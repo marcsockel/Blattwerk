@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Blattwerk – Worksheet Builder</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Fira+Sans:wght@400;500;700&display=swap');
+@font-face {
+  font-family: 'Grundschrift';
+  src: url('fonts/Grundschrift-Regular.otf') format('opentype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'Grundschrift';
+  src: url('fonts/Grundschrift-Bold.otf') format('opentype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'DidactGothic7';
+  src: url('fonts/Didact Gothic Regular 7mod.ttf') format('truetype');
+  font-weight: 400;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f0eee8;--sb:#1e1e2e;--sbt:#cdd6f4;--acc:#f38ba8;--acc2:#a6e3a1;--acc3:#89b4fa;--acc4:#fab387;--tb:#181825;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1e1e2e;}
+/* Toolbar */
+#toolbar{background:var(--tb);color:var(--sbt);display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;border-bottom:2px solid #313244;}
+.logo{font-size:16px;font-weight:800;color:var(--acc);letter-spacing:-.5px;margin-right:8px;}.logo span{color:var(--acc3);}
+.tbtn{background:#313244;border:none;color:var(--sbt);padding:5px 13px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:background .15s;}
+.tbtn:hover{background:#45475a;}.tbtn.p{background:var(--acc);color:#1e1e2e;}.tbtn.p:hover{background:#eb6f92;}
+.spacer{flex:1;}
+/* Layout */
+#layout{display:flex;flex:1;overflow:hidden;}
+/* Sidebar */
+#sidebar{width:220px;background:var(--sb);color:var(--sbt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;border-right:2px solid #313244;}
+#sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:#45475a;border-radius:4px;}
+.sb-search{padding:10px 12px 6px;position:sticky;top:0;background:var(--sb);z-index:2;}
+.sb-search input{width:100%;background:#313244;border:none;border-radius:5px;padding:6px 9px;color:var(--sbt);font-family:inherit;font-size:12px;outline:none;}
+.sb-search input::placeholder{color:#6c7086;}
+/* Category tabs */
+.cat-tabs{display:flex;gap:0;border-bottom:2px solid #313244;flex-shrink:0;}
+.cat-tab{flex:1;background:transparent;border:none;color:#6c7086;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:color .15s,background .15s;border-bottom:2px solid transparent;margin-bottom:-2px;}
+.cat-tab:hover{color:var(--sbt);background:#252535;}
+.cat-tab.active{color:var(--sbt);border-bottom-color:var(--cat-color,#89b4fa);}
+/* Widget buttons */
+.wcat{padding:8px 10px 4px;}
+.catlabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#6c7086;margin-bottom:5px;}
+.wbtn{display:flex;align-items:center;gap:7px;width:100%;background:#313244;border:none;border-radius:6px;color:var(--sbt);padding:6px 9px;margin-bottom:3px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;text-align:left;transition:background .12s,transform .1s;}
+.wbtn:hover{background:#45475a;transform:translateX(2px);}
+.wi{font-size:13px;width:18px;text-align:center;flex-shrink:0;}
+.wd{font-size:10px;color:#6c7086;font-weight:400;display:block;}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-left:auto;}
+/* Canvas */
+#canvas-area{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;align-items:center;background:var(--bg);}
+#canvas-area::-webkit-scrollbar{width:6px;}#canvas-area::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
+.page{width:180mm;min-height:267mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:12mm 14mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
+.page.page-active{border-top-color:var(--acc3);}
+.page-end{position:absolute;left:0;right:0;top:267mm;border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
+.page-end::after{content:"Ende Seite";position:absolute;right:8px;top:3px;font-size:9px;color:rgba(255,0,170,.5);font-family:sans-serif;letter-spacing:.5px;}
+.page-hint{border:2.5px dashed #d0cec8;border-radius:9px;padding:28px;text-align:center;color:#bbb;font-size:14px;font-weight:600;margin-top:10px;}
+.page-spacer{height:16px;flex-shrink:0;}
+/* Widgets on canvas */
+.wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;}
+.wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
+.wacts{display:none;position:absolute;top:-13px;right:3px;gap:3px;z-index:10;}
+.wwrap:hover .wacts,.wwrap.sel .wacts{display:flex;}
+.wa{background:var(--acc3);border:none;border-radius:3px;color:#1e1e2e;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;font-family:inherit;}
+.wa.del{background:var(--acc);}
+.dh{display:none;position:absolute;left:-20px;top:50%;transform:translateY(-50%);cursor:grab;color:#bbb;font-size:15px;user-select:none;}
+.wwrap:hover .dh{display:block;}
+.winner{padding:7px 9px;}
+/* widget internals */
+.gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
+.ws-cell{width:24px;height:24px;background:none;border:1px solid #e0ddd6;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Grundschrift',sans-serif;font-size:12px;font-weight:500;color:#333;}
+/* Props panel */
+#props{width:400px;background:#f7f5f0;border-left:2px solid #e0ddd6;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
+#props h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;}
+.prow{margin-bottom:9px;}
+.prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
+.prow input,.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
+.prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
+/* misc */
+*{user-select:none;}input,textarea{user-select:text;}
+@page{size:A4 portrait;margin:15mm;}
+@media print{
+  #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn{display:none!important;}
+  #canvas-area{padding:0;background:#fff;display:block;}
+  .page{box-shadow:none;border-top:none;border-radius:0;width:180mm;min-height:0;padding:12mm 14mm;page-break-after:auto;}
+  .page ~ .page{page-break-before:always;}
+  .page-end,.page-spacer{display:none;}
+  body{background:#fff;height:auto;}
+  .wwrap{outline:none!important;margin-bottom:12px;}
+}
+</style>
+</head>
+<body>
+<div id="toolbar">
+  <div class="logo">Blatt<span>werk</span></div>
+  <button class="tbtn" onclick="addSample()">📄 Beispiel</button>
+  <button class="tbtn" onclick="clearCanvas()">🗑 Leeren</button>
+  <button class="tbtn" onclick="addPage()">＋ Neue Seite</button>
+  <button class="tbtn" id="undobtn" onclick="undo()" title="Rückgängig (Strg+Z)">↩ Rückgängig</button>
+  <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
+  <div class="spacer"></div>
+  <span id="wcount" style="color:#6c7086;font-size:11px;">0 Widgets</span>
+  <button class="tbtn p" onclick="window.print()">⬇ PDF / Drucken</button>
+</div>
+<div id="layout">
+  <div id="sidebar">
+    <div class="sb-search">
+      <input type="text" id="search" placeholder="🔍 Widget suchen…" oninput="filterW(this.value)">
+    </div>
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <div id="wlist"></div>
+  </div>
+  <div id="canvas-area"></div>
+  <div id="props">
+    <h3>Eigenschaften</h3>
+    <div id="pi" style="color:#bbb;text-align:center;margin-top:20px;font-size:12px;">Widget auswählen</div>
+  </div>
+</div>
+
+<script>
+// ── CATEGORIES ────────────────────────────────────────────────────
+const CATEGORIES = {
+  allgemein:  { label: "Allgemein",  color: "#89b4fa" },
+  deutsch:    { label: "Deutsch",    color: "#f38ba8" },
+  mathematik: { label: "Mathematik", color: "#a6e3a1" },
+};
+
+// ── Shared helpers (available to all widget scripts) ──────────────
+const esc = s => String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const pr  = (l,inp) => `<div class="prow"><label>${l}</label>${inp}</div>`;
+
+// ── Widget registry (populated by widget scripts below) ───────────
+const WIDGETS = [];
+</script>
+
+<!-- ── Widget scripts ──────────────────────────────────────────── -->
+<script src="widgets/heading.js"></script>
+<script src="widgets/subheading.js"></script>
+<script src="widgets/instruction.js"></script>
+<script src="widgets/namedate.js"></script>
+<script src="widgets/divider.js"></script>
+<script src="widgets/linebox.js"></script>
+<script src="widgets/checkbox.js"></script>
+<script src="widgets/image.js"></script>
+<script src="widgets/table.js"></script>
+<script src="widgets/gap_text.js"></script>
+<script src="widgets/wordsearch.js"></script>
+<script src="widgets/scramble.js"></script>
+<script src="widgets/matching.js"></script>
+<script src="widgets/numbering.js"></script>
+<script src="widgets/arithmetic.js"></script>
+<script src="widgets/numberline.js"></script>
+<script src="widgets/geometry.js"></script>
+<script src="widgets/zahlenmauer.js"></script>
+<script src="widgets/zahlenhaus.js"></script>
+<script src="widgets/uhr.js"></script>
+<script src="widgets/kaestchen.js"></script>
+<script src="widgets/schriftlich_addition.js"></script>
+<script src="widgets/schriftlich_subtraktion.js"></script>
+<script src="widgets/schriftlich_multiplikation.js"></script>
+<script src="widgets/bildwort.js"></script>
+<script src="widgets/stop.js"></script>
+<script src="widgets/infobox.js"></script>
+<script src="widgets/text.js"></script>
+
+<script>
+// ── Lookup map (built after all widgets are registered) ───────────
+const WIDGET_MAP = Object.fromEntries(WIDGETS.map(w=>[w.meta.type,w]));
+
+// ── STATE ─────────────────────────────────────────────────────────
+let widgets=[],selId=null,idC=0,dragSrc=null,activeTab="allgemein",searchFilter="",activePage=0;
+let _history=[],_future=[];
+function saveHistory(){_history.push(JSON.stringify({widgets,selId}));if(_history.length>50)_history.shift();_future=[];}
+function undo(){
+  if(!_history.length)return;
+  _future.push(JSON.stringify({widgets,selId}));
+  const s=JSON.parse(_history.pop());
+  widgets=s.widgets;selId=s.selId;
+  render();if(selId)renderProps(selId);else desel();
+}
+function redo(){
+  if(!_future.length)return;
+  _history.push(JSON.stringify({widgets,selId}));
+  const s=JSON.parse(_future.pop());
+  widgets=s.widgets;selId=s.selId;
+  render();if(selId)renderProps(selId);else desel();
+}
+
+function getPageRanges(){
+  const ranges=[];let start=0;
+  widgets.forEach((w,i)=>{if(w.type==='pagebreak'){ranges.push({start,end:i});start=i+1;}});
+  ranges.push({start,end:widgets.length});
+  return ranges;
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────
+function buildTabs(){
+  const tabs=document.getElementById("cat-tabs");
+  tabs.innerHTML="";
+  Object.entries(CATEGORIES).forEach(([key,cat])=>{
+    const btn=document.createElement("button");
+    btn.className="cat-tab"+(activeTab===key?" active":"");
+    btn.textContent=cat.label;
+    btn.style.setProperty("--cat-color",cat.color);
+    if(activeTab===key)btn.style.borderBottomColor=cat.color;
+    btn.onclick=()=>{activeTab=key;buildTabs();buildList();};
+    tabs.appendChild(btn);
+  });
+}
+
+function buildList(){
+  const list=document.getElementById("wlist");list.innerHTML="";
+  const f=searchFilter.toLowerCase();
+  const toShow=WIDGETS.filter(w=>{
+    const matchCat=!f&&w.meta.category===activeTab;
+    const matchSearch=f&&(w.meta.label.toLowerCase().includes(f)||w.meta.desc.toLowerCase().includes(f));
+    return matchCat||matchSearch;
+  });
+  if(!toShow.length){list.innerHTML=`<div style="padding:16px 12px;color:#6c7086;font-size:12px;">Keine Widgets gefunden</div>`;return;}
+  if(f){
+    const grouped={};
+    toShow.forEach(w=>{(grouped[w.meta.category]=grouped[w.meta.category]||[]).push(w);});
+    Object.entries(grouped).forEach(([cat,items])=>{
+      const sec=document.createElement("div");sec.className="wcat";
+      sec.innerHTML=`<div class="catlabel" style="color:${CATEGORIES[cat].color};">${CATEGORIES[cat].label}</div>`;
+      items.forEach(w=>sec.appendChild(makeBtn(w,CATEGORIES[w.meta.category].color)));
+      list.appendChild(sec);
+    });
+  } else {
+    const sec=document.createElement("div");sec.className="wcat";
+    toShow.forEach(w=>sec.appendChild(makeBtn(w,CATEGORIES[w.meta.category].color)));
+    list.appendChild(sec);
+  }
+}
+
+function makeBtn(w,color){
+  const btn=document.createElement("button");btn.className="wbtn";
+  btn.innerHTML=`<span class="wi">${w.meta.icon}</span><span>${w.meta.label}<span class="wd">${w.meta.desc}</span></span><span class="dot" style="background:${color}"></span>`;
+  btn.onclick=()=>addWidget(w.meta.type);
+  return btn;
+}
+
+function filterW(val){searchFilter=val;buildList();}
+
+// ── CANVAS ────────────────────────────────────────────────────────
+function addWidget(type){
+  const def=WIDGET_MAP[type];if(!def)return;
+  saveHistory();
+  const w=def.createData(++idC);
+  const ranges=getPageRanges();
+  const range=ranges[activePage]||ranges[ranges.length-1];
+  widgets.splice(range.end,0,w);
+  selId=w.id;render();renderProps(w.id);
+}
+
+function addPage(){
+  saveHistory();
+  const ranges=getPageRanges();
+  const range=ranges[activePage]||ranges[ranges.length-1];
+  widgets.splice(range.end,0,{id:++idC,type:'pagebreak'});
+  activePage++;
+  render();
+}
+
+function makeWrap(w, idx) {
+  const def=WIDGET_MAP[w.type];if(!def)return null;
+  const div=document.createElement("div");
+  div.className="wwrap"+(selId===w.id?" sel":"");
+  div.draggable=true;div.dataset.idx=idx;
+  div.innerHTML=`
+    <span class="dh" title="Ziehen zum Sortieren">⠿</span>
+    <div class="wacts">
+      <button class="wa" onclick="event.stopPropagation();mv(${idx},-1)" title="Nach oben">↑</button>
+      <button class="wa" onclick="event.stopPropagation();mv(${idx},1)"  title="Nach unten">↓</button>
+      <button class="wa" onclick="event.stopPropagation();dup(${idx})"   title="Duplizieren">⧉</button>
+      <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
+    </div>
+    <div class="winner" style="${{
+      dashed: 'border:1.5px dashed #555;border-radius:6px;padding:8px;',
+      thin:   'border:1px solid #333;border-radius:6px;padding:8px;',
+      medium: 'border:2px solid #333;border-radius:6px;padding:8px;',
+      thick:  'border:3px solid #333;border-radius:6px;padding:8px;',
+    }[w.border]||''}">${def.render(w)}</div>`;
+  div.onclick=e=>{e.stopPropagation();sel(w.id);};
+  div.ondragstart=e=>{dragSrc=idx;e.dataTransfer.effectAllowed="move";};
+  div.ondragover=e=>{
+    e.preventDefault();
+    const rightHalf=w.halfWidth && e.offsetX>div.offsetWidth/2;
+    div.style.boxShadow=rightHalf?"3px 0 0 #89b4fa":"0 -3px 0 #89b4fa";
+    div.dataset.dropSide=rightHalf?"right":"left";
+  };
+  div.ondragleave=()=>{div.style.boxShadow="";delete div.dataset.dropSide;};
+  div.ondrop=e=>{
+    e.preventDefault();div.style.boxShadow="";
+    const t=+div.dataset.idx;
+    const side=div.dataset.dropSide||"left";
+    delete div.dataset.dropSide;
+    if(dragSrc===null||dragSrc===t)return;
+    saveHistory();
+    const m=widgets.splice(dragSrc,1)[0];
+    const adj=dragSrc<t?t-1:t;
+    widgets.splice(side==="right"?adj+1:adj,0,m);
+    render();
+  };
+  return div;
+}
+
+function renderPage(pageWidgets, pageIdx, range){
+  const isActive=pageIdx===activePage;
+  const pageDiv=document.createElement("div");
+  pageDiv.className="page"+(isActive?" page-active":"");
+  pageDiv.onclick=e=>{
+    if(!e.target.closest(".wwrap")){
+      if(activePage!==pageIdx){activePage=pageIdx;render();return;}
+      desel();
+    }
+  };
+
+  const wc=document.createElement("div");
+  let i=0;
+  while(i<pageWidgets.length){
+    const w=pageWidgets[i],next=pageWidgets[i+1];
+    const gIdx=range.start+i,gIdxNext=range.start+i+1;
+    if(w.halfWidth&&next&&next.halfWidth){
+      const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
+      const dA=makeWrap(w,gIdx),dB=makeWrap(next,gIdxNext);
+      if(dA){dA.style.flex="1";dA.style.marginBottom="0";row.appendChild(dA);}
+      if(dB){dB.style.flex="1";dB.style.marginBottom="0";row.appendChild(dB);}
+      wc.appendChild(row);i+=2;
+    } else if(w.halfWidth){
+      const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
+      const div=makeWrap(w,gIdx);
+      if(div){div.style.flex="1";div.style.marginBottom="0";row.appendChild(div);}
+      const hIdx=gIdx;
+      const dz=document.createElement("div");
+      dz.style.cssText="flex:1;border:2px dashed #ddd;border-radius:8px;min-height:40px;transition:border-color .12s,box-shadow .12s;";
+      dz.ondragover=e=>{e.preventDefault();dz.style.borderColor="#89b4fa";dz.style.boxShadow="inset 0 0 0 2px #89b4fa";};
+      dz.ondragleave=()=>{dz.style.borderColor="#ddd";dz.style.boxShadow="";};
+      dz.ondrop=e=>{
+        e.preventDefault();dz.style.borderColor="#ddd";dz.style.boxShadow="";
+        if(dragSrc===null||dragSrc===hIdx)return;
+        const m=widgets.splice(dragSrc,1)[0];m.halfWidth=true;
+        const adj=dragSrc<hIdx?hIdx-1:hIdx;widgets.splice(adj+1,0,m);render();
+      };
+      row.appendChild(dz);wc.appendChild(row);i++;
+    } else {
+      const div=makeWrap(w,gIdx);if(div)wc.appendChild(div);i++;
+    }
+  }
+  pageDiv.appendChild(wc);
+  if(pageWidgets.length===0){
+    const hint=document.createElement("div");hint.className="page-hint";
+    hint.textContent="← Widget aus der Liste wählen und einfügen";
+    pageDiv.appendChild(hint);
+    // X-Button zum Löschen der leeren Seite (entfernt den zugehörigen Pagebreak)
+    const delBtn=document.createElement("button");
+    delBtn.textContent="✕";
+    delBtn.title="Leere Seite löschen";
+    delBtn.style.cssText="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:none;background:#f38ba8;color:#fff;font-size:13px;font-weight:800;cursor:pointer;line-height:1;opacity:0.7;transition:opacity .15s;";
+    delBtn.onmouseenter=()=>delBtn.style.opacity="1";
+    delBtn.onmouseleave=()=>delBtn.style.opacity="0.7";
+    delBtn.onclick=e=>{
+      e.stopPropagation();
+      saveHistory();
+      // Pagebreak sitzt direkt vor range.start (außer bei der ersten Seite)
+      const pbIdx=range.start-1;
+      if(pbIdx>=0&&widgets[pbIdx]&&widgets[pbIdx].type==='pagebreak'){
+        widgets.splice(pbIdx,1);
+      }
+      if(activePage>=getPageRanges().length)activePage=Math.max(0,activePage-1);
+      render();
+    };
+    pageDiv.appendChild(delBtn);
+  }
+  const pe=document.createElement("div");pe.className="page-end";pageDiv.appendChild(pe);
+  return pageDiv;
+}
+
+function render(){
+  const ca=document.getElementById("canvas-area");
+  ca.innerHTML="";
+  const ranges=getPageRanges();
+  const total=widgets.filter(w=>w.type!=='pagebreak').length;
+  ranges.forEach((range,pageIdx)=>{
+    const pw=widgets.slice(range.start,range.end);
+    ca.appendChild(renderPage(pw,pageIdx,range));
+    if(pageIdx<ranges.length-1){const sp=document.createElement("div");sp.className="page-spacer";ca.appendChild(sp);}
+  });
+  document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('textarea[data-autoresize]').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
+    document.querySelectorAll('svg.kaestchen-svg').forEach(svg=>{
+      const cs=+svg.dataset.cs;
+      const w=svg.parentElement.offsetWidth;
+      svg.setAttribute('width',Math.floor(w/cs)*cs);
+    });
+    checkOverflow();
+  });
+}
+
+function checkOverflow(){
+  const ranges=getPageRanges();
+  const pages=document.querySelectorAll('.page');
+  for(let pi=0;pi<pages.length;pi++){
+    const pageEl=pages[pi];
+    const range=ranges[pi];
+    if(!range)continue;
+    // Convert 267mm page height to px via the page's actual rendered width (180mm)
+    const pxPerMm=pageEl.offsetWidth/180;
+    const maxBottom=(267-12)*pxPerMm; // subtract top padding (12mm)
+    const wraps=[...pageEl.querySelectorAll('.wwrap')];
+    for(let i=0;i<wraps.length;i++){
+      if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
+        if(i===0)break; // single widget taller than page — can't split
+        // Insert pagebreak before this widget
+        widgets.splice(range.start+i,0,{id:++idC,type:'pagebreak'});
+        render();
+        return; // one insertion per cycle; next render will check again
+      }
+    }
+  }
+}
+
+function sel(id){selId=id;render();renderProps(id);}
+function desel(){selId=null;render();document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';}
+
+function renderProps(id){
+  const w=widgets.find(x=>x.id===id);
+  const p=document.getElementById("pi");
+  if(!w){p.innerHTML='<span style="color:#bbb;">Widget auswählen</span>';return;}
+  const def=WIDGET_MAP[w.type];
+  const hw=w.halfWidth||false;
+  const halfToggle=`
+    <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Layout</div>
+      <div style="display:flex;gap:4px;">
+        <button onclick="upd(${id},'halfWidth',false)"
+          style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${!hw?'#89b4fa':'#ddd'};
+                 background:${!hw?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
+                 cursor:pointer;color:${!hw?'#1e1e2e':'#999'};">⬛ Volle Breite</button>
+        <button onclick="upd(${id},'halfWidth',true)"
+          style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${hw?'#89b4fa':'#ddd'};
+                 background:${hw?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
+                 cursor:pointer;color:${hw?'#1e1e2e':'#999'};">▬▬ Halbe Breite</button>
+      </div>
+      ${hw?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Zwei aufeinanderfolgende halbe Widgets erscheinen nebeneinander.</div>':''}
+    </div>`;
+  const borderToggle = w.type!=='infobox' ? `
+    <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Rahmen</div>
+      <select onchange="upd(${id},'border',this.value)"
+        style="width:100%;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
+        <option value=""       ${!w.border||w.border===''      ?'selected':''}>Kein Rahmen</option>
+        <option value="dashed" ${w.border==='dashed'           ?'selected':''}>- - - Gestrichelt</option>
+        <option value="thin"   ${w.border==='thin'             ?'selected':''}>──── Leicht (1px)</option>
+        <option value="medium" ${w.border==='medium'           ?'selected':''}>──── Mittel (2px)</option>
+        <option value="thick"  ${w.border==='thick'            ?'selected':''}>──── Dick (3px)</option>
+      </select>
+    </div>` : '';
+  p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${borderToggle}${halfToggle}`;
+}
+
+// ── ACTIONS ───────────────────────────────────────────────────────
+function upd(id,k,v){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w[k]=v;render();renderProps(id);}}
+function updrg(id,k,v){const w=widgets.find(x=>x.id===id);if(w){w[k]=v;render();renderProps(id);}}
+
+// ── ZAHLENMAUER helpers ───────────────────────────────────────────
+function zmSetBase(id, col, val) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
+  const base = (w.base || []).slice();
+  base[col] = val !== "" ? +val : 1;
+  w.base = base;
+  render(); renderProps(id);
+}
+function zmResize(id, n) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
+  n = Math.max(2, Math.min(6, n));
+  const oldBase = w.base || [];
+  w.base = Array.from({length:n}, (_,c) => oldBase[c] !== undefined ? oldBase[c] : Math.floor(Math.random()*8)+1);
+  w.rows_count = n;
+  w.shown = zmGenShown(n, w.fillMode || "basis");
+  render(); renderProps(id);
+}
+function zmFillMode(id, mode) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
+  w.fillMode = mode;
+  w.shown = zmGenShown(w.rows_count || 4, mode);
+  render(); renderProps(id);
+}
+function zmRandomBase(id) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
+  const n = w.rows_count || 4;
+  w.base = Array.from({length:n}, () => Math.floor(Math.random()*9)+1);
+  render(); renderProps(id);
+}
+function tgap(id){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w.mode=w.mode==="edit"?"preview":"edit";render();}}
+function del(id){saveHistory();widgets=widgets.filter(x=>x.id!==id);if(selId===id)desel();else render();}
+function mv(idx,d){
+  const ni=idx+d;if(ni<0||ni>=widgets.length)return;
+  if(widgets[ni]&&widgets[ni].type==='pagebreak')return;
+  saveHistory();[widgets[idx],widgets[ni]]=[widgets[ni],widgets[idx]];render();
+}
+function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]));c.id=++idC;widgets.splice(idx+1,0,c);render();sel(c.id);}
+function clearCanvas(){saveHistory();widgets=[];selId=null;activePage=0;render();desel();}
+
+function addSample(){
+  widgets=[];selId=null;activePage=0;
+  const add=type=>{const def=WIDGET_MAP[type];if(!def)return;const w=def.createData(++idC);widgets.push(w);return w;};
+
+  // Name / Datum
+  add("namedate");
+
+  // Überschrift
+  const h=add("heading");h.text="Elmar der Elefant";
+
+  // Zwischentitel
+  const sh=add("subheading");sh.text="Aufgabe 1 – Lückentext";
+
+  // Aufgabentext
+  const ins=add("instruction");ins.text="Lies den Text und fülle die Lücken aus.";
+
+  // Lückentext (5 Zeilen) mit Lösung
+  const g=add("gap_text");
+  g.text="Elmar ist ein [Elefant] aus dem [Dschungel].\nAlle anderen Elefanten sind [grau], aber Elmar ist [bunt].\nSeine Freunde [lachen] über ihn.\nDoch Elmar hat eine gute [Idee].\nAm Ende sind alle [glücklich] und mögen Elmar sehr.";
+  g.showLoesungen=true;
+
+  render();
+}
+
+// ── INIT ─────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){e.preventDefault();undo();}
+  if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){e.preventDefault();redo();}
+});
+buildTabs();
+buildList();
+addSample();
+</script>
+</body>
+</html>

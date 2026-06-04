@@ -1,0 +1,301 @@
+// Widget: Rechenaufgaben
+WIDGETS.push({
+  meta: { type:"arithmetic", label:"Rechenaufgaben", desc:"Plus, Minus, Mal, Geteilt", icon:"➕", category:"mathematik" },
+
+  createData: id => ({
+    id, type:"arithmetic",
+    tasks:"3 + 4 =\n7 - 2 =\n5 · 3 =\n12 : 4 =",
+    cols: 2,
+    zahlenraum: 20,
+    ueberschreitung: false,
+    aufgabenProPaeckchen: 4,
+    ops: ["+", "-"],
+    ergaenzung: false,
+    showLoesungen: false,
+  }),
+
+  render: d => {
+    const numCols = d.cols || 2;
+    const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
+    const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
+
+    // Parse a task string into parts.
+    // Normal:      "12 + 4 ="        → { left:"12", op:"+", right:"4", result:null }
+    // Ergänzung:   "3 + _ = 10"      → { left:"3",  op:"+", right:"_", result:"10" }
+    //              "_ + 7 = 10"      → { left:"_",  op:"+", right:"7", result:"10" }
+    const parse = task => {
+      const norm = task.replace(/[×*]/g, "·").replace(/[÷]/g, ":");
+
+      // Ergänzung pattern: "a op _ = r" or "_ op a = r"
+      const mErg = norm.match(/^(-?\d+|_)\s*([+\-·:])\s*(-?\d+|_)\s*=\s*(-?\d+)$/);
+      if (mErg) return { left: mErg[1], op: mErg[2], right: mErg[3], result: mErg[4] };
+
+      // Normal pattern: "a op b ="
+      const hasEq = norm.trimEnd().endsWith("=");
+      const core  = hasEq ? norm.slice(0, norm.lastIndexOf("=")).trim() : norm.trim();
+      const mNorm = core.match(/^(-?\d+(?:[.,]\d+)?)\s*([+\-·:])\s*(-?\d+(?:[.,]\d+)?)$/);
+      if (mNorm) return { left: mNorm[1], op: mNorm[2], right: mNorm[3], result: null, hasEq };
+
+      return { raw: norm.replace(/\s*=\s*$/, ""), hasEq };
+    };
+
+    const cell = (val, align = "right") => {
+      const content = val === "_" ? box : `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(val)}</span>`;
+      return `<td style="text-align:${align};padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${content}</td>`;
+    };
+
+    const parsed = allTasks.map(parse);
+    const perCol = Math.ceil(parsed.length / numCols);
+    const groups = Array.from({length: numCols}, (_, i) =>
+      parsed.slice(i * perCol, (i + 1) * perCol)
+    ).filter(g => g.length);
+
+    // Collect answers for the Lösungen band
+    const answers = [];
+    parsed.forEach(p => {
+      if (p.raw !== undefined) return;
+      if (p.result !== null) {
+        // Ergänzung: the missing value is the one that was "_"
+        answers.push(p.left === "_" ? p.left_val : p.right_val);
+        // Recalculate: we need the numeric answer
+        const l = p.left === "_" ? null : +p.left;
+        const r = p.right === "_" ? null : +p.right;
+        const res = +p.result;
+        let ans;
+        if (p.left === "_") {
+          if (p.op === "+") ans = res - r;
+          else if (p.op === "-") ans = res + r;
+          else if (p.op === "·") ans = res / r;
+          else ans = res * r;
+        } else {
+          if (p.op === "+") ans = res - l;
+          else if (p.op === "-") ans = l - res;
+          else if (p.op === "·") ans = res / l;
+          else ans = l / res;
+        }
+        if (!isNaN(ans) && isFinite(ans)) answers.push(String(ans));
+      } else if (p.hasEq) {
+        const l = +p.left, r = +p.right;
+        let ans;
+        if (p.op === "+") ans = l + r;
+        else if (p.op === "-") ans = l - r;
+        else if (p.op === "·") ans = l * r;
+        else ans = l / r;
+        if (!isNaN(ans) && isFinite(ans) && Number.isInteger(ans)) answers.push(String(ans));
+      }
+    });
+    // Shuffle answers
+    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+
+    const renderGroup = group => {
+      const rows = group.map(p => {
+        if (p.raw !== undefined) {
+          const ans = p.hasEq ? `&thinsp;=&thinsp;${box}` : "";
+          return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
+        }
+        const opCell = `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
+        if (p.result !== null) {
+          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
+        } else {
+          const ansCell = p.hasEq
+            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;${box}</td>`
+            : `<td></td>`;
+          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}${ansCell}</tr>`;
+        }
+      }).join("");
+      return `<table style="border-collapse:collapse;">${rows}</table>`;
+    };
+
+    const tasksHtml = `<div style="display:flex;gap:36px;flex-wrap:wrap;">${groups.map(renderGroup).join("")}</div>`;
+
+    if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
+
+    const loesungenHtml = `
+      <div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
+        <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
+        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
+      </div>`;
+
+    return tasksHtml + loesungenHtml;
+  },
+
+  renderProps: d => {
+    const ops  = d.ops || ["+", "-"];
+    const zr   = d.zahlenraum || 20;
+    const ue   = d.ueberschreitung || false;
+    const app  = d.aufgabenProPaeckchen || 4;
+    const cols = d.cols || 2;
+    const erg  = d.ergaenzung || false;
+    const sl   = d.showLoesungen || false;
+
+    const opBtn = (sym, label) => {
+      const active = ops.includes(sym);
+      return `<button onclick="event.stopPropagation();arithToggleOp(${d.id},'${sym}')"
+        style="padding:3px 8px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
+               background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:13px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
+    };
+
+    const toggleBtn = (label, active, onclick) =>
+      `<button onclick="event.stopPropagation();${onclick}"
+        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
+               background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
+
+    return `
+      <div class="prow"><label>Modus</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Rechenaufgaben", !erg, `arithSetErgaenzung(${d.id},false)`)}
+          ${toggleBtn("Ergänzung", erg, `arithSetErgaenzung(${d.id},true)`)}
+        </div>
+      </div>
+      <div class="prow"><label>Rechenzeichen</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
+          ${opBtn("+","+")}${opBtn("-","−")}${opBtn("·","·")}${opBtn(":","÷")}
+        </div>
+      </div>` +
+      pr("Zahlenraum",
+        `<select onchange="upd(${d.id},'zahlenraum',+this.value)">
+          ${[10,20,100,1000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
+        </select>`) +
+      `<div class="prow"><label>Zehnerübergang</label>
+        <label style="display:flex;align-items:center;gap:5px;font-weight:400;cursor:pointer;">
+          <input type="checkbox" ${ue?"checked":""} onchange="upd(${d.id},'ueberschreitung',this.checked)">
+          erlaubt
+        </label>
+      </div>` +
+      pr("Aufgaben pro Päckchen",
+        `<input type="number" min="1" max="20" value="${app}" onchange="upd(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
+      pr("Anzahl Päckchen",
+        `<input type="number" min="1" max="6" value="${cols}" onchange="upd(${d.id},'cols',+this.value)">`) +
+      `<div class="prow"><label>Lösungen anzeigen</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
+          ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
+        </div>
+      </div>` +
+      `<button onclick="event.stopPropagation();arithGenerate(${d.id})"
+        style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
+               background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
+               font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
+      pr(`Manuell bearbeiten${erg?" (_ = Lücke, z.B. 3 + _ = 10)":""}`,
+        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`);
+  },
+});
+
+// ── Arithmetic helpers (global) ───────────────────────────────────
+function arithToggleOp(id, sym) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const ops = (w.ops || ["+", "-"]).slice();
+  const idx = ops.indexOf(sym);
+  if (idx >= 0) { if (ops.length > 1) ops.splice(idx, 1); }
+  else ops.push(sym);
+  w.ops = ops;
+  render(); renderProps(id);
+}
+
+function arithSetErgaenzung(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w.ergaenzung = val;
+  render(); renderProps(id);
+}
+
+function arithGenerate(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const zr   = w.zahlenraum || 20;
+  const ue   = w.ueberschreitung || false;
+  const app  = w.aufgabenProPaeckchen || 4;
+  const cols = w.cols || 2;
+  const ops  = w.ops || ["+", "-"];
+  const erg  = w.ergaenzung || false;
+  const total = app * cols;
+
+  const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+  const noCarry = (a, b, op) => {
+    if (op === "+") {
+      let aa = a, bb = b;
+      while (aa > 0 || bb > 0) {
+        if ((aa % 10) + (bb % 10) >= 10) return false;
+        aa = Math.floor(aa/10); bb = Math.floor(bb/10);
+      }
+      return true;
+    }
+    if (op === "-") {
+      let aa = a, bb = b;
+      while (aa > 0 || bb > 0) {
+        if ((aa % 10) < (bb % 10)) return false;
+        aa = Math.floor(aa/10); bb = Math.floor(bb/10);
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const makeNormal = op => {
+    let a, b, tries = 0;
+    do {
+      tries++;
+      if (op === "+") {
+        a = rand(1, zr - 1); b = rand(1, zr - a);
+      } else if (op === "-") {
+        a = rand(1, zr); b = rand(0, a);
+      } else if (op === "·") {
+        const maxF = Math.floor(Math.sqrt(zr));
+        a = rand(2, Math.min(maxF, 10));
+        b = rand(2, Math.min(Math.floor(zr / a), 10));
+      } else { // :
+        b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr))));
+        const q = rand(1, Math.max(1, Math.floor(zr / b)));
+        a = q * b;
+      }
+      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      break;
+    } while (tries < 200);
+    return `${a} ${op} ${b} =`;
+  };
+
+  const makeErgaenzung = op => {
+    let a, b, tries = 0;
+    do {
+      tries++;
+      if (op === "+") {
+        a = rand(1, zr - 1); b = rand(1, zr - a);
+      } else if (op === "-") {
+        a = rand(1, zr); b = rand(0, a);
+      } else if (op === "·") {
+        const maxF = Math.floor(Math.sqrt(zr));
+        a = rand(2, Math.min(maxF, 10));
+        b = rand(2, Math.min(Math.floor(zr / a), 10));
+      } else { // :
+        b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr))));
+        const q = rand(1, Math.max(1, Math.floor(zr / b)));
+        a = q * b;
+      }
+      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      break;
+    } while (tries < 200);
+
+    if (op === "+") {
+      const result = a + b;
+      return Math.random() < 0.5 ? `_ + ${b} = ${result}` : `${a} + _ = ${result}`;
+    } else if (op === "-") {
+      const result = a - b;
+      return Math.random() < 0.5 ? `${a} - _ = ${result}` : `_ - ${b} = ${result}`;
+    } else if (op === "·") {
+      const result = a * b;
+      return Math.random() < 0.5 ? `_ · ${b} = ${result}` : `${a} · _ = ${result}`;
+    } else { // :
+      const result = a / b;
+      return Math.random() < 0.5 ? `${a} : _ = ${result}` : `_ : ${b} = ${result}`;
+    }
+  };
+
+  const lines = [];
+  for (let i = 0; i < total; i++) {
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    lines.push(erg ? makeErgaenzung(op) : makeNormal(op));
+  }
+  w.tasks = lines.join("\n");
+  render(); renderProps(id);
+}
