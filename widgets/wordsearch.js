@@ -14,7 +14,11 @@ function wsGenGrid(words, cols, rows) {
       const r = Math.floor(Math.random()*(maxR+1));
       const c = Math.floor(Math.random()*(maxC+1));
       let ok = true;
-      for(let i=0;i<word.length;i++){const ch=grid[r+dr*i][c+dc*i];if(ch&&ch!==word[i]){ok=false;break;}}
+      for(let i=0;i<word.length;i++){
+        const ri=r+dr*i, ci=c+dc*i;
+        if(ri<0||ri>=R||ci<0||ci>=C){ok=false;break;}
+        const ch=grid[ri][ci];if(ch&&ch!==word[i]){ok=false;break;}
+      }
       if(ok){for(let i=0;i<word.length;i++) grid[r+dr*i][c+dc*i]=word[i]; break;}
     }
   });
