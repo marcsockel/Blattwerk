@@ -93,7 +93,8 @@ WIDGETS.push({
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${svg}${label}</div>`;
     });
 
-    return `<div style="display:flex;flex-wrap:wrap;gap:16px 20px;">${items.join("")}</div>`;
+    const spacers = Array(6).fill(`<div style="height:0;width:${size}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
+    return `<div style="display:flex;flex-wrap:wrap;gap:16px 20px;justify-content:space-between;">${items.join("")}${spacers}</div>`;
   },
 
   renderProps: d => {

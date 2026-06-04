@@ -97,7 +97,8 @@ WIDGETS.push({
     const svgs = aufgaben.map((zahlen, i) =>
       `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, d.loesung||false, `${d.id}_${i}`, cols)}</div>`
     );
-    return `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;align-items:flex-start;">${svgs.join("")}</div>`;
+    const itemW = cols * 20;
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
   },
 
   renderProps: d => {

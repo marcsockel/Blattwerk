@@ -106,7 +106,9 @@ WIDGETS.push({
       return `<table style="border-collapse:collapse;">${rows}</table>`;
     };
 
-    const tasksHtml = `<div style="display:flex;gap:36px;flex-wrap:wrap;">${groups.map(renderGroup).join("")}</div>`;
+    const itemW = Math.ceil(Math.log10((d.zahlenraum || 20) + 2)) * 25 + 40;
+    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
+    const tasksHtml = `<div style="display:flex;gap:36px;flex-wrap:wrap;justify-content:space-between;">${groups.map(renderGroup).join("")}${spacers}</div>`;
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 
@@ -165,9 +167,9 @@ WIDGETS.push({
         </label>
       </div>` +
       pr("Aufgaben pro Päckchen",
-        `<input type="number" min="1" max="20" value="${app}" onchange="upd(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
+        `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
-        `<input type="number" min="1" max="6" value="${cols}" onchange="upd(${d.id},'cols',+this.value)">`) +
+        `<input type="number" min="1" max="6" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
       `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
@@ -198,6 +200,13 @@ function arithSetErgaenzung(id, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   w.ergaenzung = val;
   render(); renderProps(id);
+}
+
+function arithSetLayout(id, key, value) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w[key] = value;
+  // Tasks neu generieren damit Anzahl stimmt
+  arithGenerate(id);
 }
 
 function arithGenerate(id) {

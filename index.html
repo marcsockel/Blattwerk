@@ -73,7 +73,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
 .ws-cell{width:24px;height:24px;background:none;border:1px solid #e0ddd6;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Grundschrift',sans-serif;font-size:12px;font-weight:500;color:#333;}
 /* Props panel */
-#props{width:400px;background:#f7f5f0;border-left:2px solid #e0ddd6;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
+#props{width:360px;background:#f7f5f0;border-left:2px solid #e0ddd6;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
 #props h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;}
 .prow{margin-bottom:9px;}
 .prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
@@ -165,6 +165,8 @@ const WIDGETS = [];
 <script src="widgets/stop.js"></script>
 <script src="widgets/infobox.js"></script>
 <script src="widgets/text.js"></script>
+<script src="widgets/silbentext.js"></script>
+<script src="widgets/silbenwort.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -250,9 +252,13 @@ function addWidget(type){
   const def=WIDGET_MAP[type];if(!def)return;
   saveHistory();
   const w=def.createData(++idC);
-  const ranges=getPageRanges();
-  const range=ranges[activePage]||ranges[ranges.length-1];
-  widgets.splice(range.end,0,w);
+  // Insert after selected widget, otherwise at end of current page
+  const selIdx=selId!=null?widgets.findIndex(x=>x.id===selId):-1;
+  const insertAt=selIdx>=0?selIdx+1:(()=>{
+    const ranges=getPageRanges();
+    return (ranges[activePage]||ranges[ranges.length-1]).end;
+  })();
+  widgets.splice(insertAt,0,w);
   selId=w.id;render();renderProps(w.id);
 }
 
@@ -468,36 +474,57 @@ function upd(id,k,v){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w[k]
 function updrg(id,k,v){const w=widgets.find(x=>x.id===id);if(w){w[k]=v;render();renderProps(id);}}
 
 // ── ZAHLENMAUER helpers ───────────────────────────────────────────
+function zmEnsureMauern(w) {
+  const n = w.rows_count || 4, fm = w.fillMode || "basis", anz = w.anzahl || 1, zr = w.zahlenraum || 10;
+  if (!w.mauern) w.mauern = [{ base: w.base || [], shown: w.shown }];
+  while (w.mauern.length < anz) w.mauern.push(zmMakeMauer(n, fm, zr));
+  w.mauern = w.mauern.slice(0, anz);
+}
 function zmSetBase(id, col, val) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
-  saveHistory();
-  const base = (w.base || []).slice();
+  zmEnsureMauern(w);
+  const base = (w.mauern[0].base || []).slice();
   base[col] = val !== "" ? +val : 1;
-  w.base = base;
+  w.mauern[0].base = base;
   render(); renderProps(id);
 }
 function zmResize(id, n) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
-  saveHistory();
   n = Math.max(2, Math.min(6, n));
-  const oldBase = w.base || [];
-  w.base = Array.from({length:n}, (_,c) => oldBase[c] !== undefined ? oldBase[c] : Math.floor(Math.random()*8)+1);
   w.rows_count = n;
-  w.shown = zmGenShown(n, w.fillMode || "basis");
+  zmEnsureMauern(w);
+  w.mauern = w.mauern.map(m => ({
+    base: Array.from({length:n}, (_,c) => (m.base||[])[c] ?? Math.floor(Math.random()*8)+1),
+    shown: zmGenShown(n, w.fillMode || "basis")
+  }));
   render(); renderProps(id);
 }
 function zmFillMode(id, mode) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
-  saveHistory();
   w.fillMode = mode;
-  w.shown = zmGenShown(w.rows_count || 4, mode);
+  zmEnsureMauern(w);
+  w.mauern = w.mauern.map(m => ({ ...m, shown: zmGenShown(w.rows_count||4, mode) }));
   render(); renderProps(id);
 }
 function zmRandomBase(id) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
-  saveHistory();
-  const n = w.rows_count || 4;
-  w.base = Array.from({length:n}, () => Math.floor(Math.random()*9)+1);
+  const n = w.rows_count || 4, fm = w.fillMode || "basis", zr = w.zahlenraum || 10;
+  zmEnsureMauern(w);
+  w.mauern = w.mauern.map(() => zmMakeMauer(n, fm, zr));
+  render(); renderProps(id);
+}
+function zmSetZahlenraum(id, zr) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  w.zahlenraum = zr;
+  const n = w.rows_count || 4, fm = w.fillMode || "basis";
+  zmEnsureMauern(w);
+  w.mauern = w.mauern.map(() => zmMakeMauer(n, fm, zr));
+  render(); renderProps(id);
+}
+function zmSetAnzahl(id, anzahl) {
+  const w = widgets.find(x=>x.id===id); if(!w) return;
+  w.anzahl = Math.max(1, Math.min(6, anzahl));
+  zmEnsureMauern(w);
   render(); renderProps(id);
 }
 function tgap(id){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w.mode=w.mode==="edit"?"preview":"edit";render();}}

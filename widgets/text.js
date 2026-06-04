@@ -42,11 +42,20 @@ function makeRichToolbar(id, field, extraRight='') {
   </div>`;
 }
 
-function makeRichEditorBox(id, field, html, font, fontSize, extraRight='') {
+function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontOptions='') {
+  const bottomBar = fontOptions
+    ? `<div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
+         <select onchange="upd(${id},'font',this.value)"
+           style="width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;outline:none;cursor:pointer;">
+           ${fontOptions}
+         </select>
+       </div>`
+    : '';
   return `<div style="border:1.5px solid #ddd;border-radius:6px;overflow:hidden;margin-bottom:8px;">
     ${makeRichToolbar(id, field, extraRight)}
     <div id="txted-${id}" contenteditable="true" data-field="${field}"
       onclick="event.stopPropagation()"
+      onpaste="event.preventDefault();document.execCommand('insertText',false,(event.clipboardData||window.clipboardData).getData('text/plain'))"
       oninput="richSave(${id},this)"
       onblur="richBlur(${id},this)"
       onkeyup="richUpdateBtns(${id})"
@@ -54,6 +63,7 @@ function makeRichEditorBox(id, field, html, font, fontSize, extraRight='') {
       style="outline:none;padding:8px 10px;font-family:${font};font-size:${fontSize}px;
              line-height:1.7;min-height:60px;color:#333;white-space:pre-wrap;word-break:break-word;"
     >${html}</div>
+    ${bottomBar}
   </div>`;
 }
 
@@ -90,7 +100,6 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput) +
-      pr("Schriftart", `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`);
+      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions);
   },
 });

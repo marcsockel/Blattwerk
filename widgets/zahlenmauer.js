@@ -59,86 +59,109 @@ function zmGenShown(n, fillMode) {
   return shown;
 }
 
+function zmMakeMauer(n, fillMode, zahlenraum) {
+  const max = zahlenraum || 10;
+  const base = Array.from({length: n}, () => Math.floor(Math.random() * (max - 1)) + 1);
+  return { base, shown: zmGenShown(n, fillMode) };
+}
+
+function zmSvg(mauer, n, fillMode) {
+  const base = (mauer.base || []).slice(0, n);
+  while (base.length < n) base.push(1);
+  const shown = mauer.shown || zmGenShown(n, fillMode);
+
+  const grid = [base.map(v => +v)];
+  for (let row = 1; row < n; row++) {
+    const prev = grid[row - 1];
+    const next = [];
+    for (let i = 0; i < prev.length - 1; i++) next.push(prev[i] + prev[i + 1]);
+    grid.push(next);
+  }
+
+  const cw = 54, ch = 34, stroke = 1.5;
+  const svgW = n * cw + stroke;
+  const svgH = n * ch + stroke;
+  let rects = "", texts = "";
+
+  for (let visualRow = 0; visualRow < n; visualRow++) {
+    const gridRow = n - 1 - visualRow;
+    const stonesInRow = n - gridRow;
+    const rowW = stonesInRow * cw;
+    const xStart = (n * cw - rowW) / 2;
+    const y = visualRow * ch;
+    for (let col = 0; col < stonesInRow; col++) {
+      const x = xStart + col * cw;
+      const key = `${gridRow},${col}`;
+      const isShown = shown[key];
+      const val = grid[gridRow][col];
+      rects += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}"
+        fill="${isShown?'#f0ede6':'#ffffff'}" stroke="#999" stroke-width="${stroke}"/>`;
+      if (isShown)
+        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
+          font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#222">${val}</text>`;
+    }
+  }
+  return `<svg width="${svgW}" height="${svgH}" style="display:block;" xmlns="http://www.w3.org/2000/svg">${rects}${texts}</svg>`;
+}
+
 WIDGETS.push({
   meta: { type:"zahlenmauer", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik" },
 
   createData: id => {
-    const base = [3,5,2,4];
-    const fillMode = "basis";
-    return { id, type:"zahlenmauer", rows_count:4, base, fillMode, shown: zmGenShown(4, fillMode) };
+    const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;
+    const mauern = Array.from({length: anzahl}, () => ({ base:[3,5,2,4], shown: zmGenShown(n, fillMode) }));
+    return { id, type:"zahlenmauer", rows_count:n, fillMode, anzahl, zahlenraum, mauern };
   },
 
   render: d => {
     const n = d.rows_count || 4;
-    const base = (d.base || []).slice(0, n);
-    while (base.length < n) base.push(1);
     const fillMode = d.fillMode || "basis";
-    const shown = d.shown || zmGenShown(n, fillMode);
-
-    const grid = [base.map(v => +v)];
-    for (let row = 1; row < n; row++) {
-      const prev = grid[row - 1];
-      const next = [];
-      for (let i = 0; i < prev.length - 1; i++) next.push(prev[i] + prev[i + 1]);
-      grid.push(next);
-    }
-
-    const cw = 54, ch = 38, stroke = 2;
-    const svgW = n * cw + stroke;
-    const svgH = n * ch + stroke;
-
-    let rects = "";
-    let texts = "";
-
-    for (let visualRow = 0; visualRow < n; visualRow++) {
-      const gridRow = n - 1 - visualRow;
-      const stonesInRow = n - gridRow;
-      const rowW = stonesInRow * cw;
-      const xStart = (n * cw - rowW) / 2;
-      const y = visualRow * ch;
-
-      for (let col = 0; col < stonesInRow; col++) {
-        const x = xStart + col * cw;
-        const key = `${gridRow},${col}`;
-        const isShown = shown[key];
-        const val = grid[gridRow][col];
-        const fill = isShown ? "#f0ede6" : "#ffffff";
-
-        rects += `<rect x="${x + stroke/2}" y="${y + stroke/2}" width="${cw}" height="${ch}" fill="${fill}" stroke="#444" stroke-width="${stroke}"/>`;
-        if (isShown) {
-          texts += `<text x="${x + stroke/2 + cw/2}" y="${y + stroke/2 + ch/2 + 5}" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#222">${val}</text>`;
-        }
-      }
-    }
-
-    return `<svg width="${svgW}" height="${svgH}" style="display:block;max-width:100%;" xmlns="http://www.w3.org/2000/svg">${rects}${texts}</svg>`;
+    const anzahl = d.anzahl || 1;
+    // backward compat: if no mauern array, build from old base/shown
+    const mauern = d.mauern || [{ base: d.base || [], shown: d.shown }];
+    const svgs = mauern.slice(0, anzahl).map(m =>
+      `<div style="display:inline-block;">${zmSvg(m, n, fillMode)}</div>`
+    );
+    const itemW = Math.round(n * 54 + 2);
+    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
+    return `<div style="display:flex;flex-wrap:wrap;gap:12px 20px;justify-content:space-between;">${svgs.join("")}${spacers}</div>`;
   },
 
   renderProps: d => {
     const n = d.rows_count || 4;
-    const base = (d.base || []).slice(0,n);
-    while(base.length < n) base.push(1);
     const fillMode = d.fillMode || "basis";
+    const anzahl = d.anzahl || 1;
+    const zahlenraum = d.zahlenraum || 10;
+    const mauern = d.mauern || [{ base: d.base || [], shown: d.shown }];
+    const base = (mauern[0]?.base || []).slice(0, n);
+    while (base.length < n) base.push(1);
 
-    const basisInputs = base.map((v,col) =>
-      `<input type="number" min="1" max="99" value="${v}" style="width:40px;border:1.5px solid #ddd;border-radius:4px;padding:4px;font-size:13px;text-align:center;font-family:'Grundschrift',sans-serif;outline:none;"
-        onchange="zmSetBase(${d.id},${col},this.value)">`
-    ).join("");
+    const basisInputs = anzahl === 1
+      ? base.map((v, col) =>
+          `<input type="number" min="1" max="99" value="${v}"
+            style="width:40px;border:1.5px solid #ddd;border-radius:4px;padding:4px;font-size:13px;text-align:center;font-family:'Grundschrift',sans-serif;outline:none;"
+            onchange="zmSetBase(${d.id},${col},this.value)">`
+        ).join("")
+      : null;
 
-    return pr("Anzahl Basissteine",
-        `<select onchange="zmResize(${d.id},+this.value)">
-          <option value="2" ${n===2?"selected":""}>2</option>
-          <option value="3" ${n===3?"selected":""}>3</option>
-          <option value="4" ${n===4?"selected":""}>4</option>
-          <option value="5" ${n===5?"selected":""}>5</option>
-          <option value="6" ${n===6?"selected":""}>6</option>
+    return pr("Zahlenraum",
+        `<select onchange="zmSetZahlenraum(${d.id},+this.value)">
+          ${[10,20,100].map(v=>`<option value="${v}" ${zahlenraum===v?"selected":""}>${v}</option>`).join("")}
         </select>`) +
+      pr("Anzahl Basissteine",
+        `<select onchange="zmResize(${d.id},+this.value)">
+          ${[2,3,4,5,6].map(v=>`<option value="${v}" ${n===v?"selected":""}>${v}</option>`).join("")}
+        </select>`) +
+      pr("Anzahl Mauern",
+        `<input type="number" min="1" max="6" value="${anzahl}" onchange="zmSetAnzahl(${d.id},+this.value)">`) +
       pr("Sichtbare Steine",
         `<select onchange="zmFillMode(${d.id},this.value)">
-          <option value="basis" ${fillMode==="basis"?"selected":""}>Nur Basissteine</option>
+          <option value="basis"  ${fillMode==="basis" ?"selected":""}>Nur Basissteine</option>
           <option value="random" ${fillMode==="random"?"selected":""}>Zufällig (eindeutig lösbar)</option>
         </select>`) +
-      pr("Basissteine (von links)", `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${basisInputs}</div>`) +
-      `<button onclick="zmRandomBase(${d.id})" style="margin-top:8px;width:100%;background:#e8e6e0;border:none;border-radius:4px;padding:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:#555;">🎲 Zufällige Basiszahlen</button>`;
+      (basisInputs ? pr("Basissteine (von links)", `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${basisInputs}</div>`) : "") +
+      `<button onclick="zmRandomBase(${d.id})"
+        style="margin-top:8px;width:100%;background:#313244;color:#cdd6f4;border:none;border-radius:4px;padding:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;">
+        🎲 Zufällige Basiszahlen</button>`;
   },
 });

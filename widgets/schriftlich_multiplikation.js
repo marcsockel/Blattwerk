@@ -141,7 +141,8 @@ WIDGETS.push({
         : smSvgEinstellig(a, b, d.loesung||false, cols);
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${svg}</div>`;
     });
-    return `<div style="display:flex;flex-wrap:wrap;gap:4px 12px;align-items:flex-start;">${svgs.join("")}</div>`;
+    const itemW = (cols + 1) * 20; // aCols = cols + 1
+    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
   },
 
   renderProps: d => {

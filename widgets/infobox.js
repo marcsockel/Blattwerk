@@ -53,13 +53,12 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', html, font, 13) +
+      makeRichEditorBox(d.id, 'html', html, font, 13, '', fontOptions) +
       pr("Symbol", `<select onchange="upd(${d.id},'icon',this.value)">${iconOptions}</select>`) +
       (icon ? `<div class="prow"><label>Position</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Links",  iconPos==="left",  `upd(${d.id},'iconPos','left')`)}
           ${toggleBtn("Rechts", iconPos==="right", `upd(${d.id},'iconPos','right')`)}
-        </div></div>` : "") +
-      pr("Schriftart", `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`);
+        </div></div>` : "");
   },
 });

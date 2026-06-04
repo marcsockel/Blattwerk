@@ -89,12 +89,11 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text <span style="font-weight:400;color:#aaa;font-size:10px;">([Wort] = Lücke)</span></label></div>` +
-      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput) +
+      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput, fontOptions) +
       `<div class="prow">
         <label>Wort anklicken = Lücke</label>
         <div style="margin-top:5px;line-height:2;">${wordBtns}</div>
       </div>` +
-      pr("Schriftart", `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`) +
       `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
@@ -108,18 +107,24 @@ WIDGETS.push({
 function gapToggle(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
-  // Work on plain-text version of tokens for toggling
   const plainText = w.text.replace(/<[^>]+>/g, '');
   const tokens = plainText.split(/\s+/).filter(Boolean);
   if (idx >= tokens.length) return;
-  const tok = tokens[idx];
-  const plain = (tok.startsWith('[') && tok.endsWith(']')) ? tok.slice(1,-1) : tok;
-  const toggled = (tok.startsWith('[') && tok.endsWith(']')) ? plain : `[${plain}]`;
-  // Replace in the original text (HTML-aware: replace plain token)
-  const re = new RegExp('(\\[?)' + plain.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + '(\\]?)', '');
-  w.text = w.text.replace(
-    tok.startsWith('[') ? `[${plain}]` : plain,
-    toggled
+
+  const tok      = tokens[idx];
+  const isGap    = tok.startsWith('[') && tok.endsWith(']');
+  const searchFor  = tok;                              // exactly as it appears in tokens
+  const replaceWith = isGap ? tok.slice(1,-1) : `[${tok}]`;
+
+  // Count how many times searchFor already appeared in tokens before idx
+  let occurrence = 0;
+  for (let i = 0; i < idx; i++) if (tokens[i] === searchFor) occurrence++;
+
+  // Replace the (occurrence)-th match of searchFor in w.text
+  const escaped = searchFor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let count = 0;
+  w.text = w.text.replace(new RegExp(escaped, 'g'), match =>
+    count++ === occurrence ? replaceWith : match
   );
   renderProps(id); render();
 }
