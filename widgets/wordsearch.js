@@ -1,10 +1,20 @@
 // Widget: Suchsel (Buchstabengitter)
 
-function wsGenGrid(words, cols, rows) {
+function wsGetDirs(opts) {
+  const dirs = [];
+  const rw = opts.rueckwaerts !== false; // default false wenn nicht gesetzt
+  if (opts.horizontal !== false) { dirs.push([0,1]); if (rw) dirs.push([0,-1]); }
+  if (opts.vertikal   !== false) { dirs.push([1,0]); if (rw) dirs.push([-1,0]); }
+  if (opts.diagonal   !== false) { dirs.push([1,1],[1,-1]); if (rw) dirs.push([-1,-1],[-1,1]); }
+  return dirs.length ? dirs : [[0,1]]; // mindestens eine Richtung
+}
+
+function wsGenGrid(words, cols, rows, opts) {
+  opts = opts || {};
   const C = Math.max(cols || 10, words.reduce((m,w) => Math.max(m, w.length), 5));
   const R = Math.max(rows || cols || 10, words.reduce((m,w) => Math.max(m, w.length), 5));
   const grid = Array.from({length:R}, () => Array(C).fill(""));
-  const dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0]];
+  const dirs = wsGetDirs(opts);
   words.forEach(word => {
     for(let a = 0; a < 200; a++){
       const [dr,dc] = dirs[Math.floor(Math.random()*dirs.length)];
@@ -33,7 +43,8 @@ WIDGETS.push({
   createData: id => {
     const words = "ELMAR,ELEFANT,BUNT,FREUND".split(",").map(w => w.trim().toUpperCase());
     const cols = 10, rows = 10;
-    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, grid: wsGenGrid(words, cols, rows) };
+    const opts = { horizontal:true, vertikal:true, diagonal:true, rueckwaerts:false };
+    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, ...opts, grid: wsGenGrid(words, cols, rows, opts) };
   },
 
   render: d => {
@@ -42,11 +53,38 @@ WIDGETS.push({
     const R = grid.length, C = grid[0]?.length || R;
     const cs = d.gross ? 40 : 24;
     const fs = d.gross ? 22 : 12;
-    const cells = grid.map(row => row.map(ch =>
-      `<div style="width:${cs}px;height:${cs}px;border:1px solid #e0ddd6;display:flex;align-items:center;
+    const isActive = d.id === selId;
+
+    // Zellen der gesuchten Wörter finden und markieren
+    const highlighted = new Set();
+    if (isActive) {
+      const dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[1,-1],[-1,1]];
+      words.forEach(word => {
+        for (let r = 0; r < R; r++) {
+          for (let c = 0; c < C; c++) {
+            for (const [dr, dc] of dirs) {
+              let match = true;
+              for (let i = 0; i < word.length; i++) {
+                const ri = r + dr*i, ci = c + dc*i;
+                if (ri < 0 || ri >= R || ci < 0 || ci >= C || grid[ri][ci] !== word[i]) { match = false; break; }
+              }
+              if (match) {
+                for (let i = 0; i < word.length; i++) highlighted.add(`${r+dr*i},${c+dc*i}`);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const cells = grid.map((row, ri) => row.map((ch, ci) => {
+      const hl = highlighted.has(`${ri},${ci}`);
+      return `<div style="width:${cs}px;height:${cs}px;border:1px solid #e0ddd6;display:flex;align-items:center;
                   justify-content:center;font-family:'Grundschrift',sans-serif;font-size:${fs}px;
-                  font-weight:500;color:#333;">${ch}</div>`
-    ).join("")).join("");
+                  font-weight:500;color:${hl ? '#1a56cc' : '#333'};
+                  background:${hl ? '#dbeafe' : 'transparent'};">${ch}</div>`;
+    }).join("")).join("");
+
     const wl = words.map(w => `<span style="font-family:monospace;font-size:12px;background:#f0eee8;padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;">${w}</span>`).join("");
     return `<div>
       <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:5px;">Finde die Wörter:</div>
@@ -64,7 +102,19 @@ WIDGETS.push({
         style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
                background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
+    const h  = d.horizontal  !== false;
+    const v  = d.vertikal    !== false;
+    const dg = d.diagonal    !== false;
+    const rw = d.rueckwaerts === true;
     return pr("Wörter (kommagetrennt)", `<input value="${esc(d.words)}" onchange="wsUpdate(${d.id},'words',this.value)">`) +
+      `<div class="prow"><label>Richtungen</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${toggleBtn("Horizontal", h,  `wsToggleOpt(${d.id},'horizontal',${!h})`)}
+          ${toggleBtn("Vertikal",   v,  `wsToggleOpt(${d.id},'vertikal',${!v})`)}
+          ${toggleBtn("Diagonal",   dg, `wsToggleOpt(${d.id},'diagonal',${!dg})`)}
+          ${toggleBtn("Rückwärts",  rw, `wsToggleOpt(${d.id},'rueckwaerts',${!rw})`)}
+        </div>
+      </div>` +
       `<div class="prow"><label>Kästchengröße</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Klein", !gross, `upd(${d.id},'gross',false)`)}
@@ -90,25 +140,27 @@ WIDGETS.push({
 });
 
 // ── Wordsearch helpers ────────────────────────────────────────────
+function wsRegen(w) {
+  const words = w.words.split(",").map(x => x.trim().toUpperCase()).filter(Boolean);
+  w.grid = wsGenGrid(words, w.cols||w.size||10, w.rows||w.size||10, w);
+}
+
 function wsUpdate(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
-  w[key] = val;
-  const words = w.words.split(",").map(x => x.trim().toUpperCase()).filter(Boolean);
-  w.grid = wsGenGrid(words, w.cols||w.size||10, w.rows||w.size||10);
-  render(); renderProps(id);
+  w[key] = val; wsRegen(w); render(); renderProps(id);
 }
 
 function wsUpdSize(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
-  w[key] = val;
-  const words = w.words.split(",").map(x => x.trim().toUpperCase()).filter(Boolean);
-  w.grid = wsGenGrid(words, w.cols||10, w.rows||10);
-  render(); renderProps(id);
+  w[key] = val; wsRegen(w); render(); renderProps(id);
+}
+
+function wsToggleOpt(id, key, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w[key] = val; wsRegen(w); render(); renderProps(id);
 }
 
 function wsReshuffle(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
-  const words = w.words.split(",").map(x => x.trim().toUpperCase()).filter(Boolean);
-  w.grid = wsGenGrid(words, w.cols||w.size||10, w.rows||w.size||10);
-  render(); renderProps(id);
+  wsRegen(w); render(); renderProps(id);
 }
