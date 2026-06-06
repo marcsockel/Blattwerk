@@ -29,16 +29,16 @@ WIDGETS.push({
   render: d => {
     const cols      = d.cols || 1;
     const questions = mcParseText(d.text);
-    const isActive  = d.id === selId;
+    const isActive  = d.id === selId || _solutionsMode;
     const labels    = ["a","b","c","d","e","f","g","h"];
 
     const qBlocks = questions.map((item, qi) => {
       const answers = item.answers.map((ans, ai) => {
         const isCorrect = isActive && ai === item.correct;
         const circle = `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;
-                               border:1.5px solid ${isCorrect ? '#2d6a4f' : '#555'};
+                               border:2px solid ${isCorrect ? '#2563eb' : '#555'};
                                flex-shrink:0;margin-top:1px;
-                               background:${isCorrect ? '#d1fae5' : 'transparent'};"></span>`;
+                               background:${isCorrect ? '#2563eb' : 'transparent'};"></span>`;
         return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
           ${circle}
           <span style="font-size:13px;font-family:inherit;">
@@ -87,5 +87,6 @@ WIDGETS.push({
 // ── Helper ────────────────────────────────────────────────────────
 function mcUpdate(id, text) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.text = text; render(); renderProps(id);
 }

@@ -65,7 +65,7 @@ function zmMakeMauer(n, fillMode, zahlenraum) {
   return { base, shown: zmGenShown(n, fillMode) };
 }
 
-function zmSvg(mauer, n, fillMode) {
+function zmSvg(mauer, n, fillMode, isActive=false) {
   const base = (mauer.base || []).slice(0, n);
   while (base.length < n) base.push(1);
   const shown = mauer.shown || zmGenShown(n, fillMode);
@@ -99,6 +99,9 @@ function zmSvg(mauer, n, fillMode) {
       if (isShown)
         texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
           font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#222">${val}</text>`;
+      else if (isActive)
+        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
+          font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#2563eb">${val}</text>`;
     }
   }
   return `<svg width="${svgW}" height="${svgH}" style="display:block;" xmlns="http://www.w3.org/2000/svg">${rects}${texts}</svg>`;
@@ -119,8 +122,9 @@ WIDGETS.push({
     const anzahl = d.anzahl || 1;
     // backward compat: if no mauern array, build from old base/shown
     const mauern = d.mauern || [{ base: d.base || [], shown: d.shown }];
+    const active = d.id === selId || _solutionsMode;
     const svgs = mauern.slice(0, anzahl).map(m =>
-      `<div style="display:inline-block;">${zmSvg(m, n, fillMode)}</div>`
+      `<div style="display:inline-block;">${zmSvg(m, n, fillMode, active)}</div>`
     );
     const itemW = Math.round(n * 54 + 2);
     const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');

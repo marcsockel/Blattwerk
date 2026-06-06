@@ -17,6 +17,7 @@ WIDGETS.push({
     icon:"",
     iconPos:"left",
     font:"inherit",
+    border:"thick",
   }),
 
   render: d => {
@@ -29,9 +30,7 @@ WIDGETS.push({
       : "";
     const content = `<div style="font-size:13px;line-height:1.6;font-family:${font};color:#333;flex:1;">${html}</div>`;
     const inner = iconPos === 'right' ? `${content}${iconHtml}` : `${iconHtml}${content}`;
-    return `<div style="border:3px solid #333;border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;">
-              ${inner}
-            </div>`;
+    return `<div style="display:flex;align-items:flex-start;">${inner}</div>`;
   },
 
   renderProps: d => {

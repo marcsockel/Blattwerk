@@ -224,7 +224,7 @@ WIDGETS.push({
   render: d => {
     const mitCent  = d.mitCent  || false;
     const modus    = d.modus    || 'geld';
-    const isActive = d.id === selId;
+    const isActive = d.id === selId || _solutionsMode;
     const aufgaben = d.aufgaben || geldGen(d.anzahl||4, (d.maxEuro||10)*100, mitCent);
     const itemW    = 168 + 4;
 
@@ -279,6 +279,7 @@ WIDGETS.push({
 // ── Helpers ───────────────────────────────────────────────────────
 function geldSetLayout(id, key, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.aufgaben = geldGen(w.anzahl||4, (w.maxEuro||10)*100, w.mitCent||false);
   render(); renderProps(id);
@@ -286,6 +287,7 @@ function geldSetLayout(id, key, val) {
 
 function geldSetCent(id, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.mitCent = val;
   w.aufgaben = geldGen(w.anzahl||4, (w.maxEuro||10)*100, val);
   render(); renderProps(id);
@@ -293,6 +295,7 @@ function geldSetCent(id, val) {
 
 function geldWuerfeln(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.aufgaben = geldGen(w.anzahl||4, (w.maxEuro||10)*100, w.mitCent||false);
   render(); renderProps(id);
 }

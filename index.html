@@ -82,20 +82,34 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* misc */
 *{user-select:none;}input,textarea{user-select:text;}
 @page{size:A4 portrait;margin:15mm;}
+.pg-num{display:none;position:absolute;bottom:8mm;right:14mm;font-size:10px;color:#333;}
+#solution-pages{display:none;}
+@media print{#solution-pages{display:block;}
+.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:180mm;}
+.solution-pages-inner .page{page-break-before:always;}}
 @media print{
   #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn{display:none!important;}
   #canvas-area{padding:0;background:#fff;display:block;}
-  .page{box-shadow:none;border-top:none;border-radius:0;width:180mm;min-height:0;padding:12mm 14mm;page-break-after:auto;}
+  .page{box-shadow:none;border-top:none;border-radius:0;width:180mm;min-height:267mm;padding:12mm 14mm;page-break-after:auto;}
   .page ~ .page{page-break-before:always;}
   .page-end,.page-spacer{display:none;}
   body{background:#fff;height:auto;}
   .wwrap{outline:none!important;margin-bottom:12px;}
 }
 </style>
+<style id="dyn-print-style"></style>
 </head>
 <body>
 <div id="toolbar">
   <div class="logo">Blatt<span>werk</span></div>
+  <button class="tbtn" onclick="document.getElementById('blatt-open').click()">📂 Öffnen</button>
+  <button class="tbtn" onclick="blattSave()">💾 Speichern</button>
+  <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
+    style="background:#f0eee8;border:none;border-radius:5px;color:#1e1e2e;
+           padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;width:130px;outline:none;box-shadow:inset 0 3px 7px rgba(0,0,0,.45);"
+    onfocus="this.select()">
+  <input type="file" id="blatt-open" accept=".blatt" style="display:none" onchange="if(this.files[0])blattOpen(this.files[0]);this.value=''">
+  <div style="width:1px;background:#313244;height:20px;margin:0 4px;"></div>
   <button class="tbtn" onclick="addSample()">📄 Beispiel</button>
   <button class="tbtn" onclick="clearCanvas()">🗑 Leeren</button>
   <button class="tbtn" onclick="addPage()">＋ Neue Seite</button>
@@ -103,7 +117,23 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
   <div class="spacer"></div>
   <span id="wcount" style="color:#6c7086;font-size:11px;">0 Widgets</span>
-  <button class="tbtn p" onclick="window.print()">⬇ PDF / Drucken</button>
+  <div style="position:relative;display:inline-flex;">
+    <button class="tbtn p" onclick="doPrint()" style="border-radius:5px 0 0 5px;">⬇ PDF / Drucken</button><button class="tbtn p" onclick="togglePrintPanel(event)" style="border-radius:0 5px 5px 0;border-left:1px solid rgba(255,255,255,.25);padding:5px 8px;">▾</button>
+    <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:12px;">Druckoptionen</div>
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
+        <input type="checkbox" id="opt-pagenums" onchange="printOpts.pageNumbers=this.checked;updatePrintStyle()">
+        Seitenzahlen anzeigen
+      </label>
+      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
+        <input type="checkbox" id="opt-doublesided" onchange="printOpts.doubleSided=this.checked;updatePrintStyle()">
+        Beidseitiger Druck
+      </label>
+      <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
+        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div id="layout">
   <div id="sidebar">
@@ -114,6 +144,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     <div id="wlist"></div>
   </div>
   <div id="canvas-area"></div>
+  <div id="solution-pages"></div>
   <div id="props">
     <h3>Eigenschaften</h3>
     <div id="pi" style="color:#bbb;text-align:center;margin-top:20px;font-size:12px;">Widget auswählen</div>
@@ -172,6 +203,7 @@ const WIDGETS = [];
 <script src="widgets/zahlenkette.js"></script>
 <script src="widgets/stellenwert.js"></script>
 <script src="widgets/geld.js"></script>
+<script src="widgets/rechendreiecke.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -180,6 +212,7 @@ const WIDGET_MAP = Object.fromEntries(WIDGETS.map(w=>[w.meta.type,w]));
 // ── STATE ─────────────────────────────────────────────────────────
 let widgets=[],selId=null,idC=0,dragSrc=null,activeTab="allgemein",searchFilter="",activePage=0;
 let _history=[],_future=[];
+let _solutionsMode=false;
 function saveHistory(){_history.push(JSON.stringify({widgets,selId}));if(_history.length>50)_history.shift();_future=[];}
 function undo(){
   if(!_history.length)return;
@@ -362,6 +395,7 @@ function renderPage(pageWidgets, pageIdx, range){
     }
   }
   pageDiv.appendChild(wc);
+  const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
   if(pageWidgets.length===0){
     const hint=document.createElement("div");hint.className="page-hint";
     hint.textContent="← Widget aus der Liste wählen und einfügen";
@@ -483,7 +517,7 @@ function renderProps(id){
       </div>
       ${hw?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Zwei aufeinanderfolgende halbe Widgets erscheinen nebeneinander.</div>':''}
     </div>`;
-  const borderToggle = w.type!=='infobox' ? `
+  const borderToggle = ['heading','subheading','divider'].includes(w.type) ? '' : `
     <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Rahmen</div>
       <select onchange="upd(${id},'border',this.value)"
@@ -494,8 +528,35 @@ function renderProps(id){
         <option value="medium" ${w.border==='medium'           ?'selected':''}>──── Mittel (2px)</option>
         <option value="thick"  ${w.border==='thick'            ?'selected':''}>──── Dick (3px)</option>
       </select>
-    </div>` : '';
+    </div>`;
   p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${borderToggle}${halfToggle}`;
+  enhanceNumberInputs(p);
+}
+
+function enhanceNumberInputs(container) {
+  container.querySelectorAll('input[type="number"]:not([data-enhanced])').forEach(inp => {
+    inp.dataset.enhanced = '1';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;gap:4px;';
+    const mkBtn = (label, delta) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.style.cssText = 'width:30px;height:30px;flex-shrink:0;border:1.5px solid #45475a;border-radius:5px;background:#313244;color:#cdd6f4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;';
+      b.onmousedown = e => e.preventDefault();
+      b.onclick = () => {
+        const min = inp.min !== '' ? +inp.min : -Infinity;
+        const max = inp.max !== '' ? +inp.max :  Infinity;
+        inp.value = Math.min(max, Math.max(min, (+inp.value || 0) + delta));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      return b;
+    };
+    inp.parentNode.insertBefore(wrap, inp);
+    inp.style.cssText = 'flex:1;min-width:0;text-align:center;border:1.5px solid #ddd;border-radius:4px;padding:4px 2px;font-size:13px;font-family:inherit;outline:none;background:#fff;';
+    wrap.appendChild(mkBtn('−', -1));
+    wrap.appendChild(inp);
+    wrap.appendChild(mkBtn('+', +1));
+  });
 }
 
 // ── ACTIONS ───────────────────────────────────────────────────────
@@ -511,6 +572,7 @@ function zmEnsureMauern(w) {
 }
 function zmSetBase(id, col, val) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   zmEnsureMauern(w);
   const base = (w.mauern[0].base || []).slice();
   base[col] = val !== "" ? +val : 1;
@@ -519,6 +581,7 @@ function zmSetBase(id, col, val) {
 }
 function zmResize(id, n) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   n = Math.max(2, Math.min(6, n));
   w.rows_count = n;
   zmEnsureMauern(w);
@@ -530,6 +593,7 @@ function zmResize(id, n) {
 }
 function zmFillMode(id, mode) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   w.fillMode = mode;
   zmEnsureMauern(w);
   w.mauern = w.mauern.map(m => ({ ...m, shown: zmGenShown(w.rows_count||4, mode) }));
@@ -537,6 +601,7 @@ function zmFillMode(id, mode) {
 }
 function zmRandomBase(id) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   const n = w.rows_count || 4, fm = w.fillMode || "basis", zr = w.zahlenraum || 10;
   zmEnsureMauern(w);
   w.mauern = w.mauern.map(() => zmMakeMauer(n, fm, zr));
@@ -544,6 +609,7 @@ function zmRandomBase(id) {
 }
 function zmSetZahlenraum(id, zr) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   w.zahlenraum = zr;
   const n = w.rows_count || 4, fm = w.fillMode || "basis";
   zmEnsureMauern(w);
@@ -552,6 +618,7 @@ function zmSetZahlenraum(id, zr) {
 }
 function zmSetAnzahl(id, anzahl) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
+  saveHistory();
   w.anzahl = Math.max(1, Math.min(6, anzahl));
   zmEnsureMauern(w);
   render(); renderProps(id);
@@ -587,8 +654,138 @@ function addSample(){
   g.text="Elmar ist ein [Elefant] aus dem [Dschungel].\nAlle anderen Elefanten sind [grau], aber Elmar ist [bunt].\nSeine Freunde [lachen] über ihn.\nDoch Elmar hat eine gute [Idee].\nAm Ende sind alle [glücklich] und mögen Elmar sehr.";
   g.showLoesungen=true;
 
+  // Zwischentitel
+  const sh2=add("subheading");sh2.text="Aufgabe 2 – Multiple Choice";
+
+  // Aufgabentext
+  const ins2=add("instruction");ins2.text="Kreuze die richtige Antwort an.";
+
+  // Multiple Choice
+  const mc=add("multiplechoice");
+  mc.text="Welche Farbe hat Elmar?\nbunt\ngrau\nblau\nschwarz\n\nWo kommt Elmar her?\nDschungel\nWüste\nArktis\nStadt\n\nWas machen Elmars Freunde zuerst?\nlachen\nweinen\nsingen\nfliehen";
+  mc.cols=1;
+
   render();
 }
+
+// ── SAVE / LOAD (.blatt) ─────────────────────────────────────────
+let _blattFilename = 'dokument.blatt';
+
+async function blattSave() {
+  if (!window.JSZip) { alert('JSZip wird geladen…'); return; }
+  const nameEl = document.getElementById('blatt-name');
+  const base = (nameEl?.value.trim() || 'dokument').replace(/\.blatt$/i, '');
+  _blattFilename = base + '.blatt';
+  const zip = new JSZip();
+  const imgFolder = zip.folder('images');
+
+  // Deep-clone so we don't mutate live data
+  const wcopy = JSON.parse(JSON.stringify(widgets));
+
+  for (const w of wcopy) {
+    if (w.src && w.src.startsWith('data:')) {
+      const m = w.src.match(/^data:([^;]+);base64,(.+)$/);
+      if (m) {
+        const ext = m[1].split('/')[1].replace('jpeg','jpg') || 'png';
+        const fname = `img-${w.id}.${ext}`;
+        imgFolder.file(fname, m[2], { base64: true });
+        w.src = `images/${fname}`;
+      }
+    }
+  }
+
+  zip.file('document.json', JSON.stringify({ version:1, idC, widgets:wcopy }, null, 2));
+  const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = _blattFilename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function blattOpen(file) {
+  if (!window.JSZip) { alert('JSZip wird geladen…'); return; }
+  _blattFilename = file.name;
+  const nameEl = document.getElementById('blatt-name');
+  if (nameEl) nameEl.value = file.name.replace(/\.blatt$/i, '');
+  const zip = await JSZip.loadAsync(file);
+  const docJson = await zip.file('document.json').async('string');
+  const doc = JSON.parse(docJson);
+  const loaded = doc.widgets || [];
+
+  const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg',
+                    gif:'image/gif', webp:'image/webp', svg:'image/svg+xml' };
+  for (const w of loaded) {
+    if (w.src && w.src.startsWith('images/')) {
+      const entry = zip.file(w.src);
+      if (entry) {
+        const b64 = await entry.async('base64');
+        const ext = w.src.split('.').pop().toLowerCase();
+        w.src = `data:${mimeMap[ext]||'image/png'};base64,${b64}`;
+      }
+    }
+  }
+
+  saveHistory();
+  widgets = loaded;
+  idC = doc.idC || Math.max(0, ...loaded.map(w => w.id), 0);
+  selId = null; activePage = 0;
+  render(); desel();
+}
+
+// ── PRINT OPTIONS ────────────────────────────────────────────────
+let printOpts = { pageNumbers: false, doubleSided: false };
+
+function updatePrintStyle() {
+  const ds = printOpts.doubleSided;
+  let css = ds
+    ? `@page :right{margin:5mm 0 0 10mm;}@page :left{margin:5mm 10mm 0 0;}`
+    : `@page{margin:5mm 0 0 10mm;}`;
+  if (printOpts.pageNumbers) {
+    css += `.pg-num{display:block!important;}`;
+    if (ds) css += `.pg-num.pg-left{right:auto;left:14mm;}`;
+  } else {
+    css += `.pg-num{display:none!important;}`;
+  }
+  document.getElementById('dyn-print-style').textContent = css;
+}
+
+function doPrint() {
+  document.getElementById('print-panel').style.display = 'none';
+  const prevSel = selId; selId = null; render();
+  updatePrintStyle();
+  window.print();
+  selId = prevSel; render();
+}
+
+function doPrintSolutions() {
+  document.getElementById('print-panel').style.display = 'none';
+  const sc = document.getElementById('solution-pages');
+  sc.innerHTML = '';
+  _solutionsMode = true;
+  getPageRanges().forEach((range, pageIdx) => {
+    const pw = widgets.slice(range.start, range.end);
+    const pageDiv = renderPage(pw, pageIdx, range);
+    pageDiv.classList.remove('page-active');
+    pageDiv.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
+    sc.appendChild(pageDiv);
+  });
+  _solutionsMode = false;
+  updatePrintStyle();
+  window.print();
+  sc.innerHTML = '';
+}
+
+function togglePrintPanel(e) {
+  e.stopPropagation();
+  const p = document.getElementById('print-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+
+document.addEventListener('click', () => {
+  const p = document.getElementById('print-panel');
+  if (p) p.style.display = 'none';
+});
 
 // ── INIT ─────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
@@ -598,6 +795,8 @@ document.addEventListener('keydown', e => {
 buildTabs();
 buildList();
 addSample();
+updatePrintStyle();
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>

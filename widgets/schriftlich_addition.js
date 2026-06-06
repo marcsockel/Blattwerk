@@ -28,7 +28,7 @@ function saGen(count, summanden, zahlenraum, uebertrag) {
   return Array.from({length: count}, () => saGenAufgabe(summanden, zahlenraum, uebertrag));
 }
 
-function saSvg(zahlen, showResult, uid, cols) {
+function saSvg(zahlen, showResult, uid, cols, blueResult=false) {
   const cs = 20;
   const sum = zahlen.reduce((a, b) => a + b, 0);
   // rows: addends + 1 carry row + 1 result row
@@ -69,9 +69,10 @@ function saSvg(zahlen, showResult, uid, cols) {
 
   // Result
   if (showResult) {
+    const color = blueResult ? "#2563eb" : "#1a7f3c";
     String(sum).split("").forEach((d, j) => {
       const col = cols - String(sum).length + j;
-      texts += place(d, col, resultRow, "#1a7f3c");
+      texts += place(d, col, resultRow, color);
     });
   }
 
@@ -94,8 +95,9 @@ WIDGETS.push({
     const allNums = aufgaben.flatMap(z => [...z, z.reduce((a,b)=>a+b,0)]);
     const maxDigits = Math.max(...allNums.map(n => String(n).length));
     const cols = 1 + maxDigits; // col 0: operator
+    const isActive = d.id === selId || _solutionsMode;
     const svgs = aufgaben.map((zahlen, i) =>
-      `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, d.loesung||false, `${d.id}_${i}`, cols)}</div>`
+      `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, d.loesung||isActive, `${d.id}_${i}`, cols, isActive&&!d.loesung)}</div>`
     );
     const itemW = cols * 20;
     return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
@@ -145,12 +147,14 @@ WIDGETS.push({
 // ── Schriftliche Addition helpers ─────────────────────────────────
 function saRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben = saGen(w.anzahl||4, w.summanden||2, w.zahlenraum||100, w.uebertrag||false);
   render(); renderProps(id);
 }
 
 function saUpdProp(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.aufgaben = saGen(w.anzahl||4, w.summanden||2, w.zahlenraum||100, w.uebertrag||false);
   render(); renderProps(id);

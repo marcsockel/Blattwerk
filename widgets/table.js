@@ -71,6 +71,7 @@ function tblUpdCell(id, row, col, value) {
 
 function tblResize2(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.data = tblResize(w.data, w.rows, w.cols);
   render(); renderProps(id);

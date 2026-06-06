@@ -30,7 +30,7 @@ function zhGen(count, summands, stockwerke, zahlenraum, leerfeld) {
   });
 }
 
-function zhSvg(house, summands) {
+function zhSvg(house, summands, isActive=false) {
   const { dach, dachLeer, floors } = house;
   const bw = summands === 3 ? 38 : 48;
   const bh = 34;
@@ -44,7 +44,7 @@ function zhSvg(house, summands) {
     fill="#f5f3ef" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>`;
 
   const dachEl = dachLeer
-    ? ""
+    ? (isActive ? `<text x="${cx}" y="${rh-11}" text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${dach}</text>` : "")
     : `<text x="${cx}" y="${rh-11}" text-anchor="middle"
         font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#222">${dach}</text>`;
 
@@ -58,6 +58,9 @@ function zhSvg(house, summands) {
       if (!floor.leers[i]) {
         floorsHtml += `<text x="${bx + bw/2}" y="${by + bh/2 + 6}" text-anchor="middle"
           font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#222">${floor.felder[i]}</text>`;
+      } else if (isActive) {
+        floorsHtml += `<text x="${bx + bw/2}" y="${by + bh/2 + 6}" text-anchor="middle"
+          font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${floor.felder[i]}</text>`;
       }
     }
   });
@@ -78,7 +81,8 @@ WIDGETS.push({
   render: d => {
     const s = d.summands||2, st = d.stockwerke||4;
     const houses = d.houses || zhGen(d.haeuser||3, s, st, d.zahlenraum||10, d.leerfeld||"links");
-    const svgs   = houses.map(h => `<div style="display:inline-block;">${zhSvg(h, s)}</div>`);
+    const active = d.id === selId || _solutionsMode;
+    const svgs   = houses.map(h => `<div style="display:inline-block;">${zhSvg(h, s, active)}</div>`);
     return `<div style="display:flex;flex-wrap:wrap;gap:14px 20px;">${svgs.join("")}</div>`;
   },
 
@@ -121,12 +125,14 @@ WIDGETS.push({
 // ── Zahlenhaus helpers ────────────────────────────────────────────
 function zhRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.houses = zhGen(w.haeuser||3, w.summands||2, w.stockwerke||4, w.zahlenraum||10, w.leerfeld||"links");
   render(); renderProps(id);
 }
 
 function zhUpdSummands(id, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.summands = val;
   w.houses = zhGen(w.haeuser||3, val, w.stockwerke||4, w.zahlenraum||10, w.leerfeld||"links");
   render(); renderProps(id);
@@ -134,6 +140,7 @@ function zhUpdSummands(id, val) {
 
 function zhUpdProp(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.houses = zhGen(w.haeuser||3, w.summands||2, w.stockwerke||4, w.zahlenraum||10, w.leerfeld||"links");
   render(); renderProps(id);

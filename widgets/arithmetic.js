@@ -21,9 +21,11 @@ WIDGETS.push({
   },
 
   render: d => {
+    const isActive = d.id === selId || _solutionsMode;
     const numCols = d.cols || 2;
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
     const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
+    const blueVal = v => `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
 
     // Parse a task string into parts.
     // Normal:      "12 + 4 ="        → { left:"12", op:"+", right:"4", result:null }
@@ -49,8 +51,8 @@ WIDGETS.push({
       return { raw: norm.replace(/\s*=\s*$/, ""), hasEq };
     };
 
-    const cell = (val, align = "right") => {
-      const content = val === "_" ? box : `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(val)}</span>`;
+    const cell = (val, align = "right", override = null) => {
+      const content = override !== null ? override : val === "_" ? box : `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(val)}</span>`;
       return `<td style="text-align:${align};padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${content}</td>`;
     };
 
@@ -97,24 +99,51 @@ WIDGETS.push({
     // Shuffle answers
     const shuffled = answers.slice().sort(() => Math.random() - 0.5);
 
+    // Compute answer for a parsed task (used for blue solution display)
+    const computeAns = p => {
+      if (p.result !== null) {
+        const l = p.left === "_" ? null : +p.left;
+        const r = p.right === "_" ? null : +p.right;
+        const res = +p.result;
+        let ans;
+        if (p.left === "_") {
+          if (p.op==="+") ans=res-r; else if (p.op==="-") ans=res+r;
+          else if (p.op==="·") ans=res/r; else ans=res*r;
+        } else {
+          if (p.op==="+") ans=res-l; else if (p.op==="-") ans=l-res;
+          else if (p.op==="·") ans=res/l; else ans=l/res;
+        }
+        return isFinite(ans) ? String(ans) : null;
+      } else if (p.hasEq) {
+        const l=+p.left, r=+p.right;
+        let ans;
+        if (p.op==="+") ans=l+r; else if (p.op==="-") ans=l-r;
+        else if (p.op==="·") ans=l*r; else ans=l/r;
+        return isFinite(ans) ? String(ans) : null;
+      }
+      return null;
+    };
+
     const renderGroup = group => {
       const rows = group.map(p => {
         if (p.raw !== undefined) {
-          const ans = p.hasEq ? `&thinsp;=&thinsp;${box}` : "";
+          const ans = p.hasEq ? (isActive ? `&thinsp;=&thinsp;${blueVal(computeAns(p)??'?')}` : `&thinsp;=&thinsp;${box}`) : "";
           return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
         }
         const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
         const opCell = p.isZeichen
-          ? `<td style="text-align:center;padding:3px 6px;">${sqBox}</td>`
+          ? `<td style="text-align:center;padding:3px 6px;">${isActive ? blueVal(p.op) : sqBox}</td>`
           : `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
+        const leftContent = (p.left === "_" && isActive) ? blueVal(computeAns(p)??'?') : (p.left === "_" ? box : null);
+        const rightContent = (p.right === "_" && isActive) ? blueVal(computeAns(p)??'?') : (p.right === "_" ? box : null);
         if (p.result !== null) {
-          const resultVal = p.isZeichen ? esc(p.result) : esc(p.result);
-          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${resultVal}</span></td></tr>`;
+          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
         } else {
+          const ans = computeAns(p);
           const ansCell = p.hasEq
-            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;${box}</td>`
+            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;${isActive && ans ? blueVal(ans) : box}</td>`
             : `<td></td>`;
-          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}${ansCell}</tr>`;
+          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}${ansCell}</tr>`;
         }
       }).join("");
       return `<table style="border-collapse:collapse;">${rows}</table>`;
@@ -211,6 +240,7 @@ WIDGETS.push({
 // ── Arithmetic helpers (global) ───────────────────────────────────
 function arithToggleOp(id, sym) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   const ops = (w.ops || ["+", "-"]).slice();
   const idx = ops.indexOf(sym);
   if (idx >= 0) { if (ops.length > 1) ops.splice(idx, 1); }
@@ -221,12 +251,14 @@ function arithToggleOp(id, sym) {
 
 function arithSetErgaenzung(id, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.ergaenzung = val;
   render(); renderProps(id);
 }
 
 function arithSetModus(id, modus) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.ergaenzung = modus === 'ergaenzung';
   w.zeichen    = modus === 'zeichen';
   if (modus === 'ergaenzung') w.luecke = w.luecke || 'erste';
@@ -235,12 +267,14 @@ function arithSetModus(id, modus) {
 
 function arithSetLuecke(id, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.luecke = val;
   arithGenerate(id);
 }
 
 function arithSetLayout(id, key, value) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = value;
   // Tasks neu generieren damit Anzahl stimmt
   arithGenerate(id);
@@ -364,6 +398,7 @@ function arithDoGenerate(w) {
 
 function arithGenerate(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   arithDoGenerate(w);
   render(); renderProps(id);
 }

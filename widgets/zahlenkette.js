@@ -71,6 +71,7 @@ WIDGETS.push({
   },
 
   render: d => {
+    const isActive     = d.id === selId || _solutionsMode;
     const ketten       = d.ketten || [];
     const ops          = d.ops || [];
     const ks           = d.kastenGroesse || 34;
@@ -82,8 +83,10 @@ WIDGETS.push({
 
     const box = (val, show) => {
       const inner = show
-        ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;">${val}</span>`
-        : '';
+        ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;color:#222;">${val}</span>`
+        : isActive
+          ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;color:#2563eb;font-weight:700;">${val}</span>`
+          : '';
       return `<div style="width:${ks}px;height:${ks}px;border:1.5px solid #555;border-radius:3px;
                            display:inline-flex;align-items:center;justify-content:center;
                            background:#fff;flex-shrink:0;">${inner}</div>`;
@@ -196,35 +199,42 @@ WIDGETS.push({
 // ── Helpers ───────────────────────────────────────────────────────
 function zkUpdOp(id, i, key, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.ops[i][key] = val;
   zkRegen(w); render(); renderProps(id);
 }
 function zkAddOp(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.ops.push({op:'+', val:1});
   zkRegen(w); render(); renderProps(id);
 }
 function zkRemoveOp(id, i) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.ops.splice(i,1);
   zkRegen(w); render(); renderProps(id);
 }
 function zkSetZeige(id, key, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w[key] = val; render(); renderProps(id);
 }
 function zkSetLayout(id, key, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w[key] = val;
   zkRegen(w); render(); renderProps(id);
 }
 function zkWuerfeln(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   zkRegen(w); render(); renderProps(id);
 }
 
 function zkWuerfelnOps(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   const zr = w.zahlenraum || 20;
   const n  = w.ops.length || 4;
 

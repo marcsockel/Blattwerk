@@ -50,7 +50,7 @@ function smGrid(cols, rows, thickLines, cs) {
 //  Row 0: [factor1 digits][×][factor2 digit]   ← Aufgabenzeile
 //  ━━━ thick line ━━━
 //  Row 1: Ergebnis
-function smSvgEinstellig(a, b, showResult, cols) {
+function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
   const cs = 20;
   const aCols = cols + 1; // extra Spalte links
   const aStr = String(a), bStr = String(b), pStr = String(a * b);
@@ -71,7 +71,7 @@ function smSvgEinstellig(a, b, showResult, cols) {
   // Row 1: Ergebnis
   if (showResult)
     pStr.split("").forEach((d, j) =>
-      texts += smPlace(d, aCols - pStr.length + j, 1, cs, "#1a7f3c"));
+      texts += smPlace(d, aCols - pStr.length + j, 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
@@ -83,7 +83,7 @@ function smSvgEinstellig(a, b, showResult, cols) {
 //  ━━━ oberer Strich ━━━
 //  Rows 1-4: leer (Schüler füllt Teilprodukte + Ergebnis selbst ein)
 //            (kein unterer Strich – wird selbst gezeichnet)
-function smSvgZweistellig(a, b, showResult, cols) {
+function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
   const cs = 20;
   const aCols = cols + 1; // extra Spalte links
   const aStr = String(a), bStr = String(b), pStr = String(a * b);
@@ -109,7 +109,7 @@ function smSvgZweistellig(a, b, showResult, cols) {
   // Optional: Gesamtergebnis in letzter Zeile anzeigen
   if (showResult)
     pStr.split("").forEach((d, j) =>
-      texts += smPlace(d, aCols - pStr.length + j, rows - 1, cs, "#1a7f3c"));
+      texts += smPlace(d, aCols - pStr.length + j, rows - 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
@@ -135,10 +135,11 @@ WIDGETS.push({
       ...aufgaben.map(([a, b]) => String(a * b).length)
     );
 
+    const isActive = d.id === selId || _solutionsMode;
     const svgs = aufgaben.map(([a, b], i) => {
       const svg = modus === 'zweistellig'
-        ? smSvgZweistellig(a, b, d.loesung||false, cols)
-        : smSvgEinstellig(a, b, d.loesung||false, cols);
+        ? smSvgZweistellig(a, b, d.loesung||isActive, cols, isActive&&!d.loesung)
+        : smSvgEinstellig(a, b, d.loesung||isActive, cols, isActive&&!d.loesung);
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${svg}</div>`;
     });
     const itemW = (cols + 1) * 20; // aCols = cols + 1
@@ -189,12 +190,14 @@ WIDGETS.push({
 // ── Helpers ───────────────────────────────────────────────────────
 function smRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben = smGen(w.anzahl||4, w.zahlenraum||100, w.modus||"einstellig", w.uebertrag||false);
   render(); renderProps(id);
 }
 
 function smUpdProp(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.aufgaben = smGen(w.anzahl||4, w.zahlenraum||100, w.modus||"einstellig", w.uebertrag||false);
   render(); renderProps(id);

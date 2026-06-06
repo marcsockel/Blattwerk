@@ -163,7 +163,7 @@ WIDGETS.push({
     const cs = d.cellSize || 28;
     const fs = Math.round(cs * 0.52);
     const numFs = Math.round(cs * 0.27);
-    const isActive = d.id === selId;
+    const isActive = d.id === selId || _solutionsMode;
 
     // Gitter als SVG – jede Linie wird genau einmal gezeichnet
     const maxRows = d.maxRows || 0;
@@ -294,6 +294,7 @@ WIDGETS.push({
 // ── Helpers ───────────────────────────────────────────────────────
 function cwUpdate(id, text) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.pairs = text;
   cwRegen(w);
   render(); renderProps(id);
@@ -301,12 +302,14 @@ function cwUpdate(id, text) {
 
 function cwRegenWidget(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   cwRegen(w);
   render(); renderProps(id);
 }
 
 function cwSetMaxRows(id, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.maxRows = val;
   cwRegen(w);
   render(); renderProps(id);
@@ -314,6 +317,7 @@ function cwSetMaxRows(id, val) {
 
 function cwSetBias(id, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.hBias = val;
   cwRegen(w);
   render(); renderProps(id);

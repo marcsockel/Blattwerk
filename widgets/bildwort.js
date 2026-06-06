@@ -140,12 +140,14 @@ WIDGETS.push({
 // ── Bild-Wort helpers ─────────────────────────────────────────────
 function bwUpdAufgabe(id, idx, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben[idx][key] = val;
   render(); renderProps(id);
 }
 
 function bwUpdDistractor(id, idx, di, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   if (!w.aufgaben[idx].distractors) w.aufgaben[idx].distractors = ["",""];
   w.aufgaben[idx].distractors[di] = val;
   render(); renderProps(id);
@@ -153,18 +155,21 @@ function bwUpdDistractor(id, idx, di, val) {
 
 function bwAddAufgabe(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben.push({ src:"", word:"", distractors:["",""], order: bwShuffle(3) });
   render(); renderProps(id);
 }
 
 function bwRemoveAufgabe(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben.splice(idx, 1);
   render(); renderProps(id);
 }
 
 function bwReshuffle(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben.forEach(a => { a.order = bwShuffle(3); });
   render(); renderProps(id);
 }
@@ -219,6 +224,7 @@ async function bwSearch(id, idx) {
 
 function bwPickImage(id, idx, url, title) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben[idx].src = url;
   render(); renderProps(id);
 }

@@ -87,9 +87,20 @@ WIDGETS.push({
     const tf     = d.textfeld || false;
     const fmt    = d.textfeldFormat || "colon";
 
+    const isActive = d.id === selId || _solutionsMode;
+    const pad2 = n => String(n).padStart(2,'0');
     const items = uhren.map(u => {
       const svg = uhrSvg(u.h, u.m, size);
-      const label = tf ? `<div style="margin-top:6px;">${uhrZeitText(size)}</div>` : "";
+      let label = "";
+      if (tf) {
+        if (isActive) {
+          const timeStr = fmt === "colon" ? `${u.h}:${pad2(u.m)}` : `${u.h}.${pad2(u.m)}`;
+          label = `<div style="margin-top:6px;width:${size}px;height:24px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
+            <span style="font-size:13px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${timeStr} Uhr</span></div>`;
+        } else {
+          label = `<div style="margin-top:6px;">${uhrZeitText(size)}</div>`;
+        }
+      }
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${svg}${label}</div>`;
     });
 
@@ -157,12 +168,14 @@ WIDGETS.push({
 // ── Uhr helpers ───────────────────────────────────────────────────
 function uhrRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.uhren = uhrGen(w.anzahl||4, w.stufe||"ganz");
   render(); renderProps(id);
 }
 
 function uhrUpdAnzahl(id, n) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.anzahl = n;
   w.uhren  = uhrGen(n, w.stufe||"ganz");
   render(); renderProps(id);
@@ -170,6 +183,7 @@ function uhrUpdAnzahl(id, n) {
 
 function uhrUpdTime(id, idx, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.uhren[idx][key] = val;
   render(); renderProps(id);
 }

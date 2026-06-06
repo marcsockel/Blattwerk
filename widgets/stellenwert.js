@@ -108,7 +108,7 @@ WIDGETS.push({
   render: d => {
     const zahlenraum = d.zahlenraum || 100;
     const modus      = d.modus || 'zahl';
-    const isActive   = d.id === selId;
+    const isActive   = d.id === selId || _solutionsMode;
     const zahlen     = d.zahlen || svwGen(d.anzahl||4, zahlenraum);
     const itemW      = svwCols(zahlenraum).length * 42 + 2;
 
@@ -160,6 +160,7 @@ WIDGETS.push({
 // ── Helpers ───────────────────────────────────────────────────────
 function svwSetLayout(id, key, val) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.zahlen = svwGen(w.anzahl||4, w.zahlenraum||100);
   render(); renderProps(id);
@@ -167,6 +168,7 @@ function svwSetLayout(id, key, val) {
 
 function svwWuerfeln(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
+  saveHistory();
   w.zahlen = svwGen(w.anzahl||4, w.zahlenraum||100);
   render(); renderProps(id);
 }

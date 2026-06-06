@@ -5,7 +5,7 @@ function richSave(id, el) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   w[el.dataset.field || 'html'] = el.innerHTML;
 }
-function richBlur(id, el) { richSave(id, el); render(); }
+function richBlur(id, el) { saveHistory(); richSave(id, el); render(); }
 function richFmt(id, cmd) {
   const el = document.getElementById(`txted-${id}`);
   if (!el) return;
@@ -42,7 +42,7 @@ function makeRichToolbar(id, field, extraRight='') {
   </div>`;
 }
 
-function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontOptions='') {
+function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontOptions='', oninputExtra='') {
   const bottomBar = fontOptions
     ? `<div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
          <select onchange="upd(${id},'font',this.value)"
@@ -56,7 +56,7 @@ function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontO
     <div id="txted-${id}" contenteditable="true" data-field="${field}"
       onclick="event.stopPropagation()"
       onpaste="event.preventDefault();document.execCommand('insertText',false,(event.clipboardData||window.clipboardData).getData('text/plain'))"
-      oninput="richSave(${id},this)"
+      oninput="richSave(${id},this)${oninputExtra?';'+oninputExtra:''}"
       onblur="richBlur(${id},this)"
       onkeyup="richUpdateBtns(${id})"
       onmouseup="richUpdateBtns(${id})"

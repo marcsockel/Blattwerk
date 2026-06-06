@@ -3,6 +3,7 @@ WIDGETS.push({
   meta: { type:"numberline", label:"Zahlenstrahl", desc:"Lücken eintragen", icon:"↔", category:"mathematik" },
   createData: id => ({ id, type:"numberline", start:0, end:50, step:10, gaps:"20,40" }),
   render: d => {
+    const isActive = d.id === selId || _solutionsMode;
     const start=+d.start, end=+d.end, step=+d.step;
     const gaps=new Set((d.gaps||"").split(",").map(n=>parseInt(n.trim())).filter(n=>!isNaN(n)));
 
@@ -35,7 +36,12 @@ WIDGETS.push({
       ticks += `<line x1="${x}" y1="18" x2="${x}" y2="32" stroke="#444" stroke-width="1.5"/>`;
       if (isGap) {
         const boxW = step >= 100 ? 38 : step >= 10 ? 30 : 24;
-        labels += `<rect x="${x - boxW/2}" y="34" width="${boxW}" height="18" rx="2" fill="white" stroke="#555" stroke-width="1.5"/>`;
+        const fontSize = step >= 1000 ? 10 : step >= 100 ? 11 : 12;
+        if (isActive) {
+          labels += `<text x="${x}" y="48" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fontSize}" font-weight="700" fill="#2563eb">${val}</text>`;
+        } else {
+          labels += `<rect x="${x - boxW/2}" y="34" width="${boxW}" height="18" rx="2" fill="white" stroke="#555" stroke-width="1.5"/>`;
+        }
       } else {
         const fontSize = step >= 1000 ? 10 : step >= 100 ? 11 : 12;
         labels += `<text x="${x}" y="48" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fontSize}" fill="#333">${val}</text>`;

@@ -38,12 +38,14 @@ function matchingShuffleIdx(n) {
 
 function matchingReshuffle(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.rightOrder = matchingShuffleIdx(w.pairs.length);
   render(); renderProps(id);
 }
 
 function matchingUpdate(id, value) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.pairs = value.split('\n').filter(l => l.includes('=')).map(l => {
     const [a, ...b] = l.split('=');
     return [a.trim(), b.join('=').trim()];

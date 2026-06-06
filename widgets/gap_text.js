@@ -25,10 +25,14 @@ WIDGETS.push({
   render: d => {
     const font = d.font || "inherit";
     const fontFeatures = d.fontFeatures ? `font-feature-settings:${d.fontFeatures};` : "";
+    const isActive = d.id === selId || _solutionsMode;
     const parts = d.text.split(/(\[[^\]]+\])/);
     const content = parts.map(part => {
       if (part.startsWith('[') && part.endsWith(']')) {
         const word = part.slice(1, -1).replace(/<[^>]+>/g, ''); // strip tags inside brackets
+        if (isActive) {
+          return `<span style="color:#2563eb;font-weight:700;">${esc(word)}</span>`;
+        }
         const width = Math.max(66, word.length * 14);
         return `<span style="display:inline-block;border-bottom:1.5px solid #555;min-width:${width}px;height:1.3em;margin:0 2px;vertical-align:baseline;"></span>`;
       }
@@ -56,8 +60,11 @@ WIDGETS.push({
     const fontSize     = d.fontSize || 14;
     const fontFeatures = d.fontFeatures || "";
 
-    // Strip HTML tags for word-toggle display
-    const plainText = d.text.replace(/<[^>]+>/g, '');
+    // Strip HTML tags for word-toggle display (replace block elements with spaces first)
+    const plainText = d.text
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
+      .replace(/<[^>]+>/g, '');
     const tokens = plainText.split(/\s+/).filter(Boolean);
 
     const wordBtns = tokens.map((tok, i) => {
@@ -89,10 +96,10 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text <span style="font-weight:400;color:#aaa;font-size:10px;">([Wort] = Lücke)</span></label></div>` +
-      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
       `<div class="prow">
         <label>Wort anklicken = Lücke</label>
-        <div style="margin-top:5px;line-height:2;">${wordBtns}</div>
+        <div id="gap-words-${d.id}" style="margin-top:5px;line-height:2;">${wordBtns}</div>
       </div>` +
       `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
@@ -104,10 +111,36 @@ WIDGETS.push({
 });
 
 // ── Gap text helpers ──────────────────────────────────────────────
+function gapRefreshWords(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const container = document.getElementById(`gap-words-${id}`);
+  if (!container) return;
+  const plainText = w.text
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
+    .replace(/<[^>]+>/g, '');
+  const tokens = plainText.split(/\s+/).filter(Boolean);
+  const font = w.font || 'inherit';
+  container.innerHTML = tokens.map((tok, i) => {
+    const isGap = tok.startsWith('[') && tok.endsWith(']');
+    const display = isGap ? tok.slice(1,-1) : tok;
+    return `<span onclick="event.stopPropagation();gapToggle(${id},${i})"
+      style="display:inline-block;padding:2px 6px;margin:2px 1px;border-radius:4px;cursor:pointer;
+             font-family:${font};font-size:13px;line-height:1.8;
+             background:${isGap?'#fde8ec':'#f0eee8'};
+             border:1.5px solid ${isGap?'#f38ba8':'#ddd'};
+             color:${isGap?'#a0003c':'#333'};
+             font-weight:${isGap?'700':'400'};">${esc(display)}</span>`;
+  }).join('');
+}
+
 function gapToggle(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
-  const plainText = w.text.replace(/<[^>]+>/g, '');
+  const plainText = w.text
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
+    .replace(/<[^>]+>/g, '');
   const tokens = plainText.split(/\s+/).filter(Boolean);
   if (idx >= tokens.length) return;
 

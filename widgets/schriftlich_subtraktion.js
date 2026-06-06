@@ -23,7 +23,7 @@ function ssGen(count, zahlenraum, uebertrag) {
   return Array.from({length: count}, () => ssGenAufgabe(zahlenraum, uebertrag));
 }
 
-function ssSvg(zahlen, showResult, uid, cols) {
+function ssSvg(zahlen, showResult, uid, cols, blueResult=false) {
   const cs = 20;
   const [a, b] = zahlen;
   const diff = a - b;
@@ -67,9 +67,10 @@ function ssSvg(zahlen, showResult, uid, cols) {
 
   // Row 3: result
   if (showResult) {
+    const color = blueResult ? "#2563eb" : "#1a7f3c";
     String(diff).split("").forEach((d, j) => {
       const col = cols - String(diff).length + j;
-      texts += place(d, col, resultRow, "#1a7f3c");
+      texts += place(d, col, resultRow, color);
     });
   }
 
@@ -91,8 +92,9 @@ WIDGETS.push({
     const allNums = aufgaben.flatMap(([a, b]) => [a, b, a - b]);
     const maxDigits = Math.max(...allNums.map(n => String(n).length));
     const cols = 1 + maxDigits;
+    const isActive = d.id === selId || _solutionsMode;
     const svgs = aufgaben.map(([a, b], i) =>
-      `<div style="display:inline-block;margin:0 4px 8px 0;">${ssSvg([a, b], d.loesung||false, `${d.id}_${i}`, cols)}</div>`
+      `<div style="display:inline-block;margin:0 4px 8px 0;">${ssSvg([a, b], d.loesung||isActive, `${d.id}_${i}`, cols, isActive&&!d.loesung)}</div>`
     );
     const itemW = cols * 20;
     return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
@@ -136,12 +138,14 @@ WIDGETS.push({
 // ── Schriftliche Subtraktion helpers ──────────────────────────────
 function ssRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.aufgaben = ssGen(w.anzahl||4, w.zahlenraum||100, w.uebertrag||false);
   render(); renderProps(id);
 }
 
 function ssUpdProp(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val;
   w.aufgaben = ssGen(w.anzahl||4, w.zahlenraum||100, w.uebertrag||false);
   render(); renderProps(id);

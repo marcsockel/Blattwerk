@@ -53,7 +53,7 @@ WIDGETS.push({
     const R = grid.length, C = grid[0]?.length || R;
     const cs = d.gross ? 40 : 24;
     const fs = d.gross ? 22 : 12;
-    const isActive = d.id === selId;
+    const isActive = d.id === selId || _solutionsMode;
 
     // Zellen der gesuchten Wörter finden und markieren
     const highlighted = new Set();
@@ -147,20 +147,24 @@ function wsRegen(w) {
 
 function wsUpdate(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val; wsRegen(w); render(); renderProps(id);
 }
 
 function wsUpdSize(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val; wsRegen(w); render(); renderProps(id);
 }
 
 function wsToggleOpt(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w[key] = val; wsRegen(w); render(); renderProps(id);
 }
 
 function wsReshuffle(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   wsRegen(w); render(); renderProps(id);
 }

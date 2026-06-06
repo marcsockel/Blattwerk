@@ -72,6 +72,7 @@ function imgDrop(id, e) {
   const reader = new FileReader();
   reader.onload = ev => {
     const w = widgets.find(x => x.id === id); if (!w) return;
+    saveHistory();
     w.src = ev.target.result;
     render(); renderProps(id);
   };
@@ -134,6 +135,7 @@ async function imgSearch(id) {
 
 function imgPick(id, url, title) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.src = url;
   if (!w.caption) w.caption = title;
   render(); renderProps(id);

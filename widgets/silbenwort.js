@@ -250,18 +250,21 @@ function silbenwortSyncBoxen(widgetId) {
 // ── Helpers ───────────────────────────────────────────────────────
 function silbenwortUpdate(id, idx, value) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.words[idx] = value;
   render(); renderProps(id);
 }
 
 function silbenwortRemove(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.words.splice(idx, 1);
   render(); renderProps(id);
 }
 
 function silbenwortAdd(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
   w.words.push("");
   render(); renderProps(id);
 }
