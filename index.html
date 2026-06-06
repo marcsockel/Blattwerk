@@ -167,6 +167,11 @@ const WIDGETS = [];
 <script src="widgets/text.js"></script>
 <script src="widgets/silbentext.js"></script>
 <script src="widgets/silbenwort.js"></script>
+<script src="widgets/crossword.js"></script>
+<script src="widgets/multiplechoice.js"></script>
+<script src="widgets/zahlenkette.js"></script>
+<script src="widgets/stellenwert.js"></script>
+<script src="widgets/geld.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -410,21 +415,45 @@ function render(){
 function checkOverflow(){
   const ranges=getPageRanges();
   const pages=document.querySelectorAll('.page');
+
+  // ── Underflow: auto-Break entfernen wenn erste Widget der Folgeseite reinpasst ──
+  for(let pi=0;pi<pages.length-1;pi++){
+    const pageEl=pages[pi];
+    const range=ranges[pi];
+    if(!range)continue;
+    const breakIdx=range.end; // Index des Pagebreaks in widgets[]
+    if(breakIdx>=widgets.length||widgets[breakIdx].type!=='pagebreak'||!widgets[breakIdx].auto)continue;
+    const pxPerMm=pageEl.offsetWidth/180;
+    const maxBottom=(267-12)*pxPerMm;
+    const wraps=[...pageEl.querySelectorAll('.wwrap')];
+    const pageBottom=wraps.length?wraps[wraps.length-1].offsetTop+wraps[wraps.length-1].offsetHeight:0;
+    // Höhe des ersten Widgets der nächsten Seite messen
+    const nextPage=pages[pi+1];
+    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')]:[];
+    const firstNextH=nextWraps.length?nextWraps[0].offsetHeight+14:Infinity; // +14px Margin
+    if(pageBottom+firstNextH<=maxBottom){
+      // Sicher: auto-Break entfernen, Widget fließt zurück
+      widgets.splice(breakIdx,1);
+      if(activePage>=getPageRanges().length)activePage=Math.max(0,activePage-1);
+      render();
+      return;
+    }
+  }
+
+  // ── Overflow: auto-Break einfügen wenn Inhalt zu lang ──
   for(let pi=0;pi<pages.length;pi++){
     const pageEl=pages[pi];
     const range=ranges[pi];
     if(!range)continue;
-    // Convert 267mm page height to px via the page's actual rendered width (180mm)
     const pxPerMm=pageEl.offsetWidth/180;
-    const maxBottom=(267-12)*pxPerMm; // subtract top padding (12mm)
+    const maxBottom=(267-12)*pxPerMm;
     const wraps=[...pageEl.querySelectorAll('.wwrap')];
     for(let i=0;i<wraps.length;i++){
       if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
-        if(i===0)break; // single widget taller than page — can't split
-        // Insert pagebreak before this widget
-        widgets.splice(range.start+i,0,{id:++idC,type:'pagebreak'});
+        if(i===0)break; // einzelnes Widget zu groß — kann nicht gesplittet werden
+        widgets.splice(range.start+i,0,{id:++idC,type:'pagebreak',auto:true});
         render();
-        return; // one insertion per cycle; next render will check again
+        return;
       }
     }
   }

@@ -2,17 +2,23 @@
 WIDGETS.push({
   meta: { type:"arithmetic", label:"Rechenaufgaben", desc:"Plus, Minus, Mal, Geteilt", icon:"➕", category:"mathematik" },
 
-  createData: id => ({
-    id, type:"arithmetic",
-    tasks:"3 + 4 =\n7 - 2 =\n5 · 3 =\n12 : 4 =",
-    cols: 2,
-    zahlenraum: 20,
-    ueberschreitung: false,
-    aufgabenProPaeckchen: 4,
-    ops: ["+", "-"],
-    ergaenzung: false,
-    showLoesungen: false,
-  }),
+  createData: id => {
+    const w = {
+      id, type:"arithmetic",
+      tasks:"",
+      cols: 2,
+      zahlenraum: 20,
+      ueberschreitung: false,
+      aufgabenProPaeckchen: 4,
+      ops: ["+", "-"],
+      ergaenzung: false,
+      zeichen: false,
+      luecke: "erste",
+      showLoesungen: false,
+    };
+    arithDoGenerate(w);
+    return w;
+  },
 
   render: d => {
     const numCols = d.cols || 2;
@@ -29,6 +35,10 @@ WIDGETS.push({
       // Ergänzung pattern: "a op _ = r" or "_ op a = r"
       const mErg = norm.match(/^(-?\d+|_)\s*([+\-·:])\s*(-?\d+|_)\s*=\s*(-?\d+)$/);
       if (mErg) return { left: mErg[1], op: mErg[2], right: mErg[3], result: mErg[4] };
+
+      // Zeichen-Modus pattern: "a ? b = c"
+      const mZeichen = norm.match(/^(-?\d+(?:[.,]\d+)?)\s*\?\s*(-?\d+(?:[.,]\d+)?)\s*=\s*(-?\d+(?:[.,]\d+)?)$/);
+      if (mZeichen) return { left: mZeichen[1], op: "?", right: mZeichen[2], result: mZeichen[3], isZeichen: true };
 
       // Normal pattern: "a op b ="
       const hasEq = norm.trimEnd().endsWith("=");
@@ -93,9 +103,13 @@ WIDGETS.push({
           const ans = p.hasEq ? `&thinsp;=&thinsp;${box}` : "";
           return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
         }
-        const opCell = `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
+        const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
+        const opCell = p.isZeichen
+          ? `<td style="text-align:center;padding:3px 6px;">${sqBox}</td>`
+          : `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
         if (p.result !== null) {
-          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
+          const resultVal = p.isZeichen ? esc(p.result) : esc(p.result);
+          return `<tr>${cell(p.left)}${opCell}${cell(p.right)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${resultVal}</span></td></tr>`;
         } else {
           const ansCell = p.hasEq
             ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;${box}</td>`
@@ -108,7 +122,7 @@ WIDGETS.push({
 
     const itemW = Math.ceil(Math.log10((d.zahlenraum || 20) + 2)) * 25 + 40;
     const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    const tasksHtml = `<div style="display:flex;gap:36px;flex-wrap:wrap;justify-content:space-between;">${groups.map(renderGroup).join("")}${spacers}</div>`;
+    const tasksHtml = `<div style="display:flex;column-gap:36px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${groups.map(g=>`<div style="margin-bottom:16px;">${renderGroup(g)}</div>`).join('')}${spacers}</div>`;
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 
@@ -127,8 +141,9 @@ WIDGETS.push({
     const ue   = d.ueberschreitung || false;
     const app  = d.aufgabenProPaeckchen || 4;
     const cols = d.cols || 2;
-    const erg  = d.ergaenzung || false;
-    const sl   = d.showLoesungen || false;
+    const erg    = d.ergaenzung || false;
+    const sl     = d.showLoesungen || false;
+    const luecke = d.luecke || "zufall";
 
     const opBtn = (sym, label) => {
       const active = ops.includes(sym);
@@ -147,10 +162,18 @@ WIDGETS.push({
     return `
       <div class="prow"><label>Modus</label>
         <div style="display:flex;gap:4px;">
-          ${toggleBtn("Rechenaufgaben", !erg, `arithSetErgaenzung(${d.id},false)`)}
-          ${toggleBtn("Ergänzung", erg, `arithSetErgaenzung(${d.id},true)`)}
+          ${toggleBtn("Rechenaufgaben", !erg && !d.zeichen, `arithSetModus(${d.id},'normal')`)}
+          ${toggleBtn("Ergänzung",      erg,                `arithSetModus(${d.id},'ergaenzung')`)}
+          ${toggleBtn("Rechenzeichen",  d.zeichen||false,   `arithSetModus(${d.id},'zeichen')`)}
         </div>
       </div>
+      ${erg ? `<div class="prow"><label>Lücke</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("1. Zahl", luecke==="erste",  `arithSetLuecke(${d.id},'erste')`)}
+          ${toggleBtn("2. Zahl", luecke==="zweite", `arithSetLuecke(${d.id},'zweite')`)}
+          ${toggleBtn("Zufall",  luecke==="zufall", `arithSetLuecke(${d.id},'zufall')`)}
+        </div>
+      </div>` : ''}
       <div class="prow"><label>Rechenzeichen</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
           ${opBtn("+","+")}${opBtn("-","−")}${opBtn("·","·")}${opBtn(":","÷")}
@@ -202,6 +225,20 @@ function arithSetErgaenzung(id, val) {
   render(); renderProps(id);
 }
 
+function arithSetModus(id, modus) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w.ergaenzung = modus === 'ergaenzung';
+  w.zeichen    = modus === 'zeichen';
+  if (modus === 'ergaenzung') w.luecke = w.luecke || 'erste';
+  arithGenerate(id);
+}
+
+function arithSetLuecke(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w.luecke = val;
+  arithGenerate(id);
+}
+
 function arithSetLayout(id, key, value) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   w[key] = value;
@@ -209,14 +246,15 @@ function arithSetLayout(id, key, value) {
   arithGenerate(id);
 }
 
-function arithGenerate(id) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
+function arithDoGenerate(w) {
   const zr   = w.zahlenraum || 20;
-  const ue   = w.ueberschreitung || false;
-  const app  = w.aufgabenProPaeckchen || 4;
-  const cols = w.cols || 2;
-  const ops  = w.ops || ["+", "-"];
-  const erg  = w.ergaenzung || false;
+  const ue     = w.ueberschreitung || false;
+  const app    = w.aufgabenProPaeckchen || 4;
+  const cols   = w.cols || 2;
+  const ops    = w.ops || ["+", "-"];
+  const erg    = w.ergaenzung || false;
+  const zeichen= w.zeichen || false;
+  const luecke = w.luecke || "erste";
   const total = app * cols;
 
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -285,26 +323,47 @@ function arithGenerate(id) {
       break;
     } while (tries < 200);
 
+    const ersteFehlend = luecke === "erste" ? true : luecke === "zweite" ? false : Math.random() < 0.5;
     if (op === "+") {
       const result = a + b;
-      return Math.random() < 0.5 ? `_ + ${b} = ${result}` : `${a} + _ = ${result}`;
+      return ersteFehlend ? `_ + ${b} = ${result}` : `${a} + _ = ${result}`;
     } else if (op === "-") {
       const result = a - b;
-      return Math.random() < 0.5 ? `${a} - _ = ${result}` : `_ - ${b} = ${result}`;
+      return ersteFehlend ? `_ - ${b} = ${result}` : `${a} - _ = ${result}`;
     } else if (op === "·") {
       const result = a * b;
-      return Math.random() < 0.5 ? `_ · ${b} = ${result}` : `${a} · _ = ${result}`;
+      return ersteFehlend ? `_ · ${b} = ${result}` : `${a} · _ = ${result}`;
     } else { // :
       const result = a / b;
-      return Math.random() < 0.5 ? `${a} : _ = ${result}` : `_ : ${b} = ${result}`;
+      return ersteFehlend ? `_ : ${b} = ${result}` : `${a} : _ = ${result}`;
     }
+  };
+
+  const makeZeichen = op => {
+    let a, b, tries = 0;
+    do {
+      tries++;
+      if (op === "+") { a = rand(1, zr - 1); b = rand(1, zr - a); }
+      else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
+      else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
+      else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
+      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      break;
+    } while (tries < 200);
+    const result = op === "+" ? a+b : op === "-" ? a-b : op === "·" ? a*b : a/b;
+    return `${a} ? ${b} = ${result}`;
   };
 
   const lines = [];
   for (let i = 0; i < total; i++) {
     const op = ops[Math.floor(Math.random() * ops.length)];
-    lines.push(erg ? makeErgaenzung(op) : makeNormal(op));
+    lines.push(zeichen ? makeZeichen(op) : erg ? makeErgaenzung(op) : makeNormal(op));
   }
   w.tasks = lines.join("\n");
+}
+
+function arithGenerate(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  arithDoGenerate(w);
   render(); renderProps(id);
 }
