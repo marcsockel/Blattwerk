@@ -15,7 +15,13 @@ function svwCols(zahlenraum) {
 // modus: "zahl" = Plättchen gegeben, Zahl eintragen
 //        "plaettchen" = Zahl gegeben, Plättchen eintragen
 // isActive: Lösung blau anzeigen
-function svwSvg(number, zahlenraum, modus, isActive) {
+// Deterministisch "zufällig" – gleicher Wert → gleiche Positionen
+function svwPseudoRand(seed) {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
+}
+
+function svwSvg(number, zahlenraum, modus, isActive, ungeordnet=false) {
   const cols    = svwCols(zahlenraum);
   const digits  = cols.map(c => Math.floor(number / c.place) % 10);
 
@@ -51,14 +57,36 @@ function svwSvg(number, zahlenraum, modus, isActive) {
   });
 
   // Plättchen
+  const dotAreaTop = p + headerH + dotR + 4;
+  const dotAreaBot = p + headerH + dotsH - dotR - 4;
   digits.forEach((d, ci) => {
-    for (let j = 0; j < d; j++) {
-      const cx = p + ci*colW + colW/2;
-      const cy = p + headerH + 8 + j*dotGap + dotR;
-      if (showDots) {
-        svg += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="#222"/>`;
-      } else if (blueDots) {
-        svg += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="#1a56cc"/>`;
+    if (!ungeordnet) {
+      for (let j = 0; j < d; j++) {
+        const cx = p + ci*colW + colW/2;
+        const cy = p + headerH + 8 + j*dotGap + dotR;
+        if (showDots)  svg += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="#222"/>`;
+        else if (blueDots) svg += `<circle cx="${cx}" cy="${cy}" r="${dotR}" fill="#1a56cc"/>`;
+      }
+    } else {
+      // Verstreute Punkte: x und y zufällig, keine Berührung
+      const minX = p + ci*colW + dotR + 3;
+      const maxX = p + (ci+1)*colW - dotR - 3;
+      const minY = dotAreaTop;
+      const maxY = dotAreaBot;
+      const placed = [];
+      for (let j = 0; j < d; j++) {
+        let cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+        for (let att = 0; att < 120; att++) {
+          const s = number * 10000 + ci * 1000 + j * 100 + att;
+          const tx = minX + svwPseudoRand(s * 7)  * (maxX - minX);
+          const ty = minY + svwPseudoRand(s * 13) * (maxY - minY);
+          if (placed.every(([px,py]) => Math.hypot(tx-px, ty-py) >= dotR*2+2)) {
+            cx = tx; cy = ty; break;
+          }
+        }
+        placed.push([cx, cy]);
+        if (showDots)  svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${dotR}" fill="#222"/>`;
+        else if (blueDots) svg += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${dotR}" fill="#1a56cc"/>`;
       }
     }
   });
@@ -101,7 +129,7 @@ WIDGETS.push({
   meta: { type:"stellenwert", label:"Stellenwerttafel", desc:"Zahlen aus Punkten ablesen", icon:"⠿", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, modus:'zahl' };
+    const cfg = { anzahl:4, zahlenraum:100, modus:'zahl', ungeordnet:false };
     return { id, type:"stellenwert", ...cfg, zahlen: svwGen(cfg.anzahl, cfg.zahlenraum) };
   },
 
@@ -112,7 +140,8 @@ WIDGETS.push({
     const zahlen     = d.zahlen || svwGen(d.anzahl||4, zahlenraum);
     const itemW      = svwCols(zahlenraum).length * 42 + 2;
 
-    const items  = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive)}</div>`);
+    const ungeordnet = d.ungeordnet || false;
+    const items  = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive, ungeordnet)}</div>`);
     const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
     return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join('')}</div>`;
   },
@@ -121,6 +150,7 @@ WIDGETS.push({
     const anzahl     = d.anzahl     || 4;
     const zahlenraum = d.zahlenraum || 100;
     const modus      = d.modus      || 'zahl';
+    const ungeordnet = d.ungeordnet || false;
 
     const togBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -151,7 +181,12 @@ WIDGETS.push({
       <button onclick="event.stopPropagation();svwWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>
+      <div class="prow" style="margin-top:4px;"><label>Punkte</label>
+        <div style="display:flex;gap:4px;">
+          ${togBtn("Geordnet",    !ungeordnet, `upd(${d.id},'ungeordnet',false)`)}
+          ${togBtn("Ungeordnet",   ungeordnet, `upd(${d.id},'ungeordnet',true)`)}
+        </div></div>`;
   },
 });
 

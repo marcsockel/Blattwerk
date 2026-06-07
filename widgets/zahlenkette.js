@@ -39,14 +39,50 @@ function zkRandStart(ops, zahlenraum) {
     : Math.ceil(Math.random() * zahlenraum);
 }
 
+// Generiert eine gültige Kette aus erlaubten Ops vorwärts
+function zkGenChain(allowedOps, nSchritte, zahlenraum) {
+  for (let att = 0; att < 400; att++) {
+    const start = Math.floor(Math.random() * zahlenraum) + 1;
+    let cur = start;
+    const ops = [];
+    let ok = true;
+    for (let i = 0; i < nSchritte; i++) {
+      const cands = [];
+      for (const op of allowedOps) {
+        const maxStep = Math.max(2, Math.round(zahlenraum / 4));
+        if (op === '+') { for (let v=1;v<=Math.min(zahlenraum-cur,maxStep);v++) cands.push({op,val:v}); }
+        else if (op === '-') { for (let v=1;v<cur&&v<=maxStep;v++) cands.push({op,val:v}); }
+        else if (op === '×') { for (let v=2;v<=9&&cur*v<=zahlenraum;v++) cands.push({op,val:v}); }
+        else if (op === ':') { [2,3,4,5,6,7,8,9,10].forEach(v=>{ if(cur%v===0&&cur/v>=1) cands.push({op,val:v}); }); }
+      }
+      if (!cands.length) { ok=false; break; }
+      const pick = cands[Math.floor(Math.random()*cands.length)];
+      ops.push(pick);
+      if      (pick.op==='+') cur+=pick.val;
+      else if (pick.op==='-') cur-=pick.val;
+      else if (pick.op==='×') cur*=pick.val;
+      else                     cur/=pick.val;
+    }
+    if (ok && ops.length===nSchritte) {
+      return { start, ops, vals: zkCompute(start, ops) };
+    }
+  }
+  return null;
+}
+
 function zkRegen(w) {
-  const ops        = w.ops || [];
-  const anzahl     = w.anzahl || 4;
+  const allowedOps = w.allowedOps || ['+','-'];
+  const nSchritte  = w.nSchritte  || 4;
+  const anzahl     = w.anzahl     || 4;
   const zahlenraum = w.zahlenraum || 20;
-  w.ketten = Array.from({length: anzahl}, () => {
-    const start = zkRandStart(ops, zahlenraum);
-    return { start, vals: zkCompute(start, ops) };
-  });
+  w.ketten = [];
+  for (let i = 0; i < anzahl; i++) {
+    const chain = zkGenChain(allowedOps, nSchritte, zahlenraum);
+    if (chain) w.ketten.push(chain); // ops sind pro Kette gespeichert
+  }
+  if (!w.ketten.length) w.ketten = [{start:1, ops:[], vals:[1]}];
+  // d.ops auf letztes Beispiel setzen (für Abwärtskompatibilität)
+  if (w.ketten[0]?.ops) w.ops = w.ketten[0].ops;
 }
 
 // ── Widget ────────────────────────────────────────────────────────
@@ -56,7 +92,9 @@ WIDGETS.push({
   createData: id => {
     const w = {
       id, type:"zahlenkette",
-      ops: [{op:'+', val:4}, {op:'×', val:2}, {op:'-', val:6}, {op:':', val:2}],
+      allowedOps: ['+','-'],
+      nSchritte: 4,
+      ops: [],
       anzahl: 4,
       zahlenraum: 20,
       zeigeStart:      true,
@@ -92,23 +130,34 @@ WIDGETS.push({
                            background:#fff;flex-shrink:0;">${inner}</div>`;
     };
 
+    // Feste Breite für Operator-Label je nach Zahlenraum (1 Zeichen Op + N Ziffern)
+    const zr = d.zahlenraum || 20;
+    const valDigits = zr >= 1000 ? 3 : zr >= 100 ? 2 : 1;
+    const arrowMinW = Math.round(fs * 0.85) * (valDigits + 0.5); // px estimate
+
     const arrow = (op, val) => {
       const label = zeigeOps
-        ? `<span style="font-size:${Math.round(fs*0.85)}px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${op}${val}</span>`
-        : `<span style="font-size:${Math.round(fs*0.85)}px;color:#ccc;">···</span>`;
+        ? `<span style="font-size:${Math.round(fs*0.85)}px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;display:inline-block;min-width:${arrowMinW}px;text-align:center;">${op}${val}</span>`
+        : `<span style="font-size:${Math.round(fs*0.85)}px;color:#ccc;display:inline-block;min-width:${arrowMinW}px;text-align:center;">···</span>`;
+      const ah = 5; // arrowhead half-height
+      const arrowLine = `<div style="display:flex;align-items:center;width:${arrowMinW}px;">
+        <div style="flex:1;height:1.5px;background:#555;"></div>
+        <div style="width:0;height:0;border-top:${ah}px solid transparent;border-bottom:${ah}px solid transparent;border-left:${ah+2}px solid #555;flex-shrink:0;"></div>
+      </div>`;
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;
-                           justify-content:center;padding:0 4px;flex-shrink:0;">
+                           justify-content:center;padding:0 2px;flex-shrink:0;">
                 ${label}
-                <span style="font-size:${Math.round(fs*0.9)}px;color:#555;line-height:1;">→</span>
+                ${arrowLine}
               </div>`;
     };
 
     const rows = ketten.map(kette => {
-      const {start, vals} = kette;
+      const {start, vals, ops: kOps} = kette;
+      const chainOps = kOps || ops; // per-chain ops preferred
       let html = box(vals[0], zeigeStart);
-      ops.forEach((o, i) => {
+      chainOps.forEach((o, i) => {
         html += arrow(o.op, o.val);
-        const isLast = i === ops.length - 1;
+        const isLast = i === chainOps.length - 1;
         html += box(vals[i+1], isLast ? zeigeEnde : zeigeZwischen);
       });
       return `<div style="display:flex;align-items:center;margin-bottom:10px;flex-wrap:nowrap;">${html}</div>`;
@@ -118,7 +167,8 @@ WIDGETS.push({
   },
 
   renderProps: d => {
-    const ops          = d.ops || [];
+    const allowedOps   = d.allowedOps || ['+','-'];
+    const nSchritte    = d.nSchritte  || 4;
     const anzahl       = d.anzahl || 4;
     const zahlenraum   = d.zahlenraum || 20;
     const ks           = d.kastenGroesse || 34;
@@ -133,86 +183,52 @@ WIDGETS.push({
                background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
-    const opSymbols = ['+','-','×',':'];
-    const opsHtml = ops.map((o, i) =>
-      `<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;">
-        <select onchange="zkUpdOp(${d.id},${i},'op',this.value)"
-          style="width:44px;padding:3px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:13px;">
-          ${opSymbols.map(s=>`<option value="${s}" ${o.op===s?'selected':''}>${s}</option>`).join('')}
-        </select>
-        <input type="number" value="${o.val}" min="1" max="100"
-          onclick="event.stopPropagation()"
-          onchange="zkUpdOp(${d.id},${i},'val',+this.value)"
-          style="flex:1;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
-                 font-family:inherit;font-size:12px;text-align:center;">
-        <button onclick="event.stopPropagation();zkRemoveOp(${d.id},${i})"
-          style="padding:3px 7px;border:1.5px solid #ddd;border-radius:4px;background:#fff;
-                 color:#aaa;font-size:12px;cursor:pointer;">✕</button>
-      </div>`
-    ).join('');
+    const opToggle = op => {
+      const active = allowedOps.includes(op);
+      return `<button onclick="event.stopPropagation();zkToggleOp(${d.id},'${op}')"
+        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
+               background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:13px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${op}</button>`;
+    };
 
-    return `
-      <div class="prow"><label>Operationen</label></div>
-      ${opsHtml}
-      <button onclick="event.stopPropagation();zkAddOp(${d.id})"
-        style="width:100%;padding:4px;margin-bottom:8px;border:1.5px dashed #bbb;border-radius:4px;
-               background:#fafafa;font-family:inherit;font-size:11px;color:#666;cursor:pointer;">
-        + Operation</button>
-
-      <div class="prow"><label>Anzeigen</label>
+    return `<div class="prow"><label>Rechenarten</label>
+        <div style="display:flex;gap:4px;">${['+','-','×',':'].map(opToggle).join('')}</div></div>` +
+      pr('Schritte', `<input type="number" min="1" max="10" value="${nSchritte}"
+        onclick="event.stopPropagation()" onchange="zkSetLayout(${d.id},'nSchritte',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
+      `<div class="prow"><label>Anzeigen</label>
         <div style="display:flex;gap:3px;flex-wrap:wrap;">
-          ${togBtn("Start",     zeigeStart,    `zkSetZeige(${d.id},'zeigeStart',${!zeigeStart})`)}
-          ${togBtn("Zwischen",  zeigeZwischen, `zkSetZeige(${d.id},'zeigeZwischen',${!zeigeZwischen})`)}
-          ${togBtn("Ende",      zeigeEnde,     `zkSetZeige(${d.id},'zeigeEnde',${!zeigeEnde})`)}
-          ${togBtn("Ops",       zeigeOps,      `zkSetZeige(${d.id},'zeigeOps',${!zeigeOps})`)}
-        </div>
-      </div>
-
-      ${pr('Anzahl Ketten', `<input type="number" min="1" max="12" value="${anzahl}"
-        onclick="event.stopPropagation()"
-        onchange="zkSetLayout(${d.id},'anzahl',+this.value)"
-        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
-               font-family:inherit;font-size:12px;text-align:center;">`)}
-      ${pr('Zahlenraum', `<select onchange="zkSetLayout(${d.id},'zahlenraum',+this.value)"
+          ${togBtn("Start",    zeigeStart,    `zkSetZeige(${d.id},'zeigeStart',${!zeigeStart})`)}
+          ${togBtn("Zwischen", zeigeZwischen, `zkSetZeige(${d.id},'zeigeZwischen',${!zeigeZwischen})`)}
+          ${togBtn("Ende",     zeigeEnde,     `zkSetZeige(${d.id},'zeigeEnde',${!zeigeEnde})`)}
+          ${togBtn("Ops",      zeigeOps,      `zkSetZeige(${d.id},'zeigeOps',${!zeigeOps})`)}
+        </div></div>` +
+      pr('Anzahl Ketten', `<input type="number" min="1" max="12" value="${anzahl}"
+        onclick="event.stopPropagation()" onchange="zkSetLayout(${d.id},'anzahl',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
+      pr('Zahlenraum', `<select onchange="zkSetLayout(${d.id},'zahlenraum',+this.value)"
         style="border:1.5px solid #ddd;border-radius:4px;padding:3px 5px;font-family:inherit;font-size:12px;">
         ${[10,20,50,100,1000].map(n=>`<option value="${n}" ${zahlenraum===n?'selected':''}>${n}</option>`).join('')}
-      </select>`)}
-      ${pr('Kastengröße', `<input type="number" min="24" max="60" value="${ks}"
-        onclick="event.stopPropagation()"
-        onchange="upd(${d.id},'kastenGroesse',+this.value)"
-        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
-               font-family:inherit;font-size:12px;text-align:center;">`)}
-
-      <div style="display:flex;gap:6px;margin-top:6px;">
-        <button onclick="event.stopPropagation();zkWuerfeln(${d.id})"
-          style="flex:1;padding:6px;border:none;border-radius:5px;
-                 background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-                 font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>
-        <button onclick="event.stopPropagation();zkWuerfelnOps(${d.id})"
-          style="flex:1;padding:6px;border:none;border-radius:5px;
-                 background:#45475a;color:#cdd6f4;font-family:inherit;font-size:12px;
-                 font-weight:700;cursor:pointer;">🎲 Operationen würfeln</button>
-      </div>`;
+      </select>`) +
+      pr('Kastengröße', `<input type="number" min="24" max="60" value="${ks}"
+        onclick="event.stopPropagation()" onchange="upd(${d.id},'kastenGroesse',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
+      `<button onclick="event.stopPropagation();zkWuerfeln(${d.id})"
+        style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
+               background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
+               font-weight:700;cursor:pointer;">🎲 Würfeln</button>`;
   },
 });
 
 // ── Helpers ───────────────────────────────────────────────────────
-function zkUpdOp(id, i, key, val) {
+function zkToggleOp(id, op) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
   saveHistory();
-  w.ops[i][key] = val;
-  zkRegen(w); render(); renderProps(id);
-}
-function zkAddOp(id) {
-  const w = widgets.find(x=>x.id===id); if (!w) return;
-  saveHistory();
-  w.ops.push({op:'+', val:1});
-  zkRegen(w); render(); renderProps(id);
-}
-function zkRemoveOp(id, i) {
-  const w = widgets.find(x=>x.id===id); if (!w) return;
-  saveHistory();
-  w.ops.splice(i,1);
+  const allowed = w.allowedOps || ['+','-'];
+  const idx = allowed.indexOf(op);
+  if (idx >= 0 && allowed.length > 1) allowed.splice(idx, 1);
+  else if (idx < 0) allowed.push(op);
+  w.allowedOps = allowed;
   zkRegen(w); render(); renderProps(id);
 }
 function zkSetZeige(id, key, val) {
