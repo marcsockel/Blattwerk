@@ -83,8 +83,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 *{user-select:none;}input,textarea{user-select:text;}
 @page{size:A4 portrait;margin:15mm;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:14mm;font-size:10px;color:#333;}
-.winner-handdrawn{position:relative;padding:10px;}
-.winner-handdrawn::before{content:'';position:absolute;inset:0;pointer-events:none;background:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 300' preserveAspectRatio='none'><path d='M2,7 C80,5 200,8 300,6 C400,4 520,7 598,6' stroke='%23333' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M598,6 C596,70 599,150 597,210 C595,255 597,278 598,294' stroke='%23333' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M598,294 C510,296 390,293 290,295 C190,297 80,294 2,293' stroke='%23333' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M2,293 C4,230 1,160 3,100 C5,55 3,25 2,7' stroke='%23333' stroke-width='2.4' fill='none' stroke-linecap='round'/><path d='M4,9 C90,7 210,10 320,8 C440,6 540,9 596,8' stroke='%23444' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.35'/><path d='M596,8 C594,75 597,155 595,215 C593,258 595,280 596,292' stroke='%23444' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.35'/><path d='M596,292 C508,294 388,291 288,293 C188,295 78,292 4,291' stroke='%23444' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.35'/><path d='M4,291 C6,225 3,155 5,95 C7,52 5,22 4,9' stroke='%23444' stroke-width='0.9' fill='none' stroke-linecap='round' opacity='0.35'/></svg>") 0/100% 100% no-repeat;}
 #solution-pages{display:none;}
 @media print{#solution-pages{display:block;}
 .solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:180mm;}
@@ -356,12 +354,12 @@ function makeWrap(w, idx) {
       <button class="wa" onclick="event.stopPropagation();dup(${idx})"   title="Duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
     </div>
-    <div class="winner${w.border==='handdrawn'?' winner-handdrawn':''}" style="${{
+    <div class="winner" style="${{
       dashed:     'border:1.5px dashed #555;border-radius:6px;padding:8px;',
       thin:       'border:1px solid #333;border-radius:6px;padding:8px;',
       medium:     'border:2px solid #333;border-radius:6px;padding:8px;',
       thick:      'border:3px solid #333;border-radius:6px;padding:8px;',
-      handdrawn:  'padding:10px;',
+
     }[w.border]||''}">${def.render(w)}</div>`;
   div.onclick=e=>{e.stopPropagation();sel(w.id);};
   div.ondragstart=e=>{dragSrc=idx;e.dataTransfer.effectAllowed="move";};
@@ -562,7 +560,6 @@ function renderProps(id){
         <option value="thin"      ${w.border==='thin'              ?'selected':''}>──── Leicht (1px)</option>
         <option value="medium"    ${w.border==='medium'            ?'selected':''}>──── Mittel (2px)</option>
         <option value="thick"     ${w.border==='thick'             ?'selected':''}>──── Dick (3px)</option>
-        <option value="handdrawn" ${w.border==='handdrawn'         ?'selected':''}>✏ Handgezeichnet</option>
       </select>
     </div>`;
   p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${borderToggle}${halfToggle}`;
