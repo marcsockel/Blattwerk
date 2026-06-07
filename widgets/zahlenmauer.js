@@ -157,7 +157,7 @@ WIDGETS.push({
           ${[2,3,4,5,6].map(v=>`<option value="${v}" ${n===v?"selected":""}>${v}</option>`).join("")}
         </select>`) +
       pr("Anzahl Mauern",
-        `<input type="number" min="1" max="6" value="${anzahl}" onchange="zmSetAnzahl(${d.id},+this.value)">`) +
+        `<input type="number" min="1" max="12" value="${anzahl}" onchange="zmSetAnzahl(${d.id},+this.value)">`) +
       pr("Sichtbare Steine",
         `<select onchange="zmFillMode(${d.id},this.value)">
           <option value="basis"  ${fillMode==="basis" ?"selected":""}>Nur Basissteine</option>

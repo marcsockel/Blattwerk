@@ -28,51 +28,103 @@ function saGen(count, summanden, zahlenraum, uebertrag) {
   return Array.from({length: count}, () => saGenAufgabe(summanden, zahlenraum, uebertrag));
 }
 
-function saSvg(zahlen, showResult, uid, cols, blueResult=false) {
+// Generate gaps for one aufgabe: at most one per column → always uniquely solvable
+function saGenGaps(zahlen, cols, anzahlGaps) {
+  const sum = zahlen.reduce((a, b) => a + b, 0);
+  const allRows = [...zahlen.map(String), String(sum)];
+  // Collect all (rowIdx, actualCol) positions, shuffle, pick with ≤1 per col
+  const positions = [];
+  allRows.forEach((numStr, rowIdx) => {
+    numStr.split("").forEach((_, j) => {
+      const actualCol = cols - numStr.length + j;
+      positions.push([rowIdx, actualCol]);
+    });
+  });
+  positions.sort(() => Math.random() - 0.5);
+  const usedCols = new Set();
+  const gaps = [];
+  for (const pos of positions) {
+    if (gaps.length >= anzahlGaps) break;
+    const [, col] = pos;
+    if (!usedCols.has(col)) { usedCols.add(col); gaps.push(pos); }
+  }
+  return gaps;
+}
+
+function saCalcCols(aufgaben) {
+  const allNums = aufgaben.flatMap(z => [...z, z.reduce((a, b) => a + b, 0)]);
+  return 1 + Math.max(...allNums.map(n => String(n).length));
+}
+
+function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
   const cs = 20;
   const sum = zahlen.reduce((a, b) => a + b, 0);
-  // rows: addends + 1 carry row + 1 result row
-  const rows = zahlen.length + 2;
+  const resultRowIdx = zahlen.length; // row index in allRows for result
+  const rows = zahlen.length + 2;    // addends + carry row + result row
   const resultRow = rows - 1;
   const carryRow  = rows - 2;
-  const W = cols * cs;
-  const H = rows * cs;
+  const W = cols * cs, H = rows * cs;
 
-  // Grid lines
+  // Gap lookup: "rowIdx,actualCol"
+  const gapSet = new Set(gaps.map(([r, c]) => `${r},${c}`));
+  const isGap = (rowIdx, actualCol) => gapSet.has(`${rowIdx},${actualCol}`);
+
+  // Grid
   let grid = "";
   for (let c = 0; c <= cols; c++)
     grid += `<line x1="${c*cs}" y1="0" x2="${c*cs}" y2="${H}" stroke="#888" stroke-width="0.7"/>`;
   for (let r = 0; r <= rows; r++) {
-    const isResultLine = r === resultRow;
+    const thick = r === resultRow;
     grid += `<line x1="0" y1="${r*cs}" x2="${W}" y2="${r*cs}"
-      stroke="${isResultLine ? '#333' : '#888'}"
-      stroke-width="${isResultLine ? 2 : 0.7}"/>`;
+      stroke="${thick?'#333':'#888'}" stroke-width="${thick?2:0.7}"/>`;
   }
 
-  // Numbers and operator
-  let texts = "";
   const place = (digit, col, row, color="#222") =>
-    `<text x="${col*cs + cs/2}" y="${row*cs + cs*0.67}"
-      text-anchor="middle" font-family="'DidactGothic7',sans-serif"
-      font-size="14" font-weight="700" fill="${color}">${digit}</text>`;
+    `<text x="${col*cs+cs/2}" y="${row*cs+cs*0.67}" text-anchor="middle"
+      font-family="'DidactGothic7',sans-serif" font-size="14" font-weight="700" fill="${color}">${digit}</text>`;
 
+  let texts = "";
+  const gapRect = (col, row) =>
+    `<rect x="${col*cs+0.5}" y="${row*cs+0.5}" width="${cs-1}" height="${cs-1}" fill="#e8e8e8"/>`;
+
+  // Addend rows
   zahlen.forEach((n, rowIdx) => {
-    // + sign on last addend row
-    if (rowIdx === zahlen.length - 1)
-      texts += place("+", 0, rowIdx, "#555");
-
+    if (rowIdx === zahlen.length - 1) texts += place("+", 0, rowIdx, "#555");
     String(n).split("").forEach((d, j) => {
       const col = cols - String(n).length + j;
-      texts += place(d, col, rowIdx);
+      if (isGap(rowIdx, col)) {
+        if (blueResult) texts += place(d, col, rowIdx, "#2563eb");
+        else texts += gapRect(col, rowIdx);
+      } else {
+        texts += place(d, col, rowIdx);
+      }
     });
   });
 
-  // Result
+  // Carries + Result
   if (showResult) {
     const color = blueResult ? "#2563eb" : "#1a7f3c";
+    // Carries
+    const digitArrays = zahlen.map(n => String(n).split("").reverse().map(Number));
+    const maxLen = Math.max(...digitArrays.map(a => a.length));
+    let c = 0;
+    for (let p = 0; p < maxLen; p++) {
+      const colSum = digitArrays.reduce((s, a) => s + (a[p] || 0), 0) + c;
+      c = Math.floor(colSum / 10);
+      if (c > 0 && blueResult) { // only show carries in solution/active mode
+        const carryCol = cols - 2 - p;
+        if (carryCol > 0) texts += place(c, carryCol, carryRow, color);
+      }
+    }
+    // Result
     String(sum).split("").forEach((d, j) => {
       const col = cols - String(sum).length + j;
-      texts += place(d, col, resultRow, color);
+      if (isGap(resultRowIdx, col)) {
+        if (blueResult) texts += place(d, col, resultRow, "#2563eb");
+        else texts += gapRect(col, resultRow);
+      } else {
+        texts += place(d, col, resultRow, gaps.length > 0 ? "#222" : color);
+      }
     });
   }
 
@@ -81,24 +133,27 @@ function saSvg(zahlen, showResult, uid, cols, blueResult=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"schriftlich_addition", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik" },
+  meta: { type:"schriftlich_addition", group:"rechnen", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik" },
 
   createData: id => {
-    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4 };
+    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false };
     return { id, type:"schriftlich_addition", ...cfg,
-      aufgaben: saGen(cfg.anzahl, cfg.summanden, cfg.zahlenraum, cfg.uebertrag) };
+      aufgaben: saGen(cfg.anzahl, cfg.summanden, cfg.zahlenraum, cfg.uebertrag),
+      aufgabenGaps: [] };
   },
 
   render: d => {
     const aufgaben = d.aufgaben || saGen(d.anzahl||4, d.summanden||2, d.zahlenraum||100, d.uebertrag||false);
-    // Einheitliche Spaltenbreite für alle Aufgaben
-    const allNums = aufgaben.flatMap(z => [...z, z.reduce((a,b)=>a+b,0)]);
-    const maxDigits = Math.max(...allNums.map(n => String(n).length));
-    const cols = 1 + maxDigits; // col 0: operator
+    const cols = saCalcCols(aufgaben);
     const isActive = d.id === selId || _solutionsMode;
-    const svgs = aufgaben.map((zahlen, i) =>
-      `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, d.loesung||isActive, `${d.id}_${i}`, cols, isActive&&!d.loesung)}</div>`
-    );
+    const luecken = d.luecken || false;
+    const gaps = luecken ? (d.aufgabenGaps || []) : [];
+    const svgs = aufgaben.map((zahlen, i) => {
+      const g = luecken ? (gaps[i] || []) : [];
+      const showRes = luecken ? true : (d.loesung || isActive);
+      const blue    = luecken ? isActive : (isActive && !d.loesung);
+      return `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
+    });
     const itemW = cols * 20;
     return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
   },
@@ -109,6 +164,7 @@ WIDGETS.push({
     const ue  = d.uebertrag  || false;
     const sl  = d.loesung    || false;
     const anz = d.anzahl     || 4;
+    const lk  = d.luecken    || false;
 
     const toggleBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -136,11 +192,16 @@ WIDGETS.push({
         style="margin-top:2px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
                font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
-      `<div class="prow"><label>Lösung</label>
+      `<div class="prow"><label>Aufgabentyp</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Normal",        !lk, `saSetLuecken(${d.id},false)`)}
+          ${toggleBtn("Lückenaufgaben", lk, `saSetLuecken(${d.id},true)`)}
+        </div></div>` +
+      (!lk ? `<div class="prow"><label>Lösung</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>`;
+        </div></div>` : '');
   },
 });
 
@@ -149,6 +210,10 @@ function saRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   w.aufgaben = saGen(w.anzahl||4, w.summanden||2, w.zahlenraum||100, w.uebertrag||false);
+  if (w.luecken) {
+    const cols = saCalcCols(w.aufgaben);
+    w.aufgabenGaps = w.aufgaben.map(z => saGenGaps(z, cols, 3));
+  }
   render(); renderProps(id);
 }
 
@@ -157,5 +222,22 @@ function saUpdProp(id, key, val) {
   saveHistory();
   w[key] = val;
   w.aufgaben = saGen(w.anzahl||4, w.summanden||2, w.zahlenraum||100, w.uebertrag||false);
+  if (w.luecken) {
+    const cols = saCalcCols(w.aufgaben);
+    w.aufgabenGaps = w.aufgaben.map(z => saGenGaps(z, cols, 3));
+  }
+  render(); renderProps(id);
+}
+
+function saSetLuecken(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  w.luecken = val;
+  if (val) {
+    const cols = saCalcCols(w.aufgaben);
+    w.aufgabenGaps = w.aufgaben.map(z => saGenGaps(z, cols, 3));
+  } else {
+    w.aufgabenGaps = [];
+  }
   render(); renderProps(id);
 }

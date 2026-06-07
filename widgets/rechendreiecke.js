@@ -117,7 +117,7 @@ WIDGETS.push({
       pr("Leerfelder",
         `<select onchange="rdSet(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl",
-        `<input type="number" min="1" max="8" value="${anzahl}" onchange="rdSet(${d.id},'anzahl',+this.value)">`) +
+        `<input type="number" min="1" max="12" value="${anzahl}" onchange="rdSet(${d.id},'anzahl',+this.value)">`) +
       `<button onclick="rdRoll(${d.id})" style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>`;
   },
 });

@@ -221,7 +221,7 @@ WIDGETS.push({
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
-        `<input type="number" min="1" max="6" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
+        `<input type="number" min="1" max="12" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
       `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}

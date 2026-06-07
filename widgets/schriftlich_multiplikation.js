@@ -52,27 +52,19 @@ function smGrid(cols, rows, thickLines, cs) {
 //  Row 1: Ergebnis
 function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
   const cs = 20;
-  const aCols = cols + 1; // extra Spalte links
+  const aCols = cols + 1;
   const aStr = String(a), bStr = String(b), pStr = String(a * b);
   const rows = 2;
   const W = aCols * cs, H = rows * cs;
-
   const grid = smGrid(aCols, rows, [1], cs);
   let texts = "";
-
-  // Row 0: factor1 × factor2 – right-aligned
-  const xCol = aCols - 1 - bStr.length; // column for ×
-  aStr.split("").forEach((d, j) =>
-    texts += smPlace(d, xCol - aStr.length + j, 0, cs));
+  const xCol = aCols - 1 - bStr.length;
+  aStr.split("").forEach((d, j) => texts += smPlace(d, xCol - aStr.length + j, 0, cs));
   texts += smPlace("×", xCol, 0, cs, "#555");
-  bStr.split("").forEach((d, j) =>
-    texts += smPlace(d, xCol + 1 + j, 0, cs));
-
-  // Row 1: Ergebnis
+  bStr.split("").forEach((d, j) => texts += smPlace(d, xCol + 1 + j, 0, cs));
   if (showResult)
     pStr.split("").forEach((d, j) =>
       texts += smPlace(d, aCols - pStr.length + j, 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
-
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
 }
@@ -117,7 +109,7 @@ function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:"schriftlich_multiplikation", label:"Schriftl. Multiplikation", desc:"Schriftliche Multiplikation", icon:"⊠×", category:"mathematik" },
+  meta: { type:"schriftlich_multiplikation", group:"rechnen", label:"Schriftl. Multiplikation", desc:"Schriftliche Multiplikation", icon:"⊠×", category:"mathematik" },
 
   createData: id => {
     const cfg = { zahlenraum:100, modus:"einstellig", uebertrag:false, loesung:false, anzahl:4 };
