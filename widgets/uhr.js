@@ -77,7 +77,7 @@ WIDGETS.push({
   meta: { type:"uhr", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, stufe:"ganz", textfeld:false, size:80 };
+    const cfg = { anzahl:4, stufe:"ganz", textfeld:false, size:120 };
     return { id, type:"uhr", ...cfg, uhren: uhrGen(cfg.anzahl, cfg.stufe) };
   },
 
@@ -104,8 +104,8 @@ WIDGETS.push({
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${svg}${label}</div>`;
     });
 
-    const spacers = Array(6).fill(`<div style="height:0;width:${size}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:16px 20px;justify-content:space-between;">${items.join("")}${spacers}</div>`;
+    const _perRow = Math.max(1, Math.floor(594 / (size + 20)));
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${size}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
   },
 
   renderProps: d => {

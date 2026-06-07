@@ -20,24 +20,24 @@ function geldGenOne(maxEuroCents, mitCent) {
   ];
   if (!pool.length) return {betrag: 0, items: []};
 
-  const numItems = Math.floor(Math.random() * 4) + 2; // 2–5 Items
-  const items = [];
-  let total = 0;
-
-  for (let i = 0; i < numItems; i++) {
-    // Nur Items wählen die noch reinpassen
-    const fits = pool.filter(v => total + v <= maxEuroCents);
-    if (!fits.length) break;
-    const pick = fits[Math.floor(Math.random() * fits.length)];
-    items.push(pick);
-    total += pick;
+  // Mindestens 2 Items generieren – bei Bedarf wiederholen
+  let items = [], total = 0, tries = 0;
+  while (items.length < 2 && tries++ < 30) {
+    items = []; total = 0;
+    const numItems = Math.floor(Math.random() * 4) + 2; // 2–5 Items
+    for (let i = 0; i < numItems; i++) {
+      const fits = pool.filter(v => total + v <= maxEuroCents);
+      if (!fits.length) break;
+      const pick = fits[Math.floor(Math.random() * fits.length)];
+      items.push(pick);
+      total += pick;
+    }
   }
 
-  // Sicherstellen dass mindestens ein Item da ist
+  // Fallback falls kein Zahlenraum für 2 Items reicht
   if (!items.length) {
-    const pick = pool[pool.length - 1]; // kleinstes Item
-    items.push(pick);
-    total = pick;
+    const pick = pool[pool.length - 1];
+    items = [pick]; total = pick;
   }
 
   return {betrag: total, items};
@@ -229,10 +229,8 @@ WIDGETS.push({
     const itemW    = 168 + 4;
 
     const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive)}</div>`);
-    const spacers = Array(4).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:16px 20px;justify-content:space-between;">
-      ${items.join('')}${spacers}
-    </div>`;
+    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
   },
 
   renderProps: d => {

@@ -127,8 +127,8 @@ WIDGETS.push({
       `<div style="display:inline-block;">${zmSvg(m, n, fillMode, active)}</div>`
     );
     const itemW = Math.round(n * 54 + 2);
-    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:12px 20px;justify-content:space-between;">${svgs.join("")}${spacers}</div>`;
+    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:12px 20px;justify-content:space-between;">${svgs.join("")}</div>`;
   },
 
   renderProps: d => {

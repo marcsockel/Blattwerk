@@ -113,10 +113,8 @@ WIDGETS.push({
     const itemW      = svwCols(zahlenraum).length * 42 + 2;
 
     const items  = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive)}</div>`);
-    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:16px 20px;justify-content:space-between;">
-      ${items.join('')}${spacers}
-    </div>`;
+    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join('')}</div>`;
   },
 
   renderProps: d => {

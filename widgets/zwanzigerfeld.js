@@ -65,7 +65,7 @@ WIDGETS.push({
   meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik" },
 
   createData: id => {
-    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:false };
+    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, small:true };
     return { id, type:"zwanzigerfeld", ...cfg, aufgaben: zfGen(cfg.anzahl, cfg.op) };
   },
 
@@ -101,7 +101,7 @@ WIDGETS.push({
       return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
     }
     const spacers = Array(4).fill(`<div style="flex:1 1 45%;min-width:0;height:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:20px 24px;justify-content:space-between;">${items.map(i=>`<div style="flex:1 1 45%;display:flex;justify-content:center;">${i}</div>`).join('')}${spacers}</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:20px 24px;justify-content:space-between">${items.map(i=>`<div style="flex:1 1 45%;display:flex;justify-content:center;">${i}</div>`).join('')}${spacers}</div>`;
   },
 
   renderProps: d => {

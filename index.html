@@ -88,6 +88,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:180mm;}
 .solution-pages-inner .page{page-break-before:always;}}
 @media print{
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn{display:none!important;}
   #canvas-area{padding:0;background:#fff;display:block;}
   .page{box-shadow:none;border-top:none;border-radius:0;width:180mm;min-height:267mm;padding:12mm 14mm;page-break-after:auto;}

@@ -15,20 +15,20 @@ function nlDrawLine(d) {
   if (unit !== null) {
     for (let v = start; v <= end; v += unit) {
       if (v % step === 0 || (half && v % half === 0)) continue;
-      ticks += `<line x1="${scale(v)}" y1="72" x2="${scale(v)}" y2="78" stroke="#333" stroke-width="0.9"/>`;
+      ticks += `<line x1="${scale(v)}" y1="72" x2="${scale(v)}" y2="78" stroke="#000" stroke-width="1"/>`;
     }
   }
   if (half !== null) {
     for (let v = start; v < end; v += step) {
       const x = scale(v + half);
-      ticks += `<line x1="${x}" y1="68" x2="${x}" y2="82" stroke="#333" stroke-width="1.4"/>`;
+      ticks += `<line x1="${x}" y1="68" x2="${x}" y2="82" stroke="#000" stroke-width="1.5"/>`;
     }
   }
   for (let v = start; v <= end; v += step) {
     const x = scale(v);
-    ticks += `<line x1="${x}" y1="63" x2="${x}" y2="87" stroke="#333" stroke-width="2"/>`;
+    ticks += `<line x1="${x}" y1="63" x2="${x}" y2="87" stroke="#000" stroke-width="2"/>`;
     if (!nurRandwerte || v === start || v === end) {
-      labels += `<text x="${x}" y="100" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#333">${v}</text>`;
+      labels += `<text x="${x}" y="100" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#000">${v}</text>`;
     }
   }
   return { ticks, labels, scale, lineY, lineL, lineR, VW, fs };
@@ -37,7 +37,11 @@ function nlDrawLine(d) {
 WIDGETS.push({
   meta: { type:"numberline", label:"Zahlenstrahl", desc:"Lücken eintragen", icon:"↔", category:"mathematik" },
 
-  createData: id => ({ id, type:"numberline", start:0, end:50, step:10, gaps:"20,40", modus:"luecken", nurRandwerte:false }),
+  createData: id => {
+    // Zufällige Lücken bei Schritt 10 im Bereich 0–50
+    const candidates = [10,20,30,40].sort(()=>Math.random()-.5).slice(0,2).sort((a,b)=>a-b);
+    return { id, type:"numberline", start:0, end:50, step:10, gaps:candidates.join(','), modus:"luecken", nurRandwerte:false };
+  },
 
   render: d => {
     const isActive = d.id === selId || _solutionsMode;
@@ -58,33 +62,33 @@ WIDGETS.push({
       if (unit !== null) {
         for (let v = start; v <= end; v += unit) {
           if (v % step === 0 || (half && v % half === 0)) continue;
-          ticks += `<line x1="${scale(v)}" y1="25" x2="${scale(v)}" y2="31" stroke="#333" stroke-width="0.9"/>`;
+          ticks += `<line x1="${scale(v)}" y1="25" x2="${scale(v)}" y2="31" stroke="#000" stroke-width="1"/>`;
         }
       }
       if (half !== null) {
         for (let v = start; v < end; v += step) {
           const x = scale(v + half);
-          ticks += `<line x1="${x}" y1="21" x2="${x}" y2="35" stroke="#333" stroke-width="1.4"/>`;
+          ticks += `<line x1="${x}" y1="21" x2="${x}" y2="35" stroke="#000" stroke-width="1.5"/>`;
         }
       }
       for (let v = start; v <= end; v += step) {
         const x = scale(v);
         const isGap = gaps.has(v);
-        ticks += `<line x1="${x}" y1="16" x2="${x}" y2="40" stroke="#333" stroke-width="2"/>`;
+        ticks += `<line x1="${x}" y1="16" x2="${x}" y2="40" stroke="#000" stroke-width="2"/>`;
         if (isGap) {
           const boxW = step >= 100 ? 36 : step >= 10 ? 28 : 22;
           if (isActive) {
             labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${v}</text>`;
           } else {
-            labels += `<rect x="${x-boxW/2}" y="42" width="${boxW}" height="16" rx="2" fill="white" stroke="#555" stroke-width="1.5"/>`;
+            labels += `<rect x="${x-boxW/2}" y="42" width="${boxW}" height="16" rx="2" fill="white" stroke="#000" stroke-width="2"/>`;
           }
         } else if (!nurRandwerte || v === start || v === end) {
-          labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#333">${v}</text>`;
+          labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#000">${v}</text>`;
         }
       }
       return `<svg width="100%" viewBox="0 0 ${VW} 62" style="display:block;">
-        <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#333" stroke-width="2"/>
-        <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#333"/>
+        <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#000" stroke-width="2"/>
+        <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#000"/>
         ${ticks}${labels}</svg>`;
     }
 
@@ -124,24 +128,24 @@ WIDGETS.push({
       if (modus === 'eintragen') {
         lines += `${curve(bx, by+bh, tx, ty)} stroke="${lc}" stroke-width="1.3"/>`;
         if (isActive) {
-          boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#2563eb" stroke-width="1.5"/>`;
+          boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#2563eb" stroke-width="2"/>`;
           boxes += `<text x="${bx}" y="${by+14}" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${val}</text>`;
         } else {
-          boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#555" stroke-width="1.5"/>`;
+          boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#000" stroke-width="2"/>`;
         }
       } else {
         // verbinden: Zahl sichtbar, Linie nur bei aktiv, kein Dreieck
-        boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#555" stroke-width="1.5"/>`;
-        boxes += `<text x="${bx}" y="${by+14}" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#333">${val}</text>`;
+        boxes += `<rect x="${bx-bw/2}" y="${by}" width="${bw}" height="${bh}" rx="3" fill="white" stroke="#000" stroke-width="2"/>`;
+        boxes += `<text x="${bx}" y="${by+14}" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#000">${val}</text>`;
         if (isActive) {
-          lines += `${curve(bx, by+bh, tx, ty)} stroke="#2563eb" stroke-width="1.5"/>`;
+          lines += `${curve(bx, by+bh, tx, ty)} stroke="#2563eb" stroke-width="2"/>`;
         }
       }
     });
 
     return `<svg width="100%" viewBox="0 -12 ${VW} 122" style="display:block;">
-      <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#333" stroke-width="2"/>
-      <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#333"/>
+      <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#000" stroke-width="2"/>
+      <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#000"/>
       ${ticks}${labels}${lines}${boxes}</svg>`;
   },
 
