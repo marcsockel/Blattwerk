@@ -2,6 +2,9 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1e1e2e">
+<link rel="manifest" href="manifest.json">
 <title>Blattwerk – Worksheet Builder</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Fira+Sans:wght@400;500;700&display=swap');
@@ -81,7 +84,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
 /* misc */
 *{user-select:none;}input,textarea{user-select:text;}
-@page{size:A4 portrait;margin:15mm;}
+@page{size:A4 portrait;margin:5mm 0 0 10mm;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:14mm;font-size:10px;color:#333;}
 #solution-pages{display:none;}
 @media print{#solution-pages{display:block;}
@@ -118,8 +121,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
   <div class="spacer"></div>
   <span id="wcount" style="color:#6c7086;font-size:11px;">0 Widgets</span>
+  <button class="tbtn p" onclick="doDownloadPDF()">⬇ PDF</button>
+  <button class="tbtn p" onclick="document.getElementById('print-warning').style.display='flex'">🖨 Drucken</button>
   <div style="position:relative;display:inline-flex;">
-    <button class="tbtn p" onclick="doPrint()" style="border-radius:5px 0 0 5px;">⬇ PDF / Drucken</button><button class="tbtn p" onclick="togglePrintPanel(event)" style="border-radius:0 5px 5px 0;border-left:1px solid rgba(255,255,255,.25);padding:5px 8px;">▾</button>
+    <button class="tbtn p" onclick="togglePrintPanel(event)">⚙ Optionen</button>
     <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:12px;">Druckoptionen</div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
@@ -152,6 +157,29 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   </div>
 </div>
 
+<!-- Print warning modal -->
+<div id="print-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
+    <div style="font-size:13px;font-weight:800;color:#cdd6f4;margin-bottom:10px;">🖨 Alles gut!</div>
+    <div style="font-size:12px;color:#a6adc8;line-height:1.6;margin-bottom:18px;">
+      Der Ausdruck wird genau so aussehen wie das Arbeitsblatt hier.<br><br>
+      Die Vorschau im Browser sieht manchmal etwas anders aus – das ist normal und kein Fehler.
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('print-warning').style.display='none'"
+        style="flex:1;padding:7px;border:1.5px solid #45475a;border-radius:6px;background:transparent;
+               color:#a6adc8;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
+        Abbrechen
+      </button>
+      <button onclick="document.getElementById('print-warning').style.display='none';doPrint()"
+        style="flex:1;padding:7px;border:none;border-radius:6px;background:#313244;
+               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
+        Trotzdem drucken
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── CATEGORIES ────────────────────────────────────────────────────
 const CATEGORIES = {
@@ -172,6 +200,9 @@ const pr  = (l,inp) => `<div class="prow"><label>${l}</label>${inp}</div>`;
 const WIDGETS = [];
 </script>
 
+<!-- ── Neutralino (nur aktiv wenn als Desktop-App gestartet) ── -->
+<script src="/neutralino.js" onerror="console.log('Browser-Modus')"></script>
+<script src="neutralino-bridge.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
@@ -211,6 +242,8 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js"></script>
 <script src="widgets/zwanzigerrahmen.js"></script>
 <script src="widgets/rechendreiecke.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -772,6 +805,8 @@ let printOpts = { pageNumbers: false, doubleSided: false };
 
 function updatePrintStyle() {
   const ds = printOpts.doubleSided;
+  // margin:0 → Browser rendert keine eigenen Kopf-/Fußzeilen in der Druckvorschau.
+  // Seitenabstände kommen ausschließlich aus dem padding des .page-Divs (12mm 14mm).
   let css = ds
     ? `@page :right{margin:5mm 0 0 10mm;}@page :left{margin:5mm 10mm 0 0;}`
     : `@page{margin:5mm 0 0 10mm;}`;
@@ -782,6 +817,68 @@ function updatePrintStyle() {
     css += `.pg-num{display:none!important;}`;
   }
   document.getElementById('dyn-print-style').textContent = css;
+}
+
+async function doDownloadPDF() {
+  if (!window.html2canvas || !window.jspdf) {
+    alert('PDF-Bibliothek wird noch geladen, bitte kurz warten.'); return;
+  }
+  document.getElementById('print-panel').style.display = 'none';
+  const prevSel = selId; selId = null; render();
+  await document.fonts.ready;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pageEls = document.querySelectorAll('#canvas-area .page');
+
+  // Screen-only-Elemente vor dem Capture verstecken
+  const screenOnly = document.querySelectorAll('.page-end, .page-spacer, .wacts, .dh, .gmbtn');
+  screenOnly.forEach(e => e.style.visibility = 'hidden');
+
+  for (let i = 0; i < pageEls.length; i++) {
+    const el = pageEls[i];
+    // Kurz vor dem Capture: screen-Only-Styles unterdrücken
+    el.style.boxShadow = 'none';
+    el.style.borderTop = 'none';
+    el.style.borderRadius = '0';
+
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+    });
+
+    // Styles zurücksetzen
+    el.style.boxShadow = '';
+    el.style.borderTop = '';
+    el.style.borderRadius = '';
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    // Canvas-Pixel → mm (bei scale=2: 1mm = 96/25.4*2 ≈ 7.56 px)
+    const pxPerMm = 96 / 25.4 * 2;
+    const wMm = canvas.width  / pxPerMm;
+    const hMm = canvas.height / pxPerMm;
+
+    if (i > 0) pdf.addPage('a4', 'portrait');
+
+    // Bundsteg: links größer (für Lochung), rechts kleiner
+    // Bei beidseitigem Druck: gerade Seiten spiegeln
+    const ds = printOpts.doubleSided;
+    const isEvenPage = (i % 2 === 1); // 0-basiert: Seite 2, 4, 6 …
+    const xOff = (ds && isEvenPage) ? 10 : 20; // mm vom linken Blattrand
+    const yOff = 5;
+    pdf.addImage(imgData, 'JPEG', xOff, yOff, wMm, hMm);
+  }
+
+  // Screen-only-Elemente wiederherstellen
+  screenOnly.forEach(e => e.style.visibility = '');
+
+  const name = (document.getElementById('blatt-name')?.value?.trim() || 'dokument')
+    .replace(/\.blatt$/i, '');
+  pdf.save(`${name}.pdf`);
+  selId = prevSel; render();
 }
 
 function doPrint() {
@@ -832,5 +929,11 @@ addSample();
 updatePrintStyle();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+    .catch(err => console.warn('SW-Registrierung fehlgeschlagen:', err));
+}
+</script>
 </body>
 </html>

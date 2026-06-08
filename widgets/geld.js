@@ -40,69 +40,81 @@ function geldGenOne(maxEuroCents, mitCent) {
     items = [pick]; total = pick;
   }
 
-  return {betrag: total, items};
+  return {betrag: total, items, posSeed: Math.random()};
+}
+
+// Deterministischer Pseudo-Zufall basierend auf Seed (wie svwPseudoRand)
+function geldPseudoRand(seed) {
+  const x = Math.sin(seed * 9301 + 49297) * 233280;
+  return x - Math.floor(x);
 }
 
 // ── SVG-Zeichenfunktionen ─────────────────────────────────────────
-function drawSchein(val, cx, cy) {
-  const {w, h} = geldItemSize(val);
+function drawSchein(val, cx, cy, sc=1) {
+  const {w, h} = geldItemSize(val, sc);
   const label = geldLabel(val);
-  const fs = w < 40 ? 9 : w < 46 ? 10 : 11;
+  const fs = Math.round((w < 40 ? 9 : w < 46 ? 10 : 11) * sc);
+  const rx = Math.round(3 * sc);
+  const pad = Math.round(3 * sc);
   return `<g transform="translate(${cx - w/2},${cy - h/2})">
-    <rect x="0.75" y="0.75" width="${w-1.5}" height="${h-1.5}" rx="3"
+    <rect x="0.75" y="0.75" width="${w-1.5}" height="${h-1.5}" rx="${rx}"
       fill="#fdfdf8" stroke="#666" stroke-width="1.5"/>
-    <rect x="3" y="3" width="${w-6}" height="${h-6}" rx="1.5"
+    <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" rx="${Math.max(1,rx-1.5)}"
       fill="none" stroke="#bbb" stroke-width="0.8"/>
-    <text x="${w/2}" y="${h/2+4}" text-anchor="middle"
+    <text x="${w/2}" y="${h/2+Math.round(4*sc)}" text-anchor="middle"
       font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#222">${label}</text>
   </g>`;
 }
 
-function drawEuro(val, cx, cy) {
-  const r = 13;
+function drawEuro(val, cx, cy, sc=1) {
+  const r = Math.round(13 * sc);
   const label = geldLabel(val);
+  const fs = Math.round(10 * sc);
   return `<g>
     <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="#fdfdf5" stroke="#888" stroke-width="1.5"/>
-    <circle cx="${cx}" cy="${cy}" r="${r-4}"    fill="none"    stroke="#ccc" stroke-width="0.8"/>
-    <text x="${cx}" y="${cy+4}" text-anchor="middle"
-      font-size="10" font-family="sans-serif" font-weight="700" fill="#222">${label}</text>
+    <circle cx="${cx}" cy="${cy}" r="${r-Math.round(4*sc)}" fill="none" stroke="#ccc" stroke-width="0.8"/>
+    <text x="${cx}" y="${cy+Math.round(4*sc)}" text-anchor="middle"
+      font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#222">${label}</text>
   </g>`;
 }
 
-function drawCent(val, cx, cy) {
-  const r = val >= 10 ? 11 : 9;
+function drawCent(val, cx, cy, sc=1) {
+  const r = Math.round((val >= 10 ? 11 : 9) * sc);
   const label = geldLabel(val);
-  const fs = label.length > 3 ? 7 : 9;
+  const fs = Math.round((label.length > 3 ? 7 : 9) * sc);
   return `<g>
     <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="#faf8f0" stroke="#aaa" stroke-width="1.5"/>
-    <circle cx="${cx}" cy="${cy}" r="${r-3.5}"  fill="none"    stroke="#ddd" stroke-width="0.7"/>
-    <text x="${cx}" y="${cy+3}" text-anchor="middle"
+    <circle cx="${cx}" cy="${cy}" r="${r-Math.round(3.5*sc)}" fill="none" stroke="#ddd" stroke-width="0.7"/>
+    <text x="${cx}" y="${cy+Math.round(3*sc)}" text-anchor="middle"
       font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#444">${label}</text>
   </g>`;
 }
 
-function geldItemSize(val) {
-  if (val === 5000) return {w:54, h:29}; // 50€ – etwas kleiner
-  if (val === 2000) return {w:52, h:27}; // 20€
-  if (val === 1000) return {w:46, h:25}; // 10€
-  if (val === 500)  return {w:40, h:22}; //  5€
-  if (val >= 100)   return {w:24, h:24}; // Euro-Münze
-  if (val >= 10)    return {w:20, h:20}; // große Cent
-  return                   {w:17, h:17}; // kleine Cent
+function geldItemSize(val, sc=1) {
+  let w, h;
+  if      (val === 5000) { w=54; h=29; }
+  else if (val === 2000) { w=52; h=27; }
+  else if (val === 1000) { w=46; h=25; }
+  else if (val === 500)  { w=40; h=22; }
+  else if (val >= 100)   { w=24; h=24; }
+  else if (val >= 10)    { w=20; h=20; }
+  else                   { w=17; h=17; }
+  return {w: Math.round(w*sc), h: Math.round(h*sc)};
 }
 
 // ── Haupt-SVG für eine Aufgabe ────────────────────────────────────
-function geldSvg(aufgabe, mitCent, modus, isActive) {
+function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
   const amountCents = aufgabe.betrag;
   const showGeld   = modus !== 'betrag';
   const blueGeld   = modus === 'betrag' && isActive;
   const showBetrag = modus === 'betrag';
   const blueBetrag = modus === 'geld' && isActive;
 
+  const sc       = gross ? 1.5 : 1;
   const pad      = 2;
-  const maxW     = 168;   // 20% breiter
-  const contentH = 90;    // 25% höher
-  const innerPad = 7;     // Abstand Inhalt ↔ gestrichelte Linie
+  const maxW     = gross ? 270 : 168;
+  const contentH = gross ? 158 : 90;
+  const innerPad = gross ? 18 : 7;     // Abstand Inhalt ↔ gestrichelte Linie
   const gap      = 4;
   const ansH     = 26;
   const ansGap   = 6;
@@ -122,27 +134,27 @@ function geldSvg(aufgabe, mitCent, modus, isActive) {
     const availW   = maxW - innerPad * 2;
     const availH   = contentH - innerPad * 2;
 
+    const seed = aufgabe.posSeed || 0.5;
     const positions = [];
-    for (const val of rawItems) {
-      const {w, h} = geldItemSize(val);
+    rawItems.forEach((val, ji) => {
+      const {w, h} = geldItemSize(val, sc);
       const minCX = innerPad + w / 2;
       const maxCX = innerPad + availW - w / 2;
       const minCY = innerPad + h / 2;
       const maxCY = innerPad + availH - h / 2;
 
-      let bestCX = minCX + Math.random() * (maxCX - minCX);
-      let bestCY = minCY + Math.random() * (maxCY - minCY);
+      let bestCX = minCX + geldPseudoRand(seed * 7 + ji * 100) * Math.max(0, maxCX - minCX);
+      let bestCY = minCY + geldPseudoRand(seed * 13 + ji * 100) * Math.max(0, maxCY - minCY);
       let bestScore = -Infinity;
 
       // 60 Versuche, Position mit größtem Mindestabstand zu bereits platzierten Items wählen
       for (let attempt = 0; attempt < 60; attempt++) {
-        const cx = minCX + Math.random() * (maxCX - minCX);
-        const cy = minCY + Math.random() * (maxCY - minCY);
+        const cx = minCX + geldPseudoRand(seed * 7  + ji * 100 + attempt * 3 + 1) * Math.max(0, maxCX - minCX);
+        const cy = minCY + geldPseudoRand(seed * 13 + ji * 100 + attempt * 3 + 2) * Math.max(0, maxCY - minCY);
 
         let minDist = Infinity;
         for (const p of positions) {
           const dx = cx - p.cx, dy = cy - p.cy;
-          // Überlappungsabstand: Abstand zwischen Mittelpunkten minus halbe Summe der Größen
           const clearance = Math.sqrt(dx*dx + dy*dy) - (Math.max(w,h) + Math.max(p.w,p.h)) * 0.55;
           minDist = Math.min(minDist, clearance);
         }
@@ -156,16 +168,16 @@ function geldSvg(aufgabe, mitCent, modus, isActive) {
         if (minDist > 6) break; // gut genug
       }
 
-      const rot = (Math.random() - 0.5) * 14; // ±7°
+      const rot = (geldPseudoRand(seed * 999 + ji * 77) - 0.5) * 14; // ±7°, deterministisch
       positions.push({val, cx: bestCX, cy: bestCY, w, h, rot});
-    }
+    });
 
     for (const {val, cx, cy, rot} of positions) {
       const ox = pad + cx, oy = pad + cy;
       let el = '';
-      if (val >= 500) el = drawSchein(val, ox, oy);
-      else if (val >= 100) el = drawEuro(val, ox, oy);
-      else el = drawCent(val, ox, oy);
+      if (val >= 500) el = drawSchein(val, ox, oy, sc);
+      else if (val >= 100) el = drawEuro(val, ox, oy, sc);
+      else el = drawCent(val, ox, oy, sc);
       // Leichte zufällige Drehung
       if (rot) el = `<g transform="rotate(${rot.toFixed(1)},${ox},${oy})">${el}</g>`;
 
@@ -224,13 +236,15 @@ WIDGETS.push({
   render: d => {
     const mitCent  = d.mitCent  || false;
     const modus    = d.modus    || 'geld';
+    const gross    = d.gross    || false;
     const isActive = d.id === selId || _solutionsMode;
     const aufgaben = d.aufgaben || geldGen(d.anzahl||4, (d.maxEuro||10)*100, mitCent);
-    const itemW    = 168 + 4;
+    const itemW    = (gross ? 270 : 168) + 4;
 
-    const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive)}</div>`);
-    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
-    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
+    const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive, gross)}</div>`);
+    const _perRow = gross ? 2 : Math.max(1, Math.floor(594 / (itemW + 20)));
+    const justify = gross ? 'center' : 'space-between';
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:${justify};">${items.join("")}</div>`;
   },
 
   renderProps: d => {
@@ -238,6 +252,7 @@ WIDGETS.push({
     const maxEuro = d.maxEuro || 10;
     const mitCent = d.mitCent || false;
     const modus   = d.modus   || 'geld';
+    const gross   = d.gross   || false;
 
     const togBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -267,6 +282,12 @@ WIDGETS.push({
         style="border:1.5px solid #ddd;border-radius:4px;padding:3px 5px;font-family:inherit;font-size:12px;">
         ${[1,2,5,10,20,50,100].map(n=>`<option value="${n}" ${maxEuro===n?'selected':''}>${n} €</option>`).join('')}
       </select>`)}
+      <div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          ${togBtn("Klein",  !gross, `upd(${d.id},'gross',false)`)}
+          ${togBtn("Groß",    gross, `upd(${d.id},'gross',true)`)}
+        </div>
+      </div>
       <button onclick="event.stopPropagation();geldWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
