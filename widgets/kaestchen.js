@@ -5,20 +5,21 @@ WIDGETS.push({
   createData: id => ({ id, type:"kaestchen", groesse:"mittel", zeilen:8 }),
 
   render: d => {
-    const sizes = { klein: 10, mittel: 20, gross: 40 };
+    const sizes = { klein: 15, mittel: 20, gross: 40 };
     const cs = sizes[d.groesse || "mittel"];
     const rows = d.zeilen || 8;
     const h = rows * cs;
     const pid = `kp${d.id}`;
-    return `<svg class="kaestchen-svg" data-cs="${cs}" width="100%" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:hidden;">
-      <defs>
-        <pattern id="${pid}" width="${cs}" height="${cs}" patternUnits="userSpaceOnUse">
-          <path d="M ${cs} 0 L 0 0 0 ${cs}" fill="none" stroke="#888" stroke-width="0.7"/>
-        </pattern>
-      </defs>
-      <rect width="100%" height="${h}" fill="url(#${pid})"/>
-      <rect width="100%" height="${h}" fill="none" stroke="#888" stroke-width="0.7"/>
-    </svg>`;
+    const fullCols = { klein: 37, mittel: 28, gross: 14 }[d.groesse || 'mittel'];
+    const cols = d.halfWidth ? Math.floor(fullCols / 2) : fullCols;
+    const w = cols * cs;
+    let lines = '';
+    for (let i = 1; i < cols; i++)
+      lines += `<line x1="${i*cs}" y1="0" x2="${i*cs}" y2="${h}" stroke="#888" stroke-width="0.7"/>`;
+    for (let j = 1; j < rows; j++)
+      lines += `<line x1="0" y1="${j*cs}" x2="${w}" y2="${j*cs}" stroke="#888" stroke-width="0.7"/>`;
+    const border = `<rect x="0.35" y="0.35" width="${w-0.7}" height="${h-0.7}" fill="none" stroke="#888" stroke-width="0.7"/>`;
+    return `<svg class="kaestchen-svg" data-cs="${cs}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${lines}${border}</svg>`;
   },
 
   renderProps: d => {
@@ -30,7 +31,7 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${g===val?'#1e1e2e':'#999'};">${label}</button>`;
     return `<div class="prow"><label>Kästchengröße</label>
       <div style="display:flex;gap:4px;">
-        ${btn("klein","Klein (10px)")}
+        ${btn("klein","Klein (15px)")}
         ${btn("mittel","Mittel (20px)")}
         ${btn("gross","Groß (40px)")}
       </div></div>` +

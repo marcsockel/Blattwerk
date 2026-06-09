@@ -3,6 +3,10 @@
 
 const GAP_FONTS = [
   { value: "inherit",                       label: "Standard (Nunito)" },
+  { value: "'Andika', sans-serif",          label: "Andika" },
+  { value: "'Lexend', sans-serif",          label: "Lexend" },
+  { value: "'Quicksand', sans-serif",       label: "Quicksand" },
+  { value: "'Caveat', cursive",             label: "Caveat (Handschrift)" },
   { value: "'Fira Sans', sans-serif",       label: "Fira Sans" },
   { value: "'Grundschrift', sans-serif",    label: "Grundschrift" },
   { value: "'DM Mono', monospace",          label: "DM Mono" },

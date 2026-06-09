@@ -82,15 +82,16 @@ WIDGETS.push({
     const items = zahlen.map(n => {
       const resEl = showRes
         ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;font-weight:700;color:${blue?'#2563eb':'#1a7f3c'};">${n}</span>`
-        : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?24:32}px;height:${small?17:22}px;"></span>`;
-      return `<div style="display:flex;flex-direction:column;align-items:center;gap:${small?4:7}px;">
+        : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?48:64}px;height:${small?17:22}px;"></span>`;
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:${small?10:14}px;">
         ${zrSvg(n, bw, small)}
         <div style="display:flex;align-items:center;justify-content:center;min-height:${small?22:28}px;">${resEl}</div>
       </div>`;
     });
 
     const cols = small ? 3 : 2;
-    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:24px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
+    const rowGap = small ? 36 : 48;
+    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${rowGap}px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
   },
 
   renderProps: d => {

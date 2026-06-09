@@ -92,19 +92,21 @@ WIDGETS.push({
   meta: { type:"rechendreiecke", label:"Rechendreiecke", desc:"Ecken & Seiten addieren", icon:"🔺", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten" };
+    const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten", gross:false };
     return { id, type:"rechendreiecke", ...cfg, dreiecke: rdGen(cfg.anzahl, cfg.zahlenraum, cfg.leerfeld) };
   },
 
   render: d => {
     const dreiecke = d.dreiecke || rdGen(d.anzahl||4, d.zahlenraum||100, d.leerfeld||"seiten");
     const active = d.id === selId || _solutionsMode;
-    const svgs = dreiecke.map(t => `<div>${rdSvg(t, active)}</div>`);
-    return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px 10px;">${svgs.join("")}</div>`;
+    const basis = d.gross ? 250 : 150;
+    const spacers = Array(6).fill(`<div style="flex:1 1 ${basis}px;height:0;min-width:0;"></div>`).join('');
+    const items = dreiecke.map(t => `<div style="flex:1 1 ${basis}px;">${rdSvg(t, active)}</div>`).join('');
+    return `<div style="display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:space-between;">${items}${spacers}</div>`;
   },
 
   renderProps: d => {
-    const { anzahl=4, zahlenraum=100, leerfeld="seiten" } = d;
+    const { anzahl=4, zahlenraum=100, leerfeld="seiten", gross=false } = d;
     const leerOpts = [
       ["seiten",   "Alle Seiten leer"],
       ["gemischt", "Gemischt"],
@@ -118,7 +120,14 @@ WIDGETS.push({
         `<select onchange="rdSet(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl",
         `<input type="number" min="1" max="12" value="${anzahl}" onchange="rdSet(${d.id},'anzahl',+this.value)">`) +
-      `<button onclick="rdRoll(${d.id})" style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>`;
+      `<button onclick="rdRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
+      `<div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          <button onclick="event.stopPropagation();upd(${d.id},'gross',false)"
+            style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${!gross?'#a6e3a1':'#ddd'};background:${!gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${!gross?'#1e1e2e':'#999'};">Klein</button>
+          <button onclick="event.stopPropagation();upd(${d.id},'gross',true)"
+            style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${gross?'#a6e3a1':'#ddd'};background:${gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${gross?'#1e1e2e':'#999'};">Groß</button>
+        </div></div>`;
   },
 });
 

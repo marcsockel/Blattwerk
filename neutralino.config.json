@@ -1,0 +1,32 @@
+{
+  "applicationId": "de.blattwerk.app",
+  "version": "1.0.0",
+  "defaultMode": "window",
+  "port": 0,
+  "documentRoot": "/",
+  "url": "/index.html",
+  "enableServer": true,
+  "enableNativeAPI": true,
+
+  "modes": {
+    "window": {
+      "title": "Blattwerk",
+      "width": 1280,
+      "height": 860,
+      "minWidth": 900,
+      "minHeight": 600,
+      "center": true,
+      "resizable": true,
+      "maximize": false
+    }
+  },
+
+  "cli": {
+    "binaryName": "blattwerk",
+    "resourcesPath": "/",
+    "extensionsPath": "/extensions",
+    "clientLibrary": "/neutralino.js",
+    "binaryVersion": "5.5.0",
+    "clientVersion": "3.11.0"
+  }
+}

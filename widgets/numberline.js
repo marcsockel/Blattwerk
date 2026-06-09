@@ -40,7 +40,7 @@ WIDGETS.push({
   createData: id => {
     // Zufällige Lücken bei Schritt 10 im Bereich 0–50
     const candidates = [10,20,30,40].sort(()=>Math.random()-.5).slice(0,2).sort((a,b)=>a-b);
-    return { id, type:"numberline", start:0, end:50, step:10, gaps:candidates.join(','), modus:"luecken", nurRandwerte:false };
+    return { id, type:"numberline", start:0, end:50, step:10, gaps:candidates.join(','), modus:"ohne", nurRandwerte:false };
   },
 
   render: d => {
@@ -49,6 +49,40 @@ WIDGETS.push({
     const gaps=new Set((d.gaps||"").split(",").map(n=>parseInt(n.trim())).filter(n=>!isNaN(n)));
     const modus = d.modus || 'luecken';
     const nurRandwerte = d.nurRandwerte || false;
+
+    // ── Modus: Ohne ─────────────────────────────────────────────────
+    if (modus === 'ohne') {
+      const VW=580, lineY=28, lineL=18, lineR=558;
+      const range = end - start;
+      const scale = v => lineL + ((v - start) / range) * (lineR - lineL);
+      const half = step >= 2 ? step / 2 : null;
+      const unit = step >= 1000 ? 100 : step >= 100 ? 10 : step >= 10 ? 1 : null;
+      const fs = step >= 1000 ? 10 : step >= 100 ? 11 : 12;
+      let ticks="", labels="";
+      if (unit !== null) {
+        for (let v = start; v <= end; v += unit) {
+          if (v % step === 0 || (half && v % half === 0)) continue;
+          ticks += `<line x1="${scale(v)}" y1="25" x2="${scale(v)}" y2="31" stroke="#000" stroke-width="1"/>`;
+        }
+      }
+      if (half !== null) {
+        for (let v = start; v < end; v += step) {
+          const x = scale(v + half);
+          ticks += `<line x1="${x}" y1="21" x2="${x}" y2="35" stroke="#000" stroke-width="1.5"/>`;
+        }
+      }
+      for (let v = start; v <= end; v += step) {
+        const x = scale(v);
+        ticks += `<line x1="${x}" y1="16" x2="${x}" y2="40" stroke="#000" stroke-width="2"/>`;
+        if (!nurRandwerte || v === start || v === end) {
+          labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#000">${v}</text>`;
+        }
+      }
+      return `<svg width="100%" viewBox="0 0 ${VW} 62" style="display:block;">
+        <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#000" stroke-width="2"/>
+        <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#000"/>
+        ${ticks}${labels}</svg>`;
+    }
 
     // ── Modus: Lücken ────────────────────────────────────────────────
     if (modus === 'luecken') {
@@ -164,7 +198,8 @@ WIDGETS.push({
                background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
     return `<div class="prow"><label>Modus</label>
-        <div style="display:flex;gap:4px;">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${toggleBtn("Ohne",      modus==='ohne',      `upd(${d.id},'modus','ohne')`)}
           ${toggleBtn("Lücken",    modus==='luecken',   `upd(${d.id},'modus','luecken')`)}
           ${toggleBtn("Eintragen", modus==='eintragen', `upd(${d.id},'modus','eintragen')`)}
           ${toggleBtn("Verbinden", modus==='verbinden', `upd(${d.id},'modus','verbinden')`)}
@@ -177,9 +212,9 @@ WIDGETS.push({
           ${toggleBtn("Alle",            !nurRandwerte, `upd(${d.id},'nurRandwerte',false)`)}
           ${toggleBtn("Nur Rand + Lücken", nurRandwerte, `upd(${d.id},'nurRandwerte',true)`)}
         </div></div>` +
-      pr(modus==='luecken' ? "Lücken" : "Zahlen (beliebig, kommagetrennt)",
-        `<input value="${esc(d.gaps)}" placeholder="${modus==='luecken'?'z.B. 20,40':'z.B. 5,17,32'}" onchange="upd(${d.id},'gaps',this.value)">`) +
-      (modus !== 'luecken' ? `<button onclick="nlRoll(${d.id})"
+      (modus !== 'ohne' ? pr(modus==='luecken' ? "Lücken" : "Zahlen (beliebig, kommagetrennt)",
+        `<input value="${esc(d.gaps)}" placeholder="${modus==='luecken'?'z.B. 20,40':'z.B. 5,17,32'}" onchange="upd(${d.id},'gaps',this.value)">`) : '') +
+      (modus !== 'luecken' && modus !== 'ohne' ? `<button onclick="nlRoll(${d.id})"
         style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '');
   },
 });

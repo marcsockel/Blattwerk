@@ -113,10 +113,10 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
   const sc       = gross ? 1.5 : 1;
   const pad      = 2;
   const maxW     = gross ? 270 : 168;
-  const contentH = gross ? 158 : 90;
+  const contentH = gross ? 132 : 90;   // gross: 26px an ansH abgetreten
   const innerPad = gross ? 18 : 7;     // Abstand Inhalt ↔ gestrichelte Linie
   const gap      = 4;
-  const ansH     = 26;
+  const ansH     = gross ? 52 : 39;     // gross: 2×, klein: 1.5×
   const ansGap   = 6;
   const W        = maxW + pad * 2;
   const H        = contentH + ansGap + ansH + pad * 2;
@@ -198,8 +198,9 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
   svg += `<rect x="${pad+0.75}" y="${ay+0.75}" width="${maxW-1.5}" height="${ansH-1.5}"
     rx="3" fill="white" stroke="#777" stroke-width="1.5"/>`;
   // € rechts innen
-  svg += `<text x="${pad + maxW - 8}" y="${ay + ansH*0.70}"
-    text-anchor="end" font-size="13" font-family="sans-serif" font-weight="600" fill="#777">€</text>`;
+  const fsEuro = gross ? 20 : 18;
+  svg += `<text x="${pad + maxW - Math.round(8*sc)}" y="${ay + ansH*0.70}"
+    text-anchor="end" font-size="${fsEuro}" font-family="sans-serif" font-weight="600" fill="#777">€</text>`;
 
   // Betrag als Lösung
   if (showBetrag || blueBetrag) {
@@ -209,8 +210,9 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
       ? `${euros},${String(cents).padStart(2,'0')}`
       : `${euros}`;
     const fillColor = blueBetrag ? '#1a56cc' : '#222';
-    svg += `<text x="${pad + maxW/2 - 6}" y="${ay + ansH*0.70}"
-      text-anchor="middle" font-size="15" font-family="'DidactGothic7',sans-serif"
+    const fsBetrag = gross ? 23 : 20;
+    svg += `<text x="${pad + maxW/2 - Math.round(6*sc)}" y="${ay + ansH*0.70}"
+      text-anchor="middle" font-size="${fsBetrag}" font-family="'DidactGothic7',sans-serif"
       font-weight="700" fill="${fillColor}">${label}</text>`;
   }
 

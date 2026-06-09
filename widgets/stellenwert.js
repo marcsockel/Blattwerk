@@ -21,17 +21,18 @@ function svwPseudoRand(seed) {
   return x - Math.floor(x);
 }
 
-function svwSvg(number, zahlenraum, modus, isActive, ungeordnet=false) {
+function svwSvg(number, zahlenraum, modus, isActive, ungeordnet=false, gross=false) {
   const cols    = svwCols(zahlenraum);
   const digits  = cols.map(c => Math.floor(number / c.place) % 10);
+  const sc      = gross ? 1.5 : 1;
 
-  const colW    = 42;
-  const dotR    = 4;
-  const dotGap  = 12;
-  const headerH = 26;
-  const dotsH   = 9 * dotGap + 10;
-  const ansH    = 28;
-  const gap     = 6;
+  const colW    = Math.round(42 * sc);
+  const dotR    = Math.round(4 * sc);
+  const dotGap  = Math.round(12 * sc);
+  const headerH = Math.round(26 * sc);
+  const dotsH   = 9 * dotGap + Math.round(10 * sc);
+  const ansH    = gross ? 56 : 42;
+  const gap     = Math.round(6 * sc);
   const pad     = 1;
   const tableW  = cols.length * colW;
   const tableH  = headerH + dotsH;
@@ -51,8 +52,8 @@ function svwSvg(number, zahlenraum, modus, isActive, ungeordnet=false) {
 
   // Spalten-Beschriftung
   cols.forEach((col, i) => {
-    svg += `<text x="${p + i*colW + colW/2}" y="${p + headerH - 8}"
-      text-anchor="middle" font-size="12" font-family="'DidactGothic7',sans-serif"
+    svg += `<text x="${p + i*colW + colW/2}" y="${p + headerH - Math.round(8*sc)}"
+      text-anchor="middle" font-size="${Math.round(12*sc)}" font-family="'DidactGothic7',sans-serif"
       font-weight="700" fill="#333">${col.label}</text>`;
   });
 
@@ -107,8 +108,9 @@ function svwSvg(number, zahlenraum, modus, isActive, ungeordnet=false) {
   // Zahl im Kästchen
   if (showNumber || blueNumber) {
     const fill = blueNumber ? '#1a56cc' : '#222';
+    const fsAns = gross ? 24 : 20;
     svg += `<text x="${p + tableW/2}" y="${ay + ansH*0.68}"
-      text-anchor="middle" font-size="16" font-family="'DidactGothic7',sans-serif"
+      text-anchor="middle" font-size="${fsAns}" font-family="'DidactGothic7',sans-serif"
       font-weight="700" fill="${fill}">${number}</text>`;
   }
 
@@ -138,12 +140,16 @@ WIDGETS.push({
     const modus      = d.modus || 'zahl';
     const isActive   = d.id === selId || _solutionsMode;
     const zahlen     = d.zahlen || svwGen(d.anzahl||4, zahlenraum);
-    const itemW      = svwCols(zahlenraum).length * 42 + 2;
 
     const ungeordnet = d.ungeordnet || false;
-    const items  = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive, ungeordnet)}</div>`);
-    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
-    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join('')}</div>`;
+    const gross      = d.gross || false;
+    const sc         = gross ? 1.5 : 1;
+    const colW       = Math.round(42 * sc);
+    const itemW      = svwCols(zahlenraum).length * colW + 2;
+    const items   = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive, ungeordnet, gross)}</div>`);
+    const colGap  = gross ? 10 : 20;
+    const _perRow = Math.max(1, Math.floor(594 / (itemW + colGap)));
+    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px ${colGap}px;justify-content:space-between;">${items.join('')}</div>`;
   },
 
   renderProps: d => {
@@ -151,6 +157,7 @@ WIDGETS.push({
     const zahlenraum = d.zahlenraum || 100;
     const modus      = d.modus      || 'zahl';
     const ungeordnet = d.ungeordnet || false;
+    const gross      = d.gross      || false;
 
     const togBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -178,6 +185,12 @@ WIDGETS.push({
           [100000,'100.000 (HT)'], [1000000,'1.000.000 (M)']
         ].map(([n,l])=>`<option value="${n}" ${zahlenraum===n?'selected':''}>${l}</option>`).join('')}
       </select>`)}
+      <div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          ${togBtn("Klein", !gross, `upd(${d.id},'gross',false)`)}
+          ${togBtn("Groß",   gross, `upd(${d.id},'gross',true)`)}
+        </div>
+      </div>
       <button onclick="event.stopPropagation();svwWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

@@ -1,4 +1,4 @@
-const CACHE = 'blattwerk-v1';
+const CACHE = 'blattwerk-v2';
 
 const APP_FILES = [
   './',

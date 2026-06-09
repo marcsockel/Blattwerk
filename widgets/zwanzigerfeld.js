@@ -79,29 +79,29 @@ WIDGETS.push({
     const blue     = isActive && !d.loesung;
     const bw       = d.bw    || false;
     const small    = d.small || false;
-    const fs       = small ? 15 : 19;
+    const fs       = small ? 30 : 38;
 
     const items = aufgaben.map(auf => {
       const { a, b, op: o, result } = auf;
       const resEl = showRes
         ? `<span style="font-weight:700;color:${blue ? '#2563eb' : '#1a7f3c'};">${result}</span>`
-        : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?22:28}px;height:${small?16:20}px;vertical-align:middle;"></span>`;
+        : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?44:56}px;height:${small?6:8}px;align-self:flex-end;margin-bottom:2px;"></span>`;
       const label = modus==='zahl'
         ? `<div style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;display:flex;align-items:center;gap:6px;">${resEl}</div>`
         : `<div style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;display:flex;align-items:center;gap:${small?4:7}px;">
             <span>${a}</span><span>${o}</span><span>${b}</span><span>=</span>${resEl}
            </div>`;
-      return `<div style="display:flex;flex-direction:column;align-items:center;gap:${small?5:8}px;">
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:${small?10:14}px;">
         ${zfGridSvg(auf, bw, small)}
         ${label}
       </div>`;
     });
 
     if (small) {
-      return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
+      return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:36px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
     }
     const spacers = Array(4).fill(`<div style="flex:1 1 45%;min-width:0;height:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:20px 24px;justify-content:space-between">${items.map(i=>`<div style="flex:1 1 45%;display:flex;justify-content:center;">${i}</div>`).join('')}${spacers}</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;gap:48px 24px;justify-content:space-between">${items.map(i=>`<div style="flex:1 1 45%;display:flex;justify-content:center;">${i}</div>`).join('')}${spacers}</div>`;
   },
 
   renderProps: d => {
