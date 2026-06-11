@@ -149,13 +149,20 @@ WIDGETS.push({
     const luecken = d.luecken || false;
     const gaps = luecken ? (d.aufgabenGaps || []) : [];
     const svgs = aufgaben.map((zahlen, i) => {
-      const g = luecken ? (gaps[i] || []) : [];
-      const showRes = luecken ? true : (d.loesung || isActive);
-      const blue    = luecken ? isActive : (isActive && !d.loesung);
+      const g       = luecken ? (gaps[i] || []) : [];
+      const showRes = luecken ? true : isActive;
+      const blue    = isActive;
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
     });
-    const itemW = cols * 20;
-    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW  = cols * 20;
+    const tasksHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    if (!d.loesung || luecken) return tasksHtml;
+    const answers = aufgaben.map(z => String(z.reduce((a, b) => a + b, 0)));
+    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+    return tasksHtml + `<div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
+      <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
+      ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
+    </div>`;
   },
 
   renderProps: d => {

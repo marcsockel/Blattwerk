@@ -24,6 +24,7 @@ WIDGETS.push({
     id, type:"multiplechoice",
     text: "Was ist die Hauptstadt von Deutschland?\nBerlin\nMünchen\nHamburg\nWien\n\nWelches Tier ist ein Säugetier?\nDelfin\nLachs\nAdler\nEidechse",
     cols: 1,
+    shuffle: false,
   }),
 
   render: d => {
@@ -31,10 +32,15 @@ WIDGETS.push({
     const questions = mcParseText(d.text);
     const isActive  = d.id === selId || _solutionsMode;
     const labels    = ["a","b","c","d","e","f","g","h"];
+    const doShuffle = d.shuffle !== false && d.shuffle;
 
     const qBlocks = questions.map((item, qi) => {
-      const answers = item.answers.map((ans, ai) => {
-        const isCorrect = isActive && ai === item.correct;
+      // Antworten ggf. mischen (deterministisch per seed = widget-id + frage-index)
+      let entries = item.answers.map((text, i) => ({ text, correct: i === item.correct }));
+      if (doShuffle) entries = mcShuffled(entries, d.id * 31 + qi);
+
+      const answers = entries.map((entry, ai) => {
+        const isCorrect = isActive && entry.correct;
         const circle = `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;
                                border:2px solid ${isCorrect ? '#2563eb' : '#555'};
                                flex-shrink:0;margin-top:1px;
@@ -42,7 +48,7 @@ WIDGETS.push({
         return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
           ${circle}
           <span style="font-size:13px;font-family:inherit;">
-            <span style="font-weight:600;">${labels[ai] || ai+1})</span>&nbsp;${esc(ans)}
+            <span style="font-weight:600;">${labels[ai] || ai+1})</span>&nbsp;${esc(entry.text)}
           </span>
         </div>`;
       }).join('');
@@ -80,11 +86,23 @@ WIDGETS.push({
         onclick="event.stopPropagation()"
         onchange="upd(${d.id},'cols',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
-               font-family:inherit;font-size:12px;text-align:center;">`)}`;
+               font-family:inherit;font-size:12px;text-align:center;">`)}
+      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}`;
   },
 });
 
 // ── Helper ────────────────────────────────────────────────────────
+function mcShuffled(arr, seed) {
+  const a = [...arr];
+  let s = seed >>> 0;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function mcUpdate(id, text) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
   saveHistory();

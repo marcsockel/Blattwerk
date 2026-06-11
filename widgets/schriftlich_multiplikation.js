@@ -130,12 +130,19 @@ WIDGETS.push({
     const isActive = d.id === selId || _solutionsMode;
     const svgs = aufgaben.map(([a, b], i) => {
       const svg = modus === 'zweistellig'
-        ? smSvgZweistellig(a, b, d.loesung||isActive, cols, isActive&&!d.loesung)
-        : smSvgEinstellig(a, b, d.loesung||isActive, cols, isActive&&!d.loesung);
+        ? smSvgZweistellig(a, b, isActive, cols, isActive)
+        : smSvgEinstellig(a, b, isActive, cols, isActive);
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${svg}</div>`;
     });
-    const itemW = (cols + 1) * 20; // aCols = cols + 1
-    return `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW  = (cols + 1) * 20;
+    const tasksHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    if (!d.loesung) return tasksHtml;
+    const answers = aufgaben.map(([a, b]) => String(a * b));
+    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+    return tasksHtml + `<div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
+      <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
+      ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
+    </div>`;
   },
 
   renderProps: d => {

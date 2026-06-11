@@ -62,6 +62,16 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .page-end::after{content:"Ende Seite";position:absolute;right:8px;top:3px;font-size:9px;color:rgba(255,0,170,.5);font-family:sans-serif;letter-spacing:.5px;}
 .page-hint{border:2.5px dashed #d0cec8;border-radius:9px;padding:28px;text-align:center;color:#bbb;font-size:14px;font-weight:600;margin-top:10px;}
 .page-spacer{height:16px;flex-shrink:0;}
+.page-spacer.auto{height:0;}
+.page.page-before-overflow{border-radius:4px 4px 0 0;box-shadow:0 -2px 8px rgba(0,0,0,.08);}
+.page.page-overflow{border-top:2px dashed #d0cec8;border-radius:0 0 4px 4px;box-shadow:0 4px 22px rgba(0,0,0,.12);}
+/* Seitenübersicht */
+#overview-overlay{position:fixed;inset:0;z-index:500;background:rgba(10,10,20,0.88);display:none;flex-direction:column;align-items:center;overflow-y:auto;padding:32px 24px;}
+#overview-grid{display:grid;grid-template-columns:repeat(3,max-content);gap:24px 20px;}
+.ov-card{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
+.ov-thumb{overflow:hidden;border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.5);position:relative;flex-shrink:0;transition:box-shadow .15s;}
+.ov-card:hover .ov-thumb{box-shadow:0 0 0 3px #89b4fa,0 2px 10px rgba(0,0,0,.5);}
+.ov-label{color:#cdd6f4;font-size:11px;margin-top:6px;font-family:'Nunito',sans-serif;font-weight:600;}
 /* Widgets on canvas */
 .wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
@@ -157,6 +167,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   </div>
 </div>
 
+<!-- Seitenübersicht Overlay -->
+<div id="overview-overlay" onclick="closeOverview()">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;align-self:stretch;max-width:900px;" onclick="event.stopPropagation()">
+    <span style="color:#cdd6f4;font-size:14px;font-weight:700;font-family:'Nunito',sans-serif;">Seitenübersicht</span>
+    <button onclick="closeOverview()" style="background:none;border:1.5px solid #45475a;border-radius:6px;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;padding:5px 14px;cursor:pointer;">✕ Schließen</button>
+  </div>
+  <div id="overview-grid" onclick="event.stopPropagation()" style="max-width:900px;"></div>
+</div>
+
 <!-- Print warning modal -->
 <div id="print-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
@@ -229,6 +248,7 @@ const WIDGETS = [];
 <script src="widgets/schriftlich_addition.js"></script>
 <script src="widgets/schriftlich_subtraktion.js"></script>
 <script src="widgets/schriftlich_multiplikation.js"></script>
+<script src="widgets/schriftlich_division.js"></script>
 <script src="widgets/bildwort.js"></script>
 <script src="widgets/auslaut.js"></script>
 <script src="widgets/aeue.js"></script>
@@ -426,10 +446,10 @@ function makeWrap(w, idx) {
   return div;
 }
 
-function renderPage(pageWidgets, pageIdx, range){
+function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   const isActive=pageIdx===activePage;
   const pageDiv=document.createElement("div");
-  pageDiv.className="page"+(isActive?" page-active":"");
+  pageDiv.className="page"+(isActive?" page-active":"")+(isAutoPage?" page-overflow":"")+(nextIsAuto?" page-before-overflow":"");
   pageDiv.onclick=e=>{
     if(!e.target.closest(".wwrap")){
       if(activePage!==pageIdx){activePage=pageIdx;render();return;}
@@ -501,12 +521,18 @@ function renderPage(pageWidgets, pageIdx, range){
 function render(){
   const ca=document.getElementById("canvas-area");
   ca.innerHTML="";
+  const fab=document.createElement("button");
+  fab.title="Seitenübersicht";fab.textContent="⊞";fab.onclick=openOverview;
+  fab.style.cssText="position:sticky;top:12px;align-self:flex-start;z-index:50;width:32px;height:32px;border:none;border-radius:7px;background:rgba(0,0,0,0.22);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);flex-shrink:0;margin-bottom:-44px;";
+  ca.appendChild(fab);
   const ranges=getPageRanges();
   const total=widgets.filter(w=>w.type!=='pagebreak').length;
   ranges.forEach((range,pageIdx)=>{
     const pw=widgets.slice(range.start,range.end);
-    ca.appendChild(renderPage(pw,pageIdx,range));
-    if(pageIdx<ranges.length-1){const sp=document.createElement("div");sp.className="page-spacer";ca.appendChild(sp);}
+    const isAutoPage=pageIdx>0&&widgets[ranges[pageIdx-1].end]?.auto;
+    const nextIsAuto=pageIdx<ranges.length-1&&widgets[range.end]?.auto;
+    ca.appendChild(renderPage(pw,pageIdx,range,isAutoPage,nextIsAuto));
+    if(pageIdx<ranges.length-1){const sp=document.createElement("div");sp.className="page-spacer"+(nextIsAuto?" auto":"");ca.appendChild(sp);}
   });
   document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
   requestAnimationFrame(()=>{
@@ -519,6 +545,56 @@ function render(){
     checkOverflow();
   });
 }
+
+// ── Seitenübersicht ──────────────────────────────────────────────
+function openOverview() {
+  const grid = document.getElementById('overview-grid');
+  grid.innerHTML = '';
+  const pages = [...document.querySelectorAll('#canvas-area .page')];
+  if (!pages.length) return;
+  const scale = 0.33;
+  const A4h = Math.round(267 * (96/25.4)); // ~1009px
+  pages.forEach((page, i) => {
+    const pw = page.offsetWidth;
+    const clone = page.cloneNode(true);
+    clone.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
+    clone.style.cssText = clone.style.cssText +
+      `;transform:scale(${scale});transform-origin:top left;margin:0;
+       cursor:default;pointer-events:none;box-shadow:none;border-radius:0;
+       min-height:${A4h}px;background:#fff;`;
+    const thumb = document.createElement('div');
+    thumb.className = 'ov-thumb';
+    thumb.style.width  = Math.round(pw * scale) + 'px';
+    thumb.style.height = Math.round(A4h * scale) + 'px';
+    thumb.style.background = '#fff';
+    thumb.appendChild(clone);
+    const label = document.createElement('div');
+    label.className = 'ov-label';
+    label.textContent = `Seite ${i + 1}`;
+    const card = document.createElement('div');
+    card.className = 'ov-card';
+    card.appendChild(thumb); card.appendChild(label);
+    card.onclick = () => closeOverviewAndGoTo(i);
+    grid.appendChild(card);
+  });
+  document.getElementById('overview-overlay').style.display = 'flex';
+}
+
+function closeOverview() {
+  document.getElementById('overview-overlay').style.display = 'none';
+}
+
+function closeOverviewAndGoTo(pageIdx) {
+  closeOverview();
+  activePage = pageIdx;
+  render();
+  requestAnimationFrame(() => {
+    const pages = document.querySelectorAll('#canvas-area .page');
+    if (pages[pageIdx]) pages[pageIdx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverview(); });
 
 function checkOverflow(){
   const ranges=getPageRanges();
@@ -729,23 +805,25 @@ function addSample(){
   const sh=add("subheading");sh.text="Aufgabe 1 – Lückentext";
 
   // Aufgabentext
-  const ins=add("instruction");ins.text="Lies den Text und fülle die Lücken aus.";
+  const ins=add("instruction");ins.html="Lies den Text und fülle die Lücken aus.";
 
-  // Lückentext (5 Zeilen) mit Lösung
+  // Lückentext mit Lösung
   const g=add("gap_text");
-  g.text="Elmar ist ein [Elefant] aus dem [Dschungel].\nAlle anderen Elefanten sind [grau], aber Elmar ist [bunt].\nSeine Freunde [lachen] über ihn.\nDoch Elmar hat eine gute [Idee].\nAm Ende sind alle [glücklich] und mögen Elmar sehr.";
+  g.text="Elmar ist ein [Elefant] aus dem [Dschungel].\nAlle anderen Elefanten sind [grau], aber Elmar ist [bunt].\nSeine Freunde [lachen] über ihn, denn er sieht so [anders] aus.\nElmar fühlt sich [traurig] und läuft in den [Wald].\nDort rollt er sich in weißen [Blumen] und wird ganz [weiß].\nNun sieht er aus wie alle [anderen] Elefanten.\nAber seine Freunde [erkennen] ihn nicht mehr.\nDa lacht Elmar laut und alle wissen sofort: Das ist [Elmar]!\nAm Ende sind alle [glücklich] und mögen Elmar so, wie er [ist].";
   g.showLoesungen=true;
+  g.font="'Grundschrift', sans-serif";
 
   // Zwischentitel
   const sh2=add("subheading");sh2.text="Aufgabe 2 – Multiple Choice";
 
   // Aufgabentext
-  const ins2=add("instruction");ins2.text="Kreuze die richtige Antwort an.";
+  const ins2=add("instruction");ins2.html="Kreuze die richtige Antwort an.";
 
   // Multiple Choice
   const mc=add("multiplechoice");
-  mc.text="Welche Farbe hat Elmar?\nbunt\ngrau\nblau\nschwarz\n\nWo kommt Elmar her?\nDschungel\nWüste\nArktis\nStadt\n\nWas machen Elmars Freunde zuerst?\nlachen\nweinen\nsingen\nfliehen";
-  mc.cols=1;
+  mc.text="Welche Farbe hat Elmar?\nbunt\ngrau\nblau\nschwarz\n\nWo kommt Elmar her?\nDschungel\nWüste\nArktis\nStadt\n\nWomit wird Elmar weiß?\nBlumen\nSchnee\nFarbe\nKreide\n\nWie erkennen ihn die Freunde?\nan seinem Lachen\nan seiner Stimme\nan seinen Ohren\nan seiner Größe";
+  mc.cols=2;
+  mc.shuffle=true;
 
   render();
 }
