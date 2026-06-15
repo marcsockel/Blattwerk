@@ -40,7 +40,7 @@ WIDGETS.push({
   createData: id => {
     // Zufällige Lücken bei Schritt 10 im Bereich 0–50
     const candidates = [10,20,30,40].sort(()=>Math.random()-.5).slice(0,2).sort((a,b)=>a-b);
-    return { id, type:"numberline", start:0, end:50, step:10, gaps:candidates.join(','), modus:"ohne", nurRandwerte:false };
+    return { id, type:"numberline", start:0, end:50, step:10, gaps:candidates.join(','), modus:"ohne", nurRandwerte:false , aufgabenNr:0, aufgabenText:''};
   },
 
   render: d => {
@@ -177,7 +177,7 @@ WIDGETS.push({
       }
     });
 
-    return `<svg width="100%" viewBox="0 -12 ${VW} 122" style="display:block;">
+    return atHtml(d) + `<svg width="100%" viewBox="0 -12 ${VW} 122" style="display:block;">
       <line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#000" stroke-width="2"/>
       <polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#000"/>
       ${ticks}${labels}${lines}${boxes}</svg>`;
@@ -215,7 +215,8 @@ WIDGETS.push({
       (modus !== 'ohne' ? pr(modus==='luecken' ? "Lücken" : "Zahlen (beliebig, kommagetrennt)",
         `<input value="${esc(d.gaps)}" placeholder="${modus==='luecken'?'z.B. 20,40':'z.B. 5,17,32'}" onchange="upd(${d.id},'gaps',this.value)">`) : '') +
       (modus !== 'luecken' && modus !== 'ohne' ? `<button onclick="nlRoll(${d.id})"
-        style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '');
+        style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '') +
+    atProps(d.id, d);
   },
 });
 

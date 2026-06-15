@@ -1,17 +1,82 @@
 // Widget: Text
 // ── Shared rich-editor helpers (reused by instruction, infobox, gap_text) ──
 
-function richSave(id, el) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  w[el.dataset.field || 'html'] = el.innerHTML;
+let _formatting = false;
+
+// Eigener DOM-Serializer: liest Text-Nodes direkt via nodeValue,
+// umgeht Chrome's innerHTML-Whitespace-Normalisierung komplett.
+// <div>-Elemente (von Chrome's insertLineBreak erzeugt) → '<br>' + Kinder.
+function richHtml(el) {
+  function walk(node) {
+    if (node.nodeType === 3) { // TEXT_NODE
+      return node.nodeValue
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>'); // Chrome pre-wrap: \n als Zeilenumbruch
+    }
+    if (node.nodeType === 1) { // ELEMENT_NODE
+      const tag  = node.tagName.toLowerCase();
+      if (tag === 'br') return '<br>';
+      const kids = Array.from(node.childNodes).map(walk).join('');
+      if (tag === 'b' || tag === 'strong') return `<b>${kids}</b>`;
+      if (tag === 'i' || tag === 'em')     return `<i>${kids}</i>`;
+      if (tag === 'u')                     return `<u>${kids}</u>`;
+      if (tag === 'div') return '<br>' + kids; // Zeilenumbruch-Container
+      return kids; // span usw. → Inhalt durchreichen
+    }
+    return '';
+  }
+  const raw = Array.from(el.childNodes).map(walk).join('');
+  // Führendes <br> entfernen — entsteht wenn erster Knoten ein <div> ist
+  return raw.startsWith('<br>') ? raw.slice(4) : raw;
 }
-function richBlur(id, el) { saveHistory(); richSave(id, el); render(); }
+
+function richSave(id, el) {
+  if (_formatting) return; // oninput während execCommand überspringen
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w[el.dataset.field || 'html'] = richHtml(el);
+  const def = WIDGET_MAP[w.type];
+  if (def) {
+    const winner = document.querySelector(`.wwrap[data-id="${id}"] .winner`);
+    if (winner) winner.innerHTML = def.render(w);
+  }
+}
+// Undo-Fix: Der Vorher-Zustand wird bei onfocus (edFocus) gemerkt und hier
+// per edBlur() in die History gepusht — saveHistory() NACH der Mutation würde
+// nur den neuen Zustand sichern und Strg+Z wäre wirkungslos.
+function richBlur(id, el) { richSave(id, el); edBlur(); render(); }
 function richFmt(id, cmd) {
   const el = document.getElementById(`txted-${id}`);
   if (!el) return;
   el.focus();
-  document.execCommand(cmd, false, null);
-  richSave(id, el);
+
+  const sel   = window.getSelection();
+  const range = sel && sel.rangeCount ? sel.getRangeAt(0) : null;
+  const state = document.queryCommandState(cmd);
+  const tagMap = { bold:'b', italic:'i', underline:'u' };
+  const tag = tagMap[cmd];
+
+  // _formatting blockiert oninput während aller DOM-Änderungen
+  _formatting = true;
+  if (tag && range && !range.collapsed && !state) {
+    // Formatting EINschalten: manuell wrappen — execCommand trimmt sonst Leerzeichen
+    const frag    = range.extractContents();
+    const wrapper = document.createElement(tag);
+    wrapper.appendChild(frag);
+    range.insertNode(wrapper);
+    const nr = document.createRange();
+    nr.selectNodeContents(wrapper);
+    sel.removeAllRanges();
+    sel.addRange(nr);
+  } else {
+    // Formatting AUSschalten oder removeFormat
+    document.execCommand(cmd, false, null);
+  }
+  _formatting = false;
+  richSave(id, el);           // sofort lesen, DOM ist stabil
+  _formatting = true;         // async oninput nach diesem Stack blockieren
+  setTimeout(() => { _formatting = false; }, 0);
   richUpdateBtns(id);
 }
 function richUpdateBtns(id) {
@@ -28,6 +93,7 @@ function richUpdateBtns(id) {
 function makeRichToolbar(id, field, extraRight='') {
   const b = (cmd, label, style) =>
     `<button id="txbtn-${id}-${cmd}"
+       onmousedown="event.preventDefault()"
        onclick="event.stopPropagation();richFmt(${id},'${cmd}')"
        style="padding:4px 8px;border-radius:4px;border:1.5px solid #ddd;background:#fff;
               font-family:inherit;font-size:13px;cursor:pointer;
@@ -56,6 +122,8 @@ function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontO
     <div id="txted-${id}" contenteditable="true" data-field="${field}"
       onclick="event.stopPropagation()"
       onpaste="event.preventDefault();document.execCommand('insertText',false,(event.clipboardData||window.clipboardData).getData('text/plain'))"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();document.execCommand('insertLineBreak');richSave(${id},this);}"
+      onfocus="edFocus()"
       oninput="richSave(${id},this)${oninputExtra?';'+oninputExtra:''}"
       onblur="richBlur(${id},this)"
       onkeyup="richUpdateBtns(${id})"
@@ -75,13 +143,13 @@ WIDGETS.push({
     id, type:"text",
     html:"Hier steht ein Text.",
     font:"inherit",
-    fontSize: 13,
+    fontSize: 13, aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
     const font     = d.font     || "inherit";
     const fontSize = d.fontSize || 13;
-    return `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
+    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
                         color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;"
             >${d.html}</div>`;
   },
@@ -100,6 +168,7 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions);
+      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) +
+      atProps(d.id, d);
   },
 });

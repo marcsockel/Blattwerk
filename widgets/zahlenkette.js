@@ -102,7 +102,7 @@ WIDGETS.push({
       zeigeEnde:       false,
       zeigeOps:        true,
       kastenGroesse:   34,
-      ketten: [],
+      ketten: [], aufgabenNr:0, aufgabenText:'',
     };
     zkRegen(w);
     return w;
@@ -163,7 +163,7 @@ WIDGETS.push({
       return `<div style="display:flex;align-items:center;margin-bottom:10px;flex-wrap:nowrap;">${html}</div>`;
     });
 
-    return `<div>${rows.join('')}</div>`;
+    return atHtml(d) + `<div>${rows.join('')}</div>`;
   },
 
   renderProps: d => {
@@ -216,7 +216,8 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();zkWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
+    atProps(d.id, d);
   },
 });
 

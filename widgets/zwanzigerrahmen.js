@@ -67,7 +67,7 @@ WIDGETS.push({
 
   createData: id => ({
     id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, small:false,
-    zahlen: zrGen(6, 20)
+    zahlen: zrGen(6, 20), aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -89,9 +89,25 @@ WIDGETS.push({
       </div>`;
     });
 
-    const cols = small ? 3 : 2;
-    const rowGap = small ? 36 : 48;
-    return `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${rowGap}px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
+    const svgW    = small ? Math.round(174 * 0.9) : 258;
+    const colGap  = 10;
+    const rowGap  = small ? 36 : 48;
+    const perRow  = Math.max(1, Math.floor((avail + colGap) / (svgW + colGap)));
+    const gap     = perRow > 1 ? (avail - perRow * svgW) / (perRow - 1) : 0;
+
+    const rows = [];
+    for (let i = 0; i < items.length; i += perRow) rows.push(items.slice(i, i + perRow));
+    const filler = `<div style="width:${svgW}px;visibility:hidden;"></div>`;
+    const rowHtml = rows.map((row, ri) => {
+      const mb = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
+      const filled = [...row.map(i => `<div style="display:flex;justify-content:center;width:${svgW}px;">${i}</div>`)];
+      while (filled.length < perRow) filled.push(filler);
+      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join('')}</div>`;
+    }).join('');
+    return atHtml(d) + rowHtml;
   },
 
   renderProps: d => {
@@ -128,7 +144,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>`;
+        </div></div>` +
+    atProps(d.id, d);
   },
 });
 

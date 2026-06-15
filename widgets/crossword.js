@@ -151,7 +151,7 @@ WIDGETS.push({
       cellSize: 28,
       hBias: 1.4,
       maxRows: 0,
-      cw: null,
+      cw: null, aufgabenNr:0, aufgabenText:"",
     };
     cwRegen(w);
     return w;
@@ -229,7 +229,7 @@ WIDGETS.push({
          </div>`
       : '';
 
-    return `<div>
+    return atHtml(d) + `<div>
       <div style="display:flex;justify-content:center;">${gridSvg}</div>
       ${unplacedWarning}
       <div style="display:flex;gap:24px;margin-top:${cs}px;flex-wrap:wrap;">
@@ -287,7 +287,8 @@ WIDGETS.push({
       <button onclick="event.stopPropagation();cwRegenWidget(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🔀 Neu generieren</button>`;
+               font-weight:700;cursor:pointer;">🔀 Neu generieren</button>` +
+    atProps(d.id, d);
   },
 });
 

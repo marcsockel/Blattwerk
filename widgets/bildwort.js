@@ -19,7 +19,7 @@ WIDGETS.push({
       { src:"", word:"Hund",  distractors:["Katze","Maus"],    order: bwShuffle(3) },
       { src:"", word:"Apfel", distractors:["Birne","Kirsche"], order: bwShuffle(3) },
       { src:"", word:"Haus",  distractors:["Auto","Baum"],     order: bwShuffle(3) },
-    ],
+    ], aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -52,7 +52,7 @@ WIDGETS.push({
       </div>`;
     });
 
-    return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px 24px;">${items.join("")}</div>`;
+    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px 24px;">${items.join("")}</div>`;
   },
 
   renderProps: d => {
@@ -133,7 +133,8 @@ WIDGETS.push({
                color:#4a8fd4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">+ Aufgabe hinzufügen</button>` +
       `<button onclick="event.stopPropagation();bwReshuffle(${d.id})"
         style="margin-top:5px;width:100%;padding:5px;border:none;border-radius:5px;background:#313244;
-               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔀 Wörter neu mischen</button>`;
+               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔀 Wörter neu mischen</button>` +
+    atProps(d.id, d);
   },
 });
 

@@ -65,7 +65,7 @@ WIDGETS.push({
   meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik" },
 
   createData: id => {
-    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, small:true };
+    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, small:true , aufgabenNr:0, aufgabenText:''};
     return { id, type:"zwanzigerfeld", ...cfg, aufgaben: zfGen(cfg.anzahl, cfg.op) };
   },
 
@@ -97,11 +97,25 @@ WIDGETS.push({
       </div>`;
     });
 
-    if (small) {
-      return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:36px 10px;">${items.map(i=>`<div style="display:flex;justify-content:center;">${i}</div>`).join('')}</div>`;
-    }
-    const spacers = Array(4).fill(`<div style="flex:1 1 45%;min-width:0;height:0;"></div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:48px 24px;justify-content:space-between">${items.map(i=>`<div style="flex:1 1 45%;display:flex;justify-content:center;">${i}</div>`).join('')}${spacers}</div>`;
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
+    const svgW    = small ? (10*(14+2)+2) : (10*(22+3)+3);
+    const colGap  = small ? 10 : 24;
+    const rowGap  = small ? 36 : 48;
+    const perRow  = Math.max(1, Math.floor((avail + colGap) / (svgW + colGap)));
+    const gap     = perRow > 1 ? (avail - perRow * svgW) / (perRow - 1) : 0;
+
+    const rows = [];
+    for (let i = 0; i < items.length; i += perRow) rows.push(items.slice(i, i + perRow));
+    const filler = `<div style="width:${svgW}px;visibility:hidden;"></div>`;
+    const rowHtml = rows.map((row, ri) => {
+      const mb = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
+      const filled = [...row.map(i => `<div style="display:flex;justify-content:center;width:${svgW}px;">${i}</div>`)];
+      while (filled.length < perRow) filled.push(filler);
+      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join('')}</div>`;
+    }).join('');
+    return atHtml(d) + rowHtml;
   },
 
   renderProps: d => {
@@ -145,7 +159,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>`;
+        </div></div>` +
+    atProps(d.id, d);
   },
 });
 

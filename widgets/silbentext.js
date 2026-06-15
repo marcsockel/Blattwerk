@@ -178,7 +178,7 @@ WIDGETS.push({
     fontSize: 13,
     color1: "#e05252",
     color2: "#2255cc",
-    ausnahmen: "",
+    ausnahmen: "", aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -199,7 +199,7 @@ WIDGETS.push({
       content = d.html;
     }
 
-    return `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
+    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
                         color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;"
             >${content}</div>`;
   },
@@ -249,6 +249,7 @@ WIDGETS.push({
          style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;
                 border-radius:4px;padding:4px 6px;min-height:60px;resize:vertical;
                 box-sizing:border-box;"
-       >${esc(d.ausnahmen || '')}</textarea>`;
+       >${esc(d.ausnahmen || '')}</textarea>` +
+    atProps(d.id, d);
   },
 });

@@ -1,18 +1,7 @@
 // Widget: Lückentext
 // Gap words are marked with [brackets] in the text string, e.g. "Der [Elefant] heißt [Elmar]."
 
-const GAP_FONTS = [
-  { value: "inherit",                       label: "Standard (Nunito)" },
-  { value: "'Andika', sans-serif",          label: "Andika" },
-  { value: "'Lexend', sans-serif",          label: "Lexend" },
-  { value: "'Quicksand', sans-serif",       label: "Quicksand" },
-  { value: "'Caveat', cursive",             label: "Caveat (Handschrift)" },
-  { value: "'Fira Sans', sans-serif",       label: "Fira Sans" },
-  { value: "'Grundschrift', sans-serif",    label: "Grundschrift" },
-  { value: "'DM Mono', monospace",          label: "DM Mono" },
-  { value: "Georgia, serif",               label: "Georgia (Serif)" },
-  { value: "'Arial', sans-serif",           label: "Arial" },
-];
+// GAP_FONTS ist jetzt zentral in main/helpers.js definiert.
 
 WIDGETS.push({
   meta: { type:"gap_text", label:"Lückentext", desc:"Wörter als Lücken markieren", icon:"___", category:"deutsch" },
@@ -23,7 +12,7 @@ WIDGETS.push({
     showLoesungen: false,
     font: "inherit",
     fontSize: 14,
-    fontFeatures: "",
+    fontFeatures: "", aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -45,7 +34,7 @@ WIDGETS.push({
 
     const gapWords = [...d.text.matchAll(/\[([^\]]+)\]/g)]
       .map(m => m[1].replace(/<[^>]+>/g, '').replace(/[.,!?;:]+$/, ''));
-    const shuffled = gapWords.slice().sort(() => Math.random() - 0.5);
+    const shuffled = seededShuffle(gapWords, d.id * 31 + gapWords.length);
 
     const solutionBand = (d.showLoesungen && shuffled.length > 0)
       ? `<div style="margin-top:10px;border-top:1.5px dashed #ccc;padding-top:7px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;">
@@ -55,7 +44,7 @@ WIDGETS.push({
       : '';
 
     const fontSize = d.fontSize || 14;
-    return `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}">${content}</div>${solutionBand}`;
+    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}">${content}</div>${solutionBand}`;
   },
 
   renderProps: d => {
@@ -110,7 +99,8 @@ WIDGETS.push({
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
           ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
         </div>
-      </div>`;
+      </div>` +
+    atProps(d.id, d);
   },
 });
 

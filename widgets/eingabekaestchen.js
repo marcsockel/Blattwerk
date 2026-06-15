@@ -3,13 +3,14 @@
 WIDGETS.push({
   meta: { type:'eingabekaestchen', label:'Eingabekästchen', desc:'Ein Zeichen pro Kästchen', icon:'⊡', category:'mathematik' },
 
-  createData: id => ({ id, type:'eingabekaestchen', groesse:'mittel', zeilen:4, values:{}, lines:[], mode:'schreiben', font:'inherit' }),
+  createData: id => ({ id, type:'eingabekaestchen', groesse:'mittel', zeilen:4, values:{}, lines:[], mode:'schreiben', font:'inherit' , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
     const sizes  = { klein: 15, mittel: 20, gross: 40 };
     const cs     = sizes[d.groesse || 'mittel'];
     const fullCols = { klein: 37, mittel: 28, gross: 14 }[d.groesse || 'mittel'];
-    const cols   = d.halfWidth ? Math.floor(fullCols / 2) : fullCols;
+    const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
+    const cols   = Math.round(fullCols*({'1/4':0.25,'1/2':0.5,'3/4':0.75,'full':1}[_frac]||1));
     const rows   = d.zeilen || 4;
     const w      = cols * cs;
     const h      = rows * cs;
@@ -24,7 +25,10 @@ WIDGETS.push({
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const idx = r * cols + c;
-        const val = esc(vals[idx] || '');
+        const raw = vals[idx] || '';
+        // Brüche ("1/2" bzw. angefangen "1/") werden im SVG-Overlay gezeichnet,
+        // das Input bleibt optisch leer
+        const val = esc(/^.\/.?$/.test(raw) ? '' : raw);
         inputs += `<input id="${pfx}_${idx}" maxlength="1" value="${val}"
           ${isLinien ? 'tabindex="-1"' : `oninput="ekzInput(${d.id},'${pfx}',${idx},${cols},${rows})" onkeydown="ekzKey(event,${d.id},'${pfx}',${idx},${cols},${rows})"`}
           style="width:${cs}px;height:${cs}px;border:none;border-right:0.7px solid #888;
@@ -41,22 +45,24 @@ WIDGETS.push({
     ).join('');
 
     // Im Linien-Modus: SVG fängt Mausereignisse ab
+    const dataAttrs = `data-cs="${cs}" data-cols="${cols}" data-font="${d.font||'inherit'}"`;
     const svgAttrs = isLinien
-      ? `id="ekzsvg${d.id}" cursor="crosshair"
+      ? `id="ekzsvg${d.id}" ${dataAttrs} cursor="crosshair"
            onmousedown="ekzLDown(event,${d.id},${cs})"
            onmousemove="ekzLMove(event,${d.id},${cs})"
            onmouseup="ekzLUp(event,${d.id},${cs})"
            onmouseleave="ekzLCancel(${d.id})"
            style="position:absolute;inset:0;"`
-      : `id="ekzsvg${d.id}" style="position:absolute;inset:0;pointer-events:none;"`;
+      : `id="ekzsvg${d.id}" ${dataAttrs} style="position:absolute;inset:0;pointer-events:none;"`;
 
     const svg = `<svg ${svgAttrs} width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${w}" height="${h}" fill="${isLinien?'rgba(137,180,250,0.06)':'none'}"/>
       ${svgContent}
+      <g id="ekzfrac${d.id}">${ekzFracSvg(vals, cols, cs, d.font||'inherit')}</g>
       <line id="ekzprev${d.id}" stroke="#89b4fa" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3" x1="0" y1="0" x2="0" y2="0"/>
     </svg>`;
 
-    return `<div onclick="event.stopPropagation()" style="position:relative;display:inline-block;line-height:0;">
+    return atHtml(d) + `<div onclick="event.stopPropagation()" style="position:relative;display:inline-block;line-height:0;">
       <div style="display:grid;grid-template-columns:repeat(${cols},${cs}px);
                   width:${w}px;gap:0;
                   border-left:0.7px solid #888;border-top:0.7px solid #888;
@@ -103,7 +109,10 @@ WIDGETS.push({
 
       (isLinien ? `<div style="padding:6px 0;color:#888;font-size:11px;line-height:1.5;">
         Klicken &amp; ziehen um eine Linie zu zeichnen.<br>Rastet auf Gitterpunkte ein.
-      </div>` : '') +
+      </div>` : `<div style="padding:6px 0;color:#888;font-size:11px;line-height:1.5;">
+        Tipp: <b>*</b> wird automatisch zum Malpunkt „·".<br>
+        <b>1</b> <b>/</b> <b>2</b> tippen → Bruch ½ mit Balken in einem Kästchen.
+      </div>`) +
 
       (lineCount > 0 ? `<div style="display:flex;gap:4px;margin-top:4px;">
         <button onclick="event.stopPropagation();ekzUndoLine(${d.id})"
@@ -119,7 +128,8 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();ekzClear(${d.id})"
         style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#f38ba8;color:#1e1e2e;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">✕ Alle Felder leeren</button>`;
+               font-weight:700;cursor:pointer;">✕ Alle Felder leeren</button>` +
+    atProps(d.id, d);
   },
 });
 
@@ -128,6 +138,32 @@ function ekzInput(id, pfx, idx, cols, rows) {
   const el = document.getElementById(`${pfx}_${idx}`);
   if (!el) return;
   const w = widgets.find(x => x.id === id);
+
+  // "*" → Malpunkt "·" (deutsches Malzeichen, nicht auf der Tastatur)
+  if (el.value === '*') el.value = '·';
+
+  // ── Brüche: "1" "/" "2" → gestapelter Bruch "1/2" in EINEM Kästchen ──
+  const prevStored = (w && w.values && w.values[idx-1]) || '';
+  // "/" nach einem einzelnen Zeichen → Bruch beginnen (Zähler + Balken)
+  if (el.value === '/' && idx > 0) {
+    const prevEl = document.getElementById(`${pfx}_${idx-1}`);
+    const pv = prevStored || (prevEl ? prevEl.value : '');
+    if (pv.length === 1 && pv !== '/') {
+      el.value = '';
+      if (w) { if (!w.values) w.values = {}; w.values[idx-1] = pv + '/'; delete w.values[idx]; }
+      if (prevEl) prevEl.value = '';
+      ekzRedrawFracs(id);
+      return;
+    }
+  }
+  // Vorzelle wartet auf Nenner ("1/") → dieses Zeichen vervollständigt den Bruch
+  if (idx > 0 && /^.\/$/.test(prevStored) && el.value.length === 1 && el.value !== '/') {
+    if (w) { w.values[idx-1] = prevStored + el.value; delete w.values[idx]; }
+    el.value = '';
+    ekzRedrawFracs(id);
+    return;
+  }
+
   const val = el.value;
 
   // ")" in leerer Zelle → zur vorherigen Zelle anhängen
@@ -144,10 +180,40 @@ function ekzInput(id, pfx, idx, cols, rows) {
   }
 
   if (w) { if (!w.values) w.values = {}; w.values[idx] = val; }
+  ekzRedrawFracs(id); // falls ein Bruch in dieser Zelle überschrieben wurde
   if (val.length > 0) {
     const next = idx + 1;
     if (next < cols * rows) { const n = document.getElementById(`${pfx}_${next}`); if (n) { n.focus(); n.select(); } }
   }
+}
+
+// ── Bruch-Darstellung (deutsche Schreibweise: horizontaler Balken) ──
+// Zeichnet alle Zellen mit Wert "Z/N" (oder angefangen "Z/") als gestapelten
+// Bruch ins Overlay-SVG. Wird beim Render eingebettet und bei Eingaben
+// über ekzRedrawFracs() aktualisiert.
+function ekzFracSvg(vals, cols, cs, font) {
+  const fs = Math.round(cs * 0.42);
+  let out = '';
+  for (const k of Object.keys(vals || {})) {
+    const m = /^(.)\/(.?)$/.exec(vals[k] || '');
+    if (!m) continue;
+    const idx = +k, c = idx % cols, r = Math.floor(idx / cols);
+    const x = c * cs, y = r * cs;
+    const t = (txt, ty) => `<text x="${x+cs/2}" y="${ty}" text-anchor="middle" font-size="${fs}px"
+      font-weight="700" font-family="${font}" fill="#333">${esc(txt)}</text>`;
+    out += t(m[1], y + cs * 0.42)
+        + `<line x1="${x+cs*0.22}" y1="${y+cs/2}" x2="${x+cs*0.78}" y2="${y+cs/2}" stroke="#333" stroke-width="1.2"/>`
+        + (m[2] ? t(m[2], y + cs * 0.95) : '');
+  }
+  return out;
+}
+
+function ekzRedrawFracs(id) {
+  const w = widgets.find(x => x.id === id);
+  const svg = document.getElementById(`ekzsvg${id}`);
+  const g = document.getElementById(`ekzfrac${id}`);
+  if (!w || !svg || !g) return;
+  g.innerHTML = ekzFracSvg(w.values || {}, +svg.dataset.cols, +svg.dataset.cs, svg.dataset.font || 'inherit');
 }
 
 function ekzKey(e, id, pfx, idx, cols, rows) {
@@ -160,8 +226,16 @@ function ekzKey(e, id, pfx, idx, cols, rows) {
   else if (e.key === 'Backspace') {
     const el = document.getElementById(`${pfx}_${idx}`);
     if (el && el.value === '') {
-      e.preventDefault(); next = idx - 1;
+      e.preventDefault();
       const w = widgets.find(x => x.id === id);
+      const stored = (w && w.values && w.values[idx]) || '';
+      // Zelle enthält einen Bruch (Input ist optisch leer) → Bruch löschen, bleiben
+      if (/^.\/.?$/.test(stored)) {
+        delete w.values[idx];
+        ekzRedrawFracs(id);
+        return;
+      }
+      next = idx - 1;
       if (w && w.values) delete w.values[idx];
     }
   }

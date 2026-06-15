@@ -140,7 +140,7 @@ WIDGETS.push({
   meta: { type:"schriftlich_subtraktion", group:"rechnen", label:"Schriftl. Subtraktion", desc:"Schriftliche Subtraktion", icon:"⊟−", category:"mathematik" },
 
   createData: id => {
-    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false };
+    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"schriftlich_subtraktion", ...cfg,
       aufgaben: ssGen(cfg.anzahl, cfg.zahlenraum, cfg.uebertrag), aufgabenGaps: [] };
   },
@@ -158,10 +158,10 @@ WIDGETS.push({
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${ssSvg([a, b], showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
     });
     const itemW  = cols * 20;
-    const tasksHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
     if (!d.loesung || luecken) return tasksHtml;
     const answers = aufgaben.map(([a, b]) => String(a - b));
-    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+    const shuffled = mcShuffled(answers, d.id);
     return tasksHtml + `<div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
       <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
       ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
@@ -205,7 +205,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>` : '');
+        </div></div>` : '') +
+    atProps(d.id, d);
   },
 });
 

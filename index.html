@@ -6,8 +6,9 @@
 <meta name="theme-color" content="#1e1e2e">
 <link rel="manifest" href="manifest.json">
 <title>Blattwerk – Worksheet Builder</title>
+<!-- Lokale Schriften statt Google-Fonts-CDN (offline-fähig) -->
+<link rel="stylesheet" href="fonts/vendor/fonts.css">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Fira+Sans:wght@400;500;700&family=Andika:wght@400;700&family=Lexend:wght@400;700&family=Caveat:wght@400;700&family=Quicksand:wght@400;700&display=swap');
 @font-face {
   font-family: 'Grundschrift';
   src: url('fonts/Grundschrift-Regular.otf') format('opentype');
@@ -67,11 +68,27 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .page.page-overflow{border-top:2px dashed #d0cec8;border-radius:0 0 4px 4px;box-shadow:0 4px 22px rgba(0,0,0,.12);}
 /* Seitenübersicht */
 #overview-overlay{position:fixed;inset:0;z-index:500;background:rgba(10,10,20,0.88);display:none;flex-direction:column;align-items:center;overflow-y:auto;padding:32px 24px;}
-#overview-grid{display:grid;grid-template-columns:repeat(3,max-content);gap:24px 20px;}
+#overview-grid{display:flex;flex-wrap:wrap;gap:24px 0;justify-content:center;align-items:flex-start;}
+.ov-group{display:flex;gap:8px;align-items:flex-start;padding:6px;border-radius:8px;
+  cursor:grab;position:relative;transition:opacity .15s;}
+.ov-group:active{cursor:grabbing;}
+.ov-group.ov-dragging{opacity:0.2;}
+.ov-dropzone{width:20px;align-self:stretch;flex-shrink:0;position:relative;
+  transition:width .18s ease;}
+.ov-dropzone.active{width:60px;}
+.ov-dropzone.active::after{content:'';position:absolute;left:50%;top:5%;bottom:5%;
+  width:3px;transform:translateX(-50%);background:#89b4fa;border-radius:2px;
+  box-shadow:0 0 10px #89b4fa;}
 .ov-card{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
 .ov-thumb{overflow:hidden;border-radius:3px;box-shadow:0 2px 10px rgba(0,0,0,.5);position:relative;flex-shrink:0;transition:box-shadow .15s;}
 .ov-card:hover .ov-thumb{box-shadow:0 0 0 3px #89b4fa,0 2px 10px rgba(0,0,0,.5);}
 .ov-label{color:#cdd6f4;font-size:11px;margin-top:6px;font-family:'Nunito',sans-serif;font-weight:600;}
+.ov-cont-badge{position:absolute;top:50%;transform:translateY(-50%);z-index:3;
+  width:18px;height:28px;background:#f38ba8;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#1e1e2e;font-weight:900;line-height:1;pointer-events:none;}
+.ov-cont-badge.right{right:-9px;border-radius:3px 0 0 3px;}
+.ov-cont-badge.left {left:-9px; border-radius:0 3px 3px 0;}
 /* Widgets on canvas */
 .wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
@@ -93,7 +110,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prow input,.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
 /* misc */
-*{user-select:none;}input,textarea{user-select:text;}
+*{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:5mm 0 0 10mm;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:14mm;font-size:10px;color:#333;}
 #solution-pages{display:none;}
@@ -127,6 +144,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <button class="tbtn" onclick="addSample()">📄 Beispiel</button>
   <button class="tbtn" onclick="clearCanvas()">🗑 Leeren</button>
   <button class="tbtn" onclick="addPage()">＋ Neue Seite</button>
+  <button class="tbtn" onclick="dupPage()" title="Aktuelle Seite duplizieren">⧉ Seite duplizieren</button>
   <button class="tbtn" id="undobtn" onclick="undo()" title="Rückgängig (Strg+Z)">↩ Rückgängig</button>
   <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
   <div class="spacer"></div>
@@ -147,6 +165,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
       </label>
       <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
         <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
+      </div>
+      <div style="margin-top:8px;">
+        <button onclick="document.getElementById('print-panel').style.display='none';document.getElementById('pdf-hint').style.display='flex'" title="Gestochen scharfes Vektor-PDF über den Druckdialog" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Vektor-PDF (Druckdialog)</button>
       </div>
     </div>
   </div>
@@ -174,6 +195,30 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     <button onclick="closeOverview()" style="background:none;border:1.5px solid #45475a;border-radius:6px;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;padding:5px 14px;cursor:pointer;">✕ Schließen</button>
   </div>
   <div id="overview-grid" onclick="event.stopPropagation()" style="max-width:900px;"></div>
+</div>
+
+<!-- PDF hint modal (Vektor-PDF über den Druckdialog) -->
+<div id="pdf-hint" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
+    <div style="font-size:13px;font-weight:800;color:#cdd6f4;margin-bottom:10px;">⬇ Gestochen scharfes PDF</div>
+    <div style="font-size:12px;color:#a6adc8;line-height:1.6;margin-bottom:18px;">
+      Es öffnet sich gleich der Druckdialog.<br><br>
+      Dort unten links im Menü <b style="color:#cdd6f4;">„PDF" → „Als PDF sichern"</b> wählen.<br><br>
+      So bleibt der Text als Vektor erhalten – maximale Schärfe bei jedem Zoom und Druck.
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button onclick="document.getElementById('pdf-hint').style.display='none'"
+        style="flex:1;padding:7px;border:1.5px solid #45475a;border-radius:6px;background:transparent;
+               color:#a6adc8;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
+        Abbrechen
+      </button>
+      <button onclick="document.getElementById('pdf-hint').style.display='none';doPrint()"
+        style="flex:1;padding:7px;border:none;border-radius:6px;background:#89b4fa;
+               color:#1e1e2e;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
+        Weiter
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Print warning modal -->
@@ -208,6 +253,7 @@ const CATEGORIES = {
 };
 const WIDGET_GROUPS = {
   rechnen: { label: "Schriftl. Rechnen", icon: "✏" },
+  anlaut:  { label: "Anfangsunterricht",  icon: "🔤" },
 };
 const _groupOpen = {};
 
@@ -222,6 +268,8 @@ const WIDGETS = [];
 <!-- ── Neutralino (nur aktiv wenn als Desktop-App gestartet) ── -->
 <script src="/neutralino.js" onerror="console.log('Browser-Modus')"></script>
 <script src="neutralino-bridge.js"></script>
+<!-- ── Shared helpers ──────────────────────────────────────────── -->
+<script src="main/helpers.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
@@ -251,6 +299,12 @@ const WIDGETS = [];
 <script src="widgets/schriftlich_division.js"></script>
 <script src="widgets/bildwort.js"></script>
 <script src="widgets/auslaut.js"></script>
+<script src="widgets/anlaut.js"></script>
+<script src="widgets/anlaut_zuordnung.js"></script>
+<script src="widgets/wort_schreiben.js"></script>
+<script src="widgets/buchstabensalat2.js"></script>
+<script src="widgets/geheimschrift.js"></script>
+<script src="widgets/bild_wort_zuordnung2.js"></script>
 <script src="widgets/aeue.js"></script>
 <script src="widgets/stop.js"></script>
 <script src="widgets/infobox.js"></script>
@@ -265,8 +319,11 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js"></script>
 <script src="widgets/zwanzigerrahmen.js"></script>
 <script src="widgets/rechendreiecke.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Lokale Vendor-Libs statt CDN (offline-fähig) -->
+<!-- html-to-image statt html2canvas: rendert über SVG-foreignObject, d.h. die
+     Browser-Engine selbst rastert den Text (korrektes Kerning/Antialiasing) -->
+<script src="vendor/html-to-image.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -276,20 +333,33 @@ const WIDGET_MAP = Object.fromEntries(WIDGETS.map(w=>[w.meta.type,w]));
 let widgets=[],selId=null,idC=0,dragSrc=null,activeTab="allgemein",searchFilter="",activePage=0;
 let _history=[],_future=[];
 let _solutionsMode=false;
-function saveHistory(){_history.push(JSON.stringify({widgets,selId}));if(_history.length>50)_history.shift();_future=[];}
+// History-Snapshots: Base64-Bilddaten (w.src="data:…") werden NICHT in jeden
+// Snapshot kopiert, sondern einmalig im _imgPool abgelegt und nur referenziert.
+// Sonst hielten 50 Snapshots × Bilddaten schnell hunderte MB im Speicher.
+const _imgPool=[];
+function _imgRef(src){let i=_imgPool.indexOf(src);if(i<0){i=_imgPool.length;_imgPool.push(src);}return i;}
+function _snap(){return JSON.stringify(widgets,(k,v)=>typeof v==="string"&&v.startsWith("data:")?{__img:_imgRef(v)}:v);}
+function _unsnap(s){return JSON.parse(s,(k,v)=>v&&typeof v==="object"&&"__img"in v?_imgPool[v.__img]:v);}
+function saveHistory(snap){_history.push(snap||_snap());if(_history.length>50)_history.shift();_future=[];}
+// Editier-Sitzung für Inputs, die beim Tippen direkt in die Daten schreiben:
+// onfocus=edFocus() merkt den Vorher-Zustand, onblur=edBlur() pusht ihn in die History.
+let _editSnapshot=null;
+function edFocus(){_editSnapshot=_snap();}
+function edBlur(){
+  if(_editSnapshot!==null&&_editSnapshot!==_snap())saveHistory(_editSnapshot);
+  _editSnapshot=null;
+}
 function undo(){
   if(!_history.length)return;
-  _future.push(JSON.stringify({widgets,selId}));
-  const s=JSON.parse(_history.pop());
-  widgets=s.widgets;selId=s.selId;
-  render();if(selId)renderProps(selId);else desel();
+  _future.push(_snap());
+  widgets=_unsnap(_history.pop());
+  selId=null;render();desel();
 }
 function redo(){
   if(!_future.length)return;
-  _history.push(JSON.stringify({widgets,selId}));
-  const s=JSON.parse(_future.pop());
-  widgets=s.widgets;selId=s.selId;
-  render();if(selId)renderProps(selId);else desel();
+  _history.push(_snap());
+  widgets=_unsnap(_future.pop());
+  selId=null;render();desel();
 }
 
 function getPageRanges(){
@@ -346,7 +416,7 @@ function buildList(){
         // Header button
         const hdr=document.createElement("button");
         hdr.className="wbtn";
-        hdr.style.cssText="background:#252535;";
+        hdr.style.cssText=`background:${open?"#1e2d4a":"#252535"};`;
         hdr.innerHTML=`<span class="wi">${grp.icon}</span><span>${grp.label}<span class="wd">${groupWidgets.length} Typen</span></span><span style="font-size:10px;margin-left:auto;transition:transform .15s;display:inline-block;transform:rotate(${open?90:0}deg);">▶</span>`;
         hdr.onclick=()=>{_groupOpen[w.meta.group]=!_groupOpen[w.meta.group];buildList();};
         sec.appendChild(hdr);
@@ -379,14 +449,19 @@ function addWidget(type){
   const def=WIDGET_MAP[type];if(!def)return;
   saveHistory();
   const w=def.createData(++idC);
-  // Insert after selected widget, otherwise at end of current page
+  const ranges=getPageRanges();
+  const pageEnd=(ranges[activePage]||ranges[ranges.length-1]).end;
+  // Only insert after selId if it's on the current activePage
   const selIdx=selId!=null?widgets.findIndex(x=>x.id===selId):-1;
-  const insertAt=selIdx>=0?selIdx+1:(()=>{
-    const ranges=getPageRanges();
-    return (ranges[activePage]||ranges[ranges.length-1]).end;
-  })();
+  const selOnThisPage=selIdx>=0&&ranges[activePage]&&selIdx>=ranges[activePage].start&&selIdx<ranges[activePage].end;
+  const insertAt=selOnThisPage?selIdx+1:pageEnd;
   widgets.splice(insertAt,0,w);
   selId=w.id;render();renderProps(w.id);
+}
+
+function scrollToActivePage(){
+  const pages=document.querySelectorAll('#canvas-area .page');
+  if(pages[activePage]) pages[activePage].scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function addPage(){
@@ -395,14 +470,34 @@ function addPage(){
   const range=ranges[activePage]||ranges[ranges.length-1];
   widgets.splice(range.end,0,{id:++idC,type:'pagebreak'});
   activePage++;
+  selId=null;
   render();
+  scrollToActivePage();
+}
+
+function dupPage(){
+  saveHistory();
+  const ranges=getPageRanges();
+  const range=ranges[activePage]||ranges[ranges.length-1];
+  // Deep-clone all widgets on the current page with fresh IDs
+  const clones=widgets.slice(range.start,range.end).map(w=>{
+    const c=JSON.parse(JSON.stringify(w));
+    c.id=++idC;
+    return c;
+  });
+  // Insert a pagebreak + cloned widgets after the current page
+  widgets.splice(range.end,0,{id:++idC,type:'pagebreak'},...clones);
+  activePage++;
+  selId=null;
+  render();
+  scrollToActivePage();
 }
 
 function makeWrap(w, idx) {
   const def=WIDGET_MAP[w.type];if(!def)return null;
   const div=document.createElement("div");
   div.className="wwrap"+(selId===w.id?" sel":"");
-  div.draggable=true;div.dataset.idx=idx;
+  div.draggable=true;div.dataset.idx=idx;div.dataset.id=w.id;
   div.innerHTML=`
     <span class="dh" title="Ziehen zum Sortieren">⠿</span>
     <div class="wacts">
@@ -421,12 +516,13 @@ function makeWrap(w, idx) {
       'medium-rect':  'border:2px solid #333;padding:8px;',
       'thick-rect':   'border:3px solid #333;padding:8px;',
 
-    }[w.border]||''}">${def.render(w)}</div>`;
-  div.onclick=e=>{e.stopPropagation();sel(w.id);};
+    }[w.border]||''}${w.bgColor?`background:${w.bgColor};`:''}">${def.render(w)}</div>`;
+  div.addEventListener('click',()=>sel(w.id),true); // capture: feuert vor innerem stopPropagation
+  div.onclick=e=>e.stopPropagation();               // bubble: verhindert page-desel
   div.ondragstart=e=>{dragSrc=idx;e.dataTransfer.effectAllowed="move";};
   div.ondragover=e=>{
     e.preventDefault();
-    const rightHalf=w.halfWidth && e.offsetX>div.offsetWidth/2;
+    const rightHalf=widthFrac(w)<1 && e.offsetX>div.offsetWidth/2;
     div.style.boxShadow=rightHalf?"3px 0 0 #89b4fa":"0 -3px 0 #89b4fa";
     div.dataset.dropSide=rightHalf?"right":"left";
   };
@@ -446,6 +542,20 @@ function makeWrap(w, idx) {
   return div;
 }
 
+function widthFrac(w){
+  if(w.widthFraction==='1/4') return 0.25;
+  if(w.widthFraction==='3/4') return 0.75;
+  if(w.widthFraction==='1/2'||w.halfWidth) return 0.5;
+  return 1;
+}
+function setWidth(id,val){
+  const w=widgets.find(x=>x.id===id);if(!w)return;
+  saveHistory();
+  w.widthFraction=val;
+  w.halfWidth=(val==='1/2');
+  render();renderProps(id);
+}
+
 function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   const isActive=pageIdx===activePage;
   const pageDiv=document.createElement("div");
@@ -462,30 +572,38 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   while(i<pageWidgets.length){
     const w=pageWidgets[i],next=pageWidgets[i+1];
     const gIdx=range.start+i,gIdxNext=range.start+i+1;
-    if(w.halfWidth&&next&&next.halfWidth){
-      const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
-      const dA=makeWrap(w,gIdx),dB=makeWrap(next,gIdxNext);
-      if(dA){dA.style.flex="1";dA.style.marginBottom="0";row.appendChild(dA);}
-      if(dB){dB.style.flex="1";dB.style.marginBottom="0";row.appendChild(dB);}
-      wc.appendChild(row);i+=2;
-    } else if(w.halfWidth){
-      const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
-      const div=makeWrap(w,gIdx);
-      if(div){div.style.flex="1";div.style.marginBottom="0";row.appendChild(div);}
-      const hIdx=gIdx;
-      const dz=document.createElement("div");
-      dz.style.cssText="flex:1;border:2px dashed #ddd;border-radius:8px;min-height:40px;transition:border-color .12s,box-shadow .12s;";
-      dz.ondragover=e=>{e.preventDefault();dz.style.borderColor="#89b4fa";dz.style.boxShadow="inset 0 0 0 2px #89b4fa";};
-      dz.ondragleave=()=>{dz.style.borderColor="#ddd";dz.style.boxShadow="";};
-      dz.ondrop=e=>{
-        e.preventDefault();dz.style.borderColor="#ddd";dz.style.boxShadow="";
-        if(dragSrc===null||dragSrc===hIdx)return;
-        const m=widgets.splice(dragSrc,1)[0];m.halfWidth=true;
-        const adj=dragSrc<hIdx?hIdx-1:hIdx;widgets.splice(adj+1,0,m);render();
-      };
-      row.appendChild(dz);wc.appendChild(row);i++;
-    } else {
+    const fu=Math.round(widthFrac(w)*4); // Viertel-Einheiten: 1=¼, 2=½, 3=¾, 4=voll
+    if(fu>=4){
       const div=makeWrap(w,gIdx);if(div)wc.appendChild(div);i++;
+    } else {
+      const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
+      let rem=4;
+      while(i<pageWidgets.length&&rem>0){
+        const cw=pageWidgets[i],cgIdx=range.start+i;
+        const cfu=Math.round(widthFrac(cw)*4);
+        if(cfu>=4||cfu>rem) break;
+        const div=makeWrap(cw,cgIdx);
+        if(div){div.style.flex=String(cfu);div.style.marginBottom="0";row.appendChild(div);}
+        rem-=cfu;i++;
+      }
+      if(rem>0){
+        const hIdx=gIdx;
+        const dz=document.createElement("div");
+        dz.className='wdz';
+        dz.style.cssText=`flex:${rem};border:2px dashed #ddd;border-radius:8px;min-height:40px;transition:border-color .12s,box-shadow .12s;`;
+        dz.ondragover=e=>{e.preventDefault();dz.style.borderColor="#89b4fa";dz.style.boxShadow="inset 0 0 0 2px #89b4fa";};
+        dz.ondragleave=()=>{dz.style.borderColor="#ddd";dz.style.boxShadow="";};
+        dz.ondrop=e=>{
+          e.preventDefault();dz.style.borderColor="#ddd";dz.style.boxShadow="";
+          if(dragSrc===null||dragSrc===hIdx)return;
+          const m=widgets.splice(dragSrc,1)[0];
+          const remFrac=rem===1?'1/4':rem===2?'1/2':'3/4';
+          m.widthFraction=remFrac;m.halfWidth=(remFrac==='1/2');
+          const adj=dragSrc<hIdx?hIdx-1:hIdx;widgets.splice(adj+1,0,m);render();
+        };
+        row.appendChild(dz);
+      }
+      wc.appendChild(row);
     }
   }
   pageDiv.appendChild(wc);
@@ -518,7 +636,10 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   return pageDiv;
 }
 
+let _renderGen = 0;
+
 function render(){
+  const gen = ++_renderGen;
   const ca=document.getElementById("canvas-area");
   ca.innerHTML="";
   const fab=document.createElement("button");
@@ -542,42 +663,228 @@ function render(){
       const w=svg.parentElement.offsetWidth;
       svg.setAttribute('width',Math.floor(w/cs)*cs);
     });
-    checkOverflow();
+    if(gen !== _renderGen) return; // veralteter Render — kein Overflow-Check mehr
+    checkOverflow(ranges);
   });
 }
 
 // ── Seitenübersicht ──────────────────────────────────────────────
-function openOverview() {
+function openOverview(oldPositions = null, draggedStableId = null, scrollTop = 0) {
   const grid = document.getElementById('overview-grid');
   grid.innerHTML = '';
   const pages = [...document.querySelectorAll('#canvas-area .page')];
   if (!pages.length) return;
   const scale = 0.33;
   const A4h = Math.round(267 * (96/25.4)); // ~1009px
-  pages.forEach((page, i) => {
-    const pw = page.offsetWidth;
-    const clone = page.cloneNode(true);
-    clone.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
-    clone.style.cssText = clone.style.cssText +
-      `;transform:scale(${scale});transform-origin:top left;margin:0;
-       cursor:default;pointer-events:none;box-shadow:none;border-radius:0;
-       min-height:${A4h}px;background:#fff;`;
-    const thumb = document.createElement('div');
-    thumb.className = 'ov-thumb';
-    thumb.style.width  = Math.round(pw * scale) + 'px';
-    thumb.style.height = Math.round(A4h * scale) + 'px';
-    thumb.style.background = '#fff';
-    thumb.appendChild(clone);
-    const label = document.createElement('div');
-    label.className = 'ov-label';
-    label.textContent = `Seite ${i + 1}`;
-    const card = document.createElement('div');
-    card.className = 'ov-card';
-    card.appendChild(thumb); card.appendChild(label);
-    card.onclick = () => closeOverviewAndGoTo(i);
-    grid.appendChild(card);
+
+  // Build groups: consecutive pages connected by auto-pagebreaks move together
+  const ranges = getPageRanges();
+  const groups = []; // each entry = array of page indices belonging to one group
+  let pi = 0;
+  while (pi < ranges.length) {
+    const grp = [pi];
+    while (pi + 1 < ranges.length && widgets[ranges[pi].end]?.auto) { pi++; grp.push(pi); }
+    groups.push(grp);
+    pi++;
+  }
+
+  let dragSrcIdx = null;
+  let dragStartPositions = null;
+
+  // Build a group element (thumbnails + label cards)
+  const makeGroupEl = (pageIndices, gi) => {
+    const groupEl = document.createElement('div');
+    groupEl.className = 'ov-group';
+    groupEl.draggable = true;
+    groupEl.dataset.gi = gi;
+    // Stable ID: widget-ID of the first content widget on this group's first page
+    groupEl.dataset.stableId = widgets[ranges[pageIndices[0]].start]?.id ?? pageIndices[0];
+
+    pageIndices.forEach(pi => {
+      const page = pages[pi];
+      const isOverflow  = page.classList.contains('page-overflow');
+      const hasOverflow = page.classList.contains('page-before-overflow');
+      const pw = page.offsetWidth;
+
+      const clone = page.cloneNode(true);
+      clone.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
+      clone.style.cssText = clone.style.cssText +
+        `;transform:scale(${scale});transform-origin:top left;margin:0;
+         cursor:default;pointer-events:none;box-shadow:none;border-radius:0;
+         min-height:${A4h}px;background:#fff;`;
+
+      const thumb = document.createElement('div');
+      thumb.className = 'ov-thumb';
+      thumb.style.width  = Math.round(pw * scale) + 'px';
+      thumb.style.height = Math.round(A4h * scale) + 'px';
+      thumb.style.background = '#fff';
+      thumb.appendChild(clone);
+
+      if (hasOverflow) {
+        const b = document.createElement('div');
+        b.className = 'ov-cont-badge right';
+        b.title = 'Fortsetzung auf nächster Seite';
+        b.textContent = '▶';
+        thumb.appendChild(b);
+      }
+      if (isOverflow) {
+        const b = document.createElement('div');
+        b.className = 'ov-cont-badge left';
+        b.title = 'Fortsetzung von vorheriger Seite';
+        b.textContent = '▶';
+        thumb.appendChild(b);
+      }
+
+      const label = document.createElement('div');
+      label.className = 'ov-label';
+      label.textContent = `Seite ${pi + 1}`;
+
+      const card = document.createElement('div');
+      card.className = 'ov-card';
+      card.appendChild(thumb); card.appendChild(label);
+      card.onclick = () => closeOverviewAndGoTo(pi);
+      groupEl.appendChild(card);
+    });
+
+    groupEl.addEventListener('dragstart', e => {
+      dragSrcIdx = gi;
+      // Capture positions NOW — before any dropzone expands and shifts groups
+      dragStartPositions = {};
+      grid.querySelectorAll('.ov-group').forEach(g => {
+        const r = g.getBoundingClientRect();
+        dragStartPositions[g.dataset.stableId] = {x: r.left, y: r.top};
+      });
+      e.dataTransfer.effectAllowed = 'move';
+      const img = document.createElement('div');
+      img.style.cssText = 'position:fixed;left:-9999px;top:0;display:flex;gap:8px;';
+      groupEl.querySelectorAll('.ov-thumb').forEach(t => {
+        const tc = t.cloneNode(true);
+        tc.querySelectorAll('.ov-cont-badge').forEach(b => b.remove());
+        img.appendChild(tc);
+      });
+      document.body.appendChild(img);
+      e.dataTransfer.setDragImage(img, img.scrollWidth / 2, img.scrollHeight / 2);
+      requestAnimationFrame(() => {
+        document.body.removeChild(img);
+        groupEl.classList.add('ov-dragging');
+      });
+    });
+    groupEl.addEventListener('dragend', () => {
+      groupEl.classList.remove('ov-dragging');
+      grid.querySelectorAll('.ov-dropzone').forEach(dz => dz.classList.remove('active'));
+      dragSrcIdx = null;
+      dragStartPositions = null;
+    });
+
+    return groupEl;
+  };
+
+  // Build a drop zone element. insertBefore = index in groups[] before which to insert.
+  // groups.length means "append after last group".
+  const makeDropZone = (insertBefore) => {
+    const dz = document.createElement('div');
+    dz.className = 'ov-dropzone';
+    dz.dataset.insertBefore = insertBefore;
+
+    const isNoop = () => {
+      if (dragSrcIdx === null) return true;
+      const ib = +dz.dataset.insertBefore;
+      // Dropping adjacent to the source group is a no-op
+      return ib === dragSrcIdx || ib === dragSrcIdx + 1;
+    };
+
+    dz.addEventListener('dragenter', e => {
+      if (isNoop()) return;
+      e.preventDefault();
+      grid.querySelectorAll('.ov-dropzone').forEach(d => d.classList.remove('active'));
+      dz.classList.add('active');
+    });
+    dz.addEventListener('dragover', e => {
+      if (isNoop()) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    dz.addEventListener('dragleave', () => dz.classList.remove('active'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      if (isNoop()) return;
+      const insertBefore = +dz.dataset.insertBefore;
+      const draggedStableId = grid.querySelector(`.ov-group[data-gi="${dragSrcIdx}"]`)?.dataset.stableId;
+      const scrollTop = overlay.scrollTop;
+      // Build new order: remove dragSrcIdx, insert at adjusted position
+      const order = groups.map((_, i) => i).filter(i => i !== dragSrcIdx);
+      const newPos = insertBefore > dragSrcIdx ? insertBefore - 1 : insertBefore;
+      order.splice(newPos, 0, dragSrcIdx);
+      // Use positions captured at dragstart (before any dropzone expanded)
+      ovReorderGroups(order.map(i => groups[i]), dragStartPositions, draggedStableId, scrollTop);
+    });
+
+    return dz;
+  };
+
+  // Render: [dz0] [group0] [dz1] [group1] [dz2] … [dzN]
+  groups.forEach((pageIndices, gi) => {
+    grid.appendChild(makeDropZone(gi));
+    grid.appendChild(makeGroupEl(pageIndices, gi));
   });
-  document.getElementById('overview-overlay').style.display = 'flex';
+  grid.appendChild(makeDropZone(groups.length));
+
+  const overlay = document.getElementById('overview-overlay');
+
+  if (oldPositions) {
+    // Hide grid while we set up — layout is computed but nothing painted yet
+    grid.style.visibility = 'hidden';
+  }
+  overlay.style.display = 'flex';
+  overlay.scrollTop = scrollTop;
+
+  if (oldPositions) {
+    // Synchronously measure new positions (getBoundingClientRect works with visibility:hidden)
+    const animated = [];
+    grid.querySelectorAll('.ov-group').forEach(groupEl => {
+      const sid = groupEl.dataset.stableId;
+      if (sid === draggedStableId) return; // already at target, no animation needed
+      const old = oldPositions[sid];
+      if (!old) return;
+      const curr = groupEl.getBoundingClientRect();
+      const dx = old.x - curr.left;
+      const dy = old.y - curr.top;
+if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      groupEl.style.transform = `translate(${dx}px,${dy}px)`;
+      animated.push(groupEl);
+    });
+    // Make visible — first paint shows elements at their OLD positions via transform
+    grid.style.visibility = '';
+    // Next frame: add transition and clear transform → smooth slide to new positions
+    requestAnimationFrame(() => {
+      animated.forEach(el => {
+        el.style.transition = 'transform .45s ease';
+        el.style.transform = '';
+        el.addEventListener('transitionend', () => { el.style.transition = ''; }, {once: true});
+      });
+    });
+  }
+}
+
+function ovReorderGroups(newGroupOrder, oldPositions = null, draggedStableId = null, scrollTop = 0) {
+  saveHistory();
+  const ranges = getPageRanges();
+  const newWidgets = [];
+  newGroupOrder.forEach((pageIndices, gi) => {
+    if (gi > 0) newWidgets.push({id: ++idC, type: 'pagebreak'});
+    pageIndices.forEach((pageIdx, pos) => {
+      const range = ranges[pageIdx];
+      newWidgets.push(...widgets.slice(range.start, range.end));
+      // keep the auto-pagebreak that connects pages within a group
+      if (pos < pageIndices.length - 1) newWidgets.push({...widgets[range.end]});
+    });
+  });
+  widgets = newWidgets;
+  selId = null;
+  activePage = 0;
+  render();
+  // Stay in overview — re-open after render so page DOM is fresh
+  requestAnimationFrame(() => openOverview(oldPositions, draggedStableId, scrollTop));
 }
 
 function closeOverview() {
@@ -596,8 +903,16 @@ function closeOverviewAndGoTo(pageIdx) {
 
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverview(); });
 
-function checkOverflow(){
-  const ranges=getPageRanges();
+let _ovfPasses=0;
+function checkOverflow(ranges){
+  if(!ranges)ranges=getPageRanges();
+  // Guard gegen Oszillation: Underflow entfernt einen Auto-Break (Schätzung),
+  // Overflow fügt ihn wieder ein → ohne Limit potenzielle Endlosschleife.
+  if(_ovfPasses>widgets.length+10){
+    console.warn('checkOverflow: Abbruch nach',_ovfPasses,'Durchläufen (Oszillation?)');
+    _ovfPasses=0;
+    return;
+  }
   const pages=document.querySelectorAll('.page');
 
   // ── Underflow: auto-Break entfernen wenn erste Widget der Folgeseite reinpasst ──
@@ -617,6 +932,7 @@ function checkOverflow(){
     const firstNextH=nextWraps.length?nextWraps[0].offsetHeight+14:Infinity; // +14px Margin
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
+      _ovfPasses++;
       widgets.splice(breakIdx,1);
       if(activePage>=getPageRanges().length)activePage=Math.max(0,activePage-1);
       render();
@@ -635,37 +951,45 @@ function checkOverflow(){
     for(let i=0;i<wraps.length;i++){
       if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
         if(i===0)break; // einzelnes Widget zu groß — kann nicht gesplittet werden
+        _ovfPasses++;
         widgets.splice(range.start+i,0,{id:++idC,type:'pagebreak',auto:true});
         render();
         return;
       }
     }
   }
+  _ovfPasses=0; // stabil — keine Änderung in diesem Durchlauf
 }
 
-function sel(id){selId=id;render();renderProps(id);}
-function desel(){selId=null;render();document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';}
+function sel(id){
+  if(selId!==null)document.querySelector(`.wwrap[data-id="${selId}"]`)?.classList.remove('sel');
+  selId=id;
+  document.querySelector(`.wwrap[data-id="${id}"]`)?.classList.add('sel');
+  renderProps(id);
+}
+function desel(){
+  if(selId!==null)document.querySelector(`.wwrap[data-id="${selId}"]`)?.classList.remove('sel');
+  selId=null;
+  document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
+}
 
 function renderProps(id){
   const w=widgets.find(x=>x.id===id);
   const p=document.getElementById("pi");
   if(!w){p.innerHTML='<span style="color:#bbb;">Widget auswählen</span>';return;}
   const def=WIDGET_MAP[w.type];
-  const hw=w.halfWidth||false;
+  const wf=w.widthFraction||(w.halfWidth?'1/2':'full');
   const halfToggle=`
     <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Layout</div>
       <div style="display:flex;gap:4px;">
-        <button onclick="upd(${id},'halfWidth',false)"
-          style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${!hw?'#89b4fa':'#ddd'};
-                 background:${!hw?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
-                 cursor:pointer;color:${!hw?'#1e1e2e':'#999'};">⬛ Volle Breite</button>
-        <button onclick="upd(${id},'halfWidth',true)"
-          style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${hw?'#89b4fa':'#ddd'};
-                 background:${hw?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
-                 cursor:pointer;color:${hw?'#1e1e2e':'#999'};">▬▬ Halbe Breite</button>
+        ${[['1/4','▎ ¼'],['1/2','▬▬ ½'],['3/4','▬▬▬ ¾'],['full','⬛ Voll']].map(([val,lbl])=>`
+        <button onclick="setWidth(${id},'${val}')"
+          style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
+                 background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:10px;font-weight:700;
+                 cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('')}
       </div>
-      ${hw?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Zwei aufeinanderfolgende halbe Widgets erscheinen nebeneinander.</div>':''}
+      ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
     </div>`;
   const borderToggle = ['heading','subheading','divider'].includes(w.type) ? '' : `
     <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
@@ -719,7 +1043,16 @@ function enhanceNumberInputs(container) {
 
 // ── ACTIONS ───────────────────────────────────────────────────────
 function upd(id,k,v){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w[k]=v;render();renderProps(id);}}
-function updrg(id,k,v){const w=widgets.find(x=>x.id===id);if(w){w[k]=v;render();renderProps(id);}}
+// Leises Update beim Tippen: schreibt nur die Daten und rendert (debounced) den
+// Canvas neu — KEIN renderProps, damit das fokussierte Input erhalten bleibt.
+// History übernimmt edFocus/edBlur. Für oninput in Props-Textareas.
+let _updqTimer=null;
+function updq(id,k,v){
+  const w=widgets.find(x=>x.id===id);if(!w)return;
+  w[k]=v;
+  clearTimeout(_updqTimer);
+  _updqTimer=setTimeout(render,80);
+}
 
 // ── ZAHLENMAUER helpers ───────────────────────────────────────────
 function zmEnsureMauern(w) {
@@ -782,7 +1115,7 @@ function zmSetAnzahl(id, anzahl) {
   render(); renderProps(id);
 }
 function tgap(id){saveHistory();const w=widgets.find(x=>x.id===id);if(w){w.mode=w.mode==="edit"?"preview":"edit";render();}}
-function del(id){saveHistory();widgets=widgets.filter(x=>x.id!==id);if(selId===id)desel();else render();}
+function del(id){saveHistory();widgets=widgets.filter(x=>x.id!==id);if(selId===id){selId=null;document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';}render();}
 function mv(idx,d){
   const ni=idx+d;if(ni<0||ni>=widgets.length)return;
   if(widgets[ni]&&widgets[ni].type==='pagebreak')return;
@@ -792,6 +1125,7 @@ function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]))
 function clearCanvas(){saveHistory();widgets=[];selId=null;activePage=0;render();desel();}
 
 function addSample(){
+  if(widgets.length)saveHistory();
   widgets=[];selId=null;activePage=0;
   const add=type=>{const def=WIDGET_MAP[type];if(!def)return;const w=def.createData(++idC);widgets.push(w);return w;};
 
@@ -865,12 +1199,20 @@ async function blattSave() {
 
 async function blattOpen(file) {
   if (!window.JSZip) { alert('JSZip wird geladen…'); return; }
+  let doc;
+  try {
+    var zip = await JSZip.loadAsync(file);
+    const entry = zip.file('document.json');
+    if (!entry) throw new Error('document.json fehlt im Archiv');
+    doc = JSON.parse(await entry.async('string'));
+  } catch (err) {
+    console.error('blattOpen:', err);
+    alert(`Die Datei „${file.name}" konnte nicht geöffnet werden.\nSie ist beschädigt oder kein gültiges .blatt-Format.`);
+    return;
+  }
   _blattFilename = file.name;
   const nameEl = document.getElementById('blatt-name');
   if (nameEl) nameEl.value = file.name.replace(/\.blatt$/i, '');
-  const zip = await JSZip.loadAsync(file);
-  const docJson = await zip.file('document.json').async('string');
-  const doc = JSON.parse(docJson);
   const loaded = doc.widgets || [];
 
   const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg',
@@ -913,7 +1255,7 @@ function updatePrintStyle() {
 }
 
 async function doDownloadPDF() {
-  if (!window.html2canvas || !window.jspdf) {
+  if (!window.htmlToImage || !window.jspdf) {
     alert('PDF-Bibliothek wird noch geladen, bitte kurz warten.'); return;
   }
   document.getElementById('print-panel').style.display = 'none';
@@ -925,8 +1267,11 @@ async function doDownloadPDF() {
   const pageEls = document.querySelectorAll('#canvas-area .page');
 
   // Screen-only-Elemente vor dem Capture verstecken
-  const screenOnly = document.querySelectorAll('.page-end, .page-spacer, .wacts, .dh, .gmbtn');
+  const screenOnly = document.querySelectorAll('.page-end, .page-spacer, .wacts, .dh, .gmbtn, .wdz');
   screenOnly.forEach(e => e.style.visibility = 'hidden');
+
+  // scale 3 ≈ 290 DPI (Druckqualität); PNG = verlustfrei.
+  const PDF_SCALE = 3;
 
   for (let i = 0; i < pageEls.length; i++) {
     const el = pageEls[i];
@@ -935,12 +1280,23 @@ async function doDownloadPDF() {
     el.style.borderTop = 'none';
     el.style.borderRadius = '0';
 
-    const canvas = await html2canvas(el, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
+    // Pixel-Raster-Sauberkeit: die Seite ist 180mm ≈ 680,3px breit — krumme
+    // Maße erzeugen Subpixel-Verschiebungen. Auf ganze CSS-Pixel runden und
+    // die Canvas-Größe als exaktes ganzzahliges Vielfaches davon festlegen.
+    const wPx = Math.round(el.offsetWidth);
+    const hPx = Math.round(el.offsetHeight);
+
+    // html-to-image rendert über SVG-foreignObject: die Browser-Engine selbst
+    // rastert Text und Layout (korrektes Kerning, Subpixel-Antialiasing) —
+    // deutlich schärfer als die nachgebaute Layout-Engine von html2canvas.
+    // Lokale Fonts/Bilder werden automatisch als Data-URLs eingebettet.
+    const canvas = await htmlToImage.toCanvas(el, {
       backgroundColor: '#ffffff',
-      logging: false,
+      width: wPx,
+      height: hPx,
+      canvasWidth: wPx * PDF_SCALE,
+      canvasHeight: hPx * PDF_SCALE,
+      pixelRatio: PDF_SCALE,
     });
 
     // Styles zurücksetzen
@@ -948,11 +1304,12 @@ async function doDownloadPDF() {
     el.style.borderTop = '';
     el.style.borderRadius = '';
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-    // Canvas-Pixel → mm (bei scale=2: 1mm = 96/25.4*2 ≈ 7.56 px)
-    const pxPerMm = 96 / 25.4 * 2;
-    const wMm = canvas.width  / pxPerMm;
-    const hMm = canvas.height / pxPerMm;
+    const imgData = canvas.toDataURL('image/png');
+    // mm aus den GERUNDETEN CSS-Pixeln ableiten, damit das Bild im PDF exakt
+    // 1:1 zur Canvas-Größe platziert wird (kein Nachskalieren durch jsPDF).
+    const cssPxPerMm = 96 / 25.4;
+    const wMm = wPx / cssPxPerMm;
+    const hMm = hPx / cssPxPerMm;
 
     if (i > 0) pdf.addPage('a4', 'portrait');
 
@@ -962,7 +1319,7 @@ async function doDownloadPDF() {
     const isEvenPage = (i % 2 === 1); // 0-basiert: Seite 2, 4, 6 …
     const xOff = (ds && isEvenPage) ? 10 : 20; // mm vom linken Blattrand
     const yOff = 5;
-    pdf.addImage(imgData, 'JPEG', xOff, yOff, wMm, hMm);
+    pdf.addImage(imgData, 'PNG', xOff, yOff, wMm, hMm, undefined, 'FAST');
   }
 
   // Screen-only-Elemente wiederherstellen
@@ -1019,9 +1376,30 @@ document.addEventListener('keydown', e => {
 buildTabs();
 buildList();
 addSample();
+
+// Scroll-basiertes activePage-Tracking
+(()=>{
+  let _scrollRaf=null;
+  document.getElementById('canvas-area').addEventListener('scroll',()=>{
+    if(_scrollRaf)return;
+    _scrollRaf=requestAnimationFrame(()=>{
+      _scrollRaf=null;
+      const ca=document.getElementById('canvas-area');
+      const pages=[...ca.querySelectorAll('.page')];
+      const caRect=ca.getBoundingClientRect();
+      let best=0,bestPx=-1;
+      pages.forEach((p,i)=>{
+        const r=p.getBoundingClientRect();
+        const px=Math.max(0,Math.min(r.bottom,caRect.bottom)-Math.max(r.top,caRect.top));
+        if(px>bestPx){bestPx=px;best=i;}
+      });
+      activePage=best;
+    });
+  },{passive:true});
+})();
 updatePrintStyle();
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./service-worker.js')

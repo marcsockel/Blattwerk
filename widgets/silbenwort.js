@@ -106,7 +106,7 @@ WIDGETS.push({
     font: "inherit",
     modus: "gleichlang", // "wortform" | "gleichlang" | "zeichnen"
     arcWidth: 60,
-    ausnahmen: "",
+    ausnahmen: "", aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -149,7 +149,7 @@ WIDGETS.push({
       ? `<img src="" onerror="this.onerror=null;silbenwortSyncBoxen(${d.id})" style="display:none">`
       : '';
 
-        return `<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;line-height:1.4;">${items}${trigger}</div>`;
+        return atHtml(d) + `<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;line-height:1.4;">${items}${trigger}</div>`;
   },
 
   renderProps: d => {
@@ -234,7 +234,8 @@ WIDGETS.push({
         style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;
                border-radius:4px;padding:4px 6px;min-height:60px;resize:vertical;
                box-sizing:border-box;"
-      >${esc(d.ausnahmen || '')}</textarea>`;
+      >${esc(d.ausnahmen || '')}</textarea>` +
+    atProps(d.id, d);
   },
 });
 

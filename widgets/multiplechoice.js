@@ -24,7 +24,7 @@ WIDGETS.push({
     id, type:"multiplechoice",
     text: "Was ist die Hauptstadt von Deutschland?\nBerlin\nMünchen\nHamburg\nWien\n\nWelches Tier ist ein Säugetier?\nDelfin\nLachs\nAdler\nEidechse",
     cols: 1,
-    shuffle: false,
+    shuffle: false, aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -66,7 +66,7 @@ WIDGETS.push({
       `<div style="flex:1;min-width:0;">${qBlocks.slice(i*perCol,(i+1)*perCol).join('')}</div>`
     ).join('');
 
-    return `<div style="display:flex;gap:24px;align-items:flex-start;">${colDivs}</div>`;
+    return atHtml(d) + `<div style="display:flex;gap:24px;align-items:flex-start;">${colDivs}</div>`;
   },
 
   renderProps: d => {
@@ -87,7 +87,8 @@ WIDGETS.push({
         onchange="upd(${d.id},'cols',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
                font-family:inherit;font-size:12px;text-align:center;">`)}
-      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}`;
+      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}` +
+    atProps(d.id, d);
   },
 });
 

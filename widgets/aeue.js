@@ -1,12 +1,6 @@
 // Widget: Wörter mit äu und ä
 
-const AEUE_FONTS = [
-  { value: "'Grundschrift', sans-serif",  label: "Grundschrift" },
-  { value: "inherit",                     label: "Standard (Nunito)" },
-  { value: "'DidactGothic7', sans-serif", label: "Didact Gothic" },
-  { value: "'DM Mono', monospace",        label: "DM Mono" },
-  { value: "Georgia, serif",              label: "Georgia" },
-];
+// Font-Liste zentral in main/helpers.js (SCHREIB_FONTS).
 
 const AEUE_POOL = {
   'äu': [
@@ -79,7 +73,7 @@ WIDGETS.push({
     const modi = ['äu', 'ä'], anzahl = 6;
     return { id, type:'aeue', modi, anzahl,
              font: "'Grundschrift', sans-serif", fontSize: 16,
-             text: aeueGenText(modi, anzahl) };
+             text: aeueGenText(modi, anzahl) , aufgabenNr:0, aufgabenText:''};
   },
 
   render: d => {
@@ -111,7 +105,7 @@ WIDGETS.push({
       </tr>`
     ).join('');
 
-    return `<table style="width:100%;border-collapse:collapse;font-family:${font};">
+    return atHtml(d) + `<table style="width:100%;border-collapse:collapse;font-family:${font};">
       <thead><tr>
         <th style="${thS}">Wort</th>
         <th style="${thS}">verwandt mit:</th>
@@ -161,7 +155,8 @@ WIDGETS.push({
                    font-family:inherit;font-size:12px;text-align:center;"></div>
         </div>
         <textarea onclick="event.stopPropagation()"
-          oninput="upd(${d.id},'text',this.value)"
+          onfocus="edFocus()" onblur="edBlur()"
+          oninput="updq(${d.id},'text',this.value)"
           style="width:100%;height:150px;font-family:inherit;font-size:12px;
                  border:none;outline:none;padding:8px 10px;
                  resize:vertical;box-sizing:border-box;line-height:1.6;display:block;"
@@ -169,14 +164,15 @@ WIDGETS.push({
         <div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
           <select onchange="upd(${d.id},'font',this.value)"
             style="width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;outline:none;cursor:pointer;">
-            ${AEUE_FONTS.map(f=>`<option value="${f.value}" ${font===f.value?'selected':''}>${f.label}</option>`).join('')}
+            ${SCHREIB_FONTS.map(f=>`<option value="${f.value}" ${font===f.value?'selected':''}>${f.label}</option>`).join('')}
           </select>
         </div>
       </div>
       <button onclick="event.stopPropagation();aeueWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
+    atProps(d.id, d);
   },
 });
 

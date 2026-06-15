@@ -1,5 +1,4 @@
 // Widget: Schriftliche Addition
-
 function saNoCarry(zahlen) {
   const maxLen = Math.max(...zahlen.map(n => String(n).length));
   for (let pos = 0; pos < maxLen; pos++) {
@@ -136,7 +135,7 @@ WIDGETS.push({
   meta: { type:"schriftlich_addition", group:"rechnen", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik" },
 
   createData: id => {
-    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false };
+    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false, aufgabenNr:0, aufgabenText:'' };
     return { id, type:"schriftlich_addition", ...cfg,
       aufgaben: saGen(cfg.anzahl, cfg.summanden, cfg.zahlenraum, cfg.uebertrag),
       aufgabenGaps: [] };
@@ -154,11 +153,11 @@ WIDGETS.push({
       const blue    = isActive;
       return `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
     });
-    const itemW  = cols * 20;
-    const tasksHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW    = cols * 20;
+    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
     if (!d.loesung || luecken) return tasksHtml;
     const answers = aufgaben.map(z => String(z.reduce((a, b) => a + b, 0)));
-    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+    const shuffled = mcShuffled(answers, d.id);
     return tasksHtml + `<div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
       <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
       ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
@@ -208,7 +207,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>` : '');
+        </div></div>` : '') +
+    atProps(d.id, d);
   },
 });
 

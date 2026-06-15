@@ -113,7 +113,7 @@ WIDGETS.push({
   createData: id => {
     const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;
     const mauern = Array.from({length: anzahl}, () => ({ base:[3,5,2,4], shown: zmGenShown(n, fillMode) }));
-    return { id, type:"zahlenmauer", rows_count:n, fillMode, anzahl, zahlenraum, mauern };
+    return { id, type:"zahlenmauer", rows_count:n, fillMode, anzahl, zahlenraum, mauern , aufgabenNr:0, aufgabenText:''};
   },
 
   render: d => {
@@ -126,9 +126,12 @@ WIDGETS.push({
     const svgs = mauern.slice(0, anzahl).map(m =>
       `<div style="display:inline-block;">${zmSvg(m, n, fillMode, active)}</div>`
     );
-    const itemW = Math.round(n * 54 + 2);
-    const _perRow = Math.max(1, Math.floor(594 / (itemW + 20)));
-    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:12px 20px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
+    const itemW   = Math.round(n * 54 + 2);
+    const _perRow = Math.max(1, Math.floor((avail + 20) / (itemW + 20)));
+    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:12px 20px;justify-content:space-between;">${svgs.join("")}</div>`;
   },
 
   renderProps: d => {
@@ -166,6 +169,7 @@ WIDGETS.push({
       (basisInputs ? pr("Basissteine (von links)", `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${basisInputs}</div>`) : "") +
       `<button onclick="zmRandomBase(${d.id})"
         style="margin-top:8px;width:100%;background:#313244;color:#cdd6f4;border:none;border-radius:4px;padding:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;">
-        🎲 Zufällige Basiszahlen</button>`;
+        🎲 Zufällige Basiszahlen</button>` +
+    atProps(d.id, d);
   },
 });

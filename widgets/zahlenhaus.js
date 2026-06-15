@@ -74,16 +74,43 @@ WIDGETS.push({
   meta: { type:"zahlenhaus", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik" },
 
   createData: id => {
-    const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links" };
+    const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links" , aufgabenNr:0, aufgabenText:''};
     return { id, type:"zahlenhaus", ...cfg, houses: zhGen(cfg.haeuser, cfg.summands, cfg.stockwerke, cfg.zahlenraum, cfg.leerfeld) };
   },
 
   render: d => {
-    const s = d.summands||2, st = d.stockwerke||4;
+    const s      = d.summands  || 2;
+    const st     = d.stockwerke || 4;
     const houses = d.houses || zhGen(d.haeuser||3, s, st, d.zahlenraum||10, d.leerfeld||"links");
     const active = d.id === selId || _solutionsMode;
-    const svgs   = houses.map(h => `<div style="display:inline-block;">${zhSvg(h, s, active)}</div>`);
-    return `<div style="display:flex;flex-wrap:wrap;gap:14px 20px;">${svgs.join("")}</div>`;
+    const svgs   = houses.map(h => zhSvg(h, s, active));
+
+    // Verfügbare Breite je nach widthFraction
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
+
+    // Automatisch berechnen: wie viele passen pro Zeile?
+    const itemW  = (s === 3 ? 38 : 48) * s + 4;
+    const minGap = 10;
+    const perRow = Math.max(1, Math.floor((avail + minGap) / (itemW + minGap)));
+    const gap    = perRow > 1 ? (avail - perRow * itemW) / (perRow - 1) : 0;
+    const rowGap = 14;
+
+    // In Zeilen aufteilen — letzte Zeile mit unsichtbaren Füllern auffüllen
+    // damit space-between immer den identischen Gap berechnet
+    const rows = [];
+    for (let i = 0; i < svgs.length; i += perRow) rows.push(svgs.slice(i, i + perRow));
+
+    const filler = `<div style="width:${itemW}px;visibility:hidden;"></div>`;
+    const rowHtml = rows.map((row, ri) => {
+      const mb     = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
+      const filled = [...row];
+      while (filled.length < perRow) filled.push(filler);
+      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join("")}</div>`;
+    }).join("");
+
+    return atHtml(d) + rowHtml;
   },
 
   renderProps: d => {
@@ -118,7 +145,8 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();zhRoll(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Häuser würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Häuser würfeln</button>` +
+    atProps(d.id, d);
   },
 });
 

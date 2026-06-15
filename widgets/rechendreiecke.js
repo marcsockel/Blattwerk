@@ -92,7 +92,7 @@ WIDGETS.push({
   meta: { type:"rechendreiecke", label:"Rechendreiecke", desc:"Ecken & Seiten addieren", icon:"🔺", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten", gross:false };
+    const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten", gross:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"rechendreiecke", ...cfg, dreiecke: rdGen(cfg.anzahl, cfg.zahlenraum, cfg.leerfeld) };
   },
 
@@ -100,9 +100,9 @@ WIDGETS.push({
     const dreiecke = d.dreiecke || rdGen(d.anzahl||4, d.zahlenraum||100, d.leerfeld||"seiten");
     const active = d.id === selId || _solutionsMode;
     const basis = d.gross ? 250 : 150;
-    const spacers = Array(6).fill(`<div style="flex:1 1 ${basis}px;height:0;min-width:0;"></div>`).join('');
-    const items = dreiecke.map(t => `<div style="flex:1 1 ${basis}px;">${rdSvg(t, active)}</div>`).join('');
-    return `<div style="display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:space-between;">${items}${spacers}</div>`;
+    const spacers = Array(6).fill(`<div style="flex:1 1 ${basis}px;max-width:${basis}px;height:0;min-width:0;"></div>`).join('');
+    const items = dreiecke.map(t => `<div style="flex:1 1 ${basis}px;max-width:${basis}px;">${rdSvg(t, active)}</div>`).join('');
+    return atHtml(d) + `<div style="display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:space-between;">${items}${spacers}</div>`;
   },
 
   renderProps: d => {
@@ -127,7 +127,8 @@ WIDGETS.push({
             style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${!gross?'#a6e3a1':'#ddd'};background:${!gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${!gross?'#1e1e2e':'#999'};">Klein</button>
           <button onclick="event.stopPropagation();upd(${d.id},'gross',true)"
             style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${gross?'#a6e3a1':'#ddd'};background:${gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${gross?'#1e1e2e':'#999'};">Groß</button>
-        </div></div>`;
+        </div></div>` +
+    atProps(d.id, d);
   },
 });
 

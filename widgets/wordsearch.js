@@ -44,7 +44,7 @@ WIDGETS.push({
     const words = "ELMAR,ELEFANT,BUNT,FREUND".split(",").map(w => w.trim().toUpperCase());
     const cols = 10, rows = 10;
     const opts = { horizontal:true, vertikal:true, diagonal:true, rueckwaerts:false };
-    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, ...opts, grid: wsGenGrid(words, cols, rows, opts) };
+    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, ...opts, grid: wsGenGrid(words, cols, rows, opts) , aufgabenNr:0, aufgabenText:''};
   },
 
   render: d => {
@@ -86,7 +86,7 @@ WIDGETS.push({
     }).join("")).join("");
 
     const wl = words.map(w => `<span style="font-family:monospace;font-size:12px;background:#f0eee8;padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;">${w}</span>`).join("");
-    return `<div>
+    return atHtml(d) + `<div>
       <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:5px;">Finde die Wörter:</div>
       <div style="margin-bottom:7px;">${wl}</div>
       <div style="display:inline-grid;grid-template-columns:repeat(${C},${cs}px);gap:0;">${cells}</div>
@@ -135,7 +135,8 @@ WIDGETS.push({
     `<button onclick="event.stopPropagation();wsReshuffle(${d.id})"
       style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#313244;
              color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
-      🔀 Neu generieren</button>`;
+      🔀 Neu generieren</button>` +
+    atProps(d.id, d);
   },
 });
 

@@ -1,12 +1,6 @@
 // Widget: Auslautverhärtung (d/t, b/p, g/k)
 
-const AUSLAUT_FONTS = [
-  { value: "'Grundschrift', sans-serif",  label: "Grundschrift" },
-  { value: "inherit",                     label: "Standard (Nunito)" },
-  { value: "'DidactGothic7', sans-serif", label: "Didact Gothic" },
-  { value: "'DM Mono', monospace",        label: "DM Mono" },
-  { value: "Georgia, serif",             label: "Georgia" },
-];
+// Font-Liste zentral in main/helpers.js (SCHREIB_FONTS).
 
 const AUSLAUT_POOL = {
   'g/k': [
@@ -95,7 +89,7 @@ WIDGETS.push({
     const modi = ['g/k'], anzahl = 6;
     return { id, type:'auslaut', modi, anzahl, zeigVerlaengerung: false,
              font: "'Grundschrift', sans-serif", fontSize: 16,
-             text: auslautGenText(modi, anzahl) };
+             text: auslautGenText(modi, anzahl) , aufgabenNr:0, aufgabenText:''};
   },
 
   render: d => {
@@ -144,7 +138,7 @@ WIDGETS.push({
       </tr>`;
     }).join('');
 
-    return `<table style="width:100%;border-collapse:collapse;font-family:${font};">
+    return atHtml(d) + `<table style="width:100%;border-collapse:collapse;font-family:${font};">
       <thead><tr>
         <th style="${thS}">Wort</th>
         <th style="${thS}"><svg height="12" viewBox="0 0 150 58" style="display:inline-block;vertical-align:middle;margin-right:4px;" xmlns="http://www.w3.org/2000/svg"><path d="M11.0313 17.709C11.0313 34.2776 24.4628 47.709 41.0313 47.709C57.5999 47.709 71.0313 34.2776 71.0313 17.709L105.904 17.709" fill="none" stroke="#888" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><path d="M105.904 8.70902L127.904 17.709L105.904 26.709Z" fill="#888"/></svg>Verlängerung</th>
@@ -203,7 +197,8 @@ WIDGETS.push({
                    font-family:inherit;font-size:12px;text-align:center;"></div>
         </div>
         <textarea onclick="event.stopPropagation()"
-          oninput="upd(${d.id},'text',this.value)"
+          onfocus="edFocus()" onblur="edBlur()"
+          oninput="updq(${d.id},'text',this.value)"
           style="width:100%;height:150px;font-family:inherit;font-size:12px;
                  border:none;outline:none;padding:8px 10px;
                  resize:vertical;box-sizing:border-box;line-height:1.6;display:block;"
@@ -211,14 +206,15 @@ WIDGETS.push({
         <div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
           <select onchange="upd(${d.id},'font',this.value)"
             style="width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;outline:none;cursor:pointer;">
-            ${AUSLAUT_FONTS.map(f=>`<option value="${f.value}" ${font===f.value?'selected':''}>${f.label}</option>`).join('')}
+            ${SCHREIB_FONTS.map(f=>`<option value="${f.value}" ${font===f.value?'selected':''}>${f.label}</option>`).join('')}
           </select>
         </div>
       </div>
       <button onclick="event.stopPropagation();auslautWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
+    atProps(d.id, d);
   },
 });
 

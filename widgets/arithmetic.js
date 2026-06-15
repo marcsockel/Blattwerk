@@ -14,7 +14,7 @@ WIDGETS.push({
       ergaenzung: false,
       zeichen: false,
       luecke: "erste",
-      showLoesungen: false,
+      showLoesungen: false, aufgabenNr:0, aufgabenText:'',
     };
     arithDoGenerate(w);
     return w;
@@ -97,7 +97,7 @@ WIDGETS.push({
       }
     });
     // Shuffle answers
-    const shuffled = answers.slice().sort(() => Math.random() - 0.5);
+    const shuffled = mcShuffled(answers, d.id);
 
     // Compute answer for a parsed task (used for blue solution display)
     const computeAns = p => {
@@ -151,7 +151,7 @@ WIDGETS.push({
 
     const itemW = Math.ceil(Math.log10((d.zahlenraum || 20) + 2)) * 25 + 40;
     const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    const tasksHtml = `<div style="display:flex;column-gap:36px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${groups.map(g=>`<div style="margin-bottom:16px;">${renderGroup(g)}</div>`).join('')}${spacers}</div>`;
+    const tasksHtml = atHtml(d) + `<div style="display:flex;column-gap:36px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${groups.map(g=>`<div style="margin-bottom:16px;">${renderGroup(g)}</div>`).join('')}${spacers}</div>`;
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 
@@ -233,7 +233,8 @@ WIDGETS.push({
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
                font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
       pr(`Manuell bearbeiten${erg?" (_ = Lücke, z.B. 3 + _ = 10)":""}`,
-        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`);
+        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`) +
+    atProps(d.id, d);
   },
 });
 

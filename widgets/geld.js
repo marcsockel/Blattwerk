@@ -230,7 +230,7 @@ WIDGETS.push({
   meta: { type:"geld", label:"Geld", desc:"Scheine und Münzen zählen", icon:"€", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld' };
+    const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld' , aufgabenNr:0, aufgabenText:''};
     return { id, type:"geld", ...cfg,
       aufgaben: geldGen(cfg.anzahl, cfg.maxEuro*100, cfg.mitCent) };
   },
@@ -243,10 +243,12 @@ WIDGETS.push({
     const aufgaben = d.aufgaben || geldGen(d.anzahl||4, (d.maxEuro||10)*100, mitCent);
     const itemW    = (gross ? 270 : 168) + 4;
 
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
     const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive, gross)}</div>`);
-    const _perRow = gross ? 2 : Math.max(1, Math.floor(594 / (itemW + 20)));
-    const justify = gross ? 'center' : 'space-between';
-    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:${justify};">${items.join("")}</div>`;
+    const _perRow = Math.max(1, Math.floor((avail + 20) / (itemW + 20)));
+    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
   },
 
   renderProps: d => {
@@ -293,7 +295,8 @@ WIDGETS.push({
       <button onclick="event.stopPropagation();geldWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
+    atProps(d.id, d);
   },
 });
 

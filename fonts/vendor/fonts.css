@@ -1,0 +1,18 @@
+/* Lokale Schriften (ersetzt Google-Fonts-@import) — generiert aus @fontsource */
+@font-face{font-family:'Nunito';font-style:normal;font-weight:400;src:url('nunito-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Nunito';font-style:normal;font-weight:600;src:url('nunito-latin-600-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Nunito';font-style:normal;font-weight:700;src:url('nunito-latin-700-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Nunito';font-style:normal;font-weight:800;src:url('nunito-latin-800-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;src:url('dm-mono-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;src:url('dm-mono-latin-500-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Fira Sans';font-style:normal;font-weight:400;src:url('fira-sans-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Fira Sans';font-style:normal;font-weight:500;src:url('fira-sans-latin-500-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Fira Sans';font-style:normal;font-weight:700;src:url('fira-sans-latin-700-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Andika';font-style:normal;font-weight:400;src:url('andika-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Andika';font-style:normal;font-weight:700;src:url('andika-latin-700-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:400;src:url('lexend-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Lexend';font-style:normal;font-weight:700;src:url('lexend-latin-700-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:400;src:url('caveat-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Caveat';font-style:normal;font-weight:700;src:url('caveat-latin-700-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:400;src:url('quicksand-latin-400-normal.woff2') format('woff2');font-display:swap;}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:700;src:url('quicksand-latin-700-normal.woff2') format('woff2');font-display:swap;}

@@ -13,7 +13,7 @@ WIDGETS.push({
 
   createData: id => ({
     id, type:"table", rows:3, cols:3, hasHeader:true, fullWidth:true,
-    data: tblResize([], 3, 3)
+    data: tblResize([], 3, 3), aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
@@ -36,7 +36,7 @@ WIDGETS.push({
       }
       html += "</tr>";
     }
-    return html + "</table>";
+    return atHtml(d) + html + "</table>";
   },
 
   renderProps: d => {
@@ -56,7 +56,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Volle Breite", fw, `upd(${d.id},'fullWidth',true)`)}
           ${toggleBtn("Automatisch", !fw, `upd(${d.id},'fullWidth',false)`)}
-        </div></div>`;
+        </div></div>` +
+    atProps(d.id, d);
   },
 });
 

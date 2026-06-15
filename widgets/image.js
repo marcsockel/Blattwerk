@@ -2,7 +2,7 @@
 WIDGETS.push({
   meta: { type:"image", label:"Bild", desc:"Bildplatzhalter / Drag & Drop", icon:"🖼", category:"allgemein" },
 
-  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center" }),
+  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center" , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
     const align = d.align || "center";
@@ -14,7 +14,7 @@ WIDGETS.push({
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;
     }
-    return `<div style="text-align:${align};"><div
+    return atHtml(d) + `<div style="text-align:${align};"><div
         ondragover="event.preventDefault();this.style.borderColor='#89b4fa';this.style.background='#eef4ff';"
         ondragleave="this.style.borderColor='#ccc';this.style.background='#fafaf8';"
         ondrop="event.stopPropagation();imgDrop(${d.id},event);this.style.borderColor='#ccc';this.style.background='#fafaf8';"
@@ -60,7 +60,8 @@ WIDGETS.push({
                    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔍</button>
         </div>
         <div id="img-results-${d.id}" style="margin-top:6px;"></div>
-      </div>`;
+      </div>` +
+    atProps(d.id, d);
   },
 });
 

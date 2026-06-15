@@ -131,7 +131,7 @@ WIDGETS.push({
   meta: { type:"stellenwert", label:"Stellenwerttafel", desc:"Zahlen aus Punkten ablesen", icon:"⠿", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, modus:'zahl', ungeordnet:false };
+    const cfg = { anzahl:4, zahlenraum:100, modus:'zahl', ungeordnet:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"stellenwert", ...cfg, zahlen: svwGen(cfg.anzahl, cfg.zahlenraum) };
   },
 
@@ -147,9 +147,12 @@ WIDGETS.push({
     const colW       = Math.round(42 * sc);
     const itemW      = svwCols(zahlenraum).length * colW + 2;
     const items   = zahlen.map(n => `<div>${svwSvg(n, zahlenraum, modus, isActive, ungeordnet, gross)}</div>`);
+    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
+    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+    const avail   = Math.round(594 * frac);
     const colGap  = gross ? 10 : 20;
-    const _perRow = Math.max(1, Math.floor(594 / (itemW + colGap)));
-    return `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px ${colGap}px;justify-content:space-between;">${items.join('')}</div>`;
+    const _perRow = Math.max(1, Math.floor((avail + colGap) / (itemW + colGap)));
+    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px ${colGap}px;justify-content:space-between;">${items.join('')}</div>`;
   },
 
   renderProps: d => {
@@ -199,7 +202,8 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${togBtn("Geordnet",    !ungeordnet, `upd(${d.id},'ungeordnet',false)`)}
           ${togBtn("Ungeordnet",   ungeordnet, `upd(${d.id},'ungeordnet',true)`)}
-        </div></div>`;
+        </div></div>` +
+    atProps(d.id, d);
   },
 });
 
