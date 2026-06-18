@@ -133,8 +133,7 @@ WIDGETS.push({
                color:#4a8fd4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">+ Aufgabe hinzufügen</button>` +
       `<button onclick="event.stopPropagation();bwReshuffle(${d.id})"
         style="margin-top:5px;width:100%;padding:5px;border:none;border-radius:5px;background:#313244;
-               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔀 Wörter neu mischen</button>` +
-    atProps(d.id, d);
+               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔀 Wörter neu mischen</button>` ;
   },
 });
 

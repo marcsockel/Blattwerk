@@ -127,8 +127,7 @@ WIDGETS.push({
             style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${!gross?'#a6e3a1':'#ddd'};background:${!gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${!gross?'#1e1e2e':'#999'};">Klein</button>
           <button onclick="event.stopPropagation();upd(${d.id},'gross',true)"
             style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${gross?'#a6e3a1':'#ddd'};background:${gross?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${gross?'#1e1e2e':'#999'};">Groß</button>
-        </div></div>` +
-    atProps(d.id, d);
+        </div></div>` ;
   },
 });
 

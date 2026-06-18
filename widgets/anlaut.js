@@ -149,8 +149,7 @@ WIDGETS.push({
             oninput="this.nextElementSibling.textContent=this.value+'px'"
             onchange="upd(${d.id},'gap',+this.value)" style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
-        </div>`) +
-      atProps(d.id, d);
+        </div>`) ;
   },
 });
 

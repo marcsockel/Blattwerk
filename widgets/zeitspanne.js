@@ -185,8 +185,7 @@ WIDGETS.push({
           ${toggleBtn("S/W",   !zeigerFarbe, `upd(${d.id},'zeigerFarbe',false)`)}
           ${toggleBtn("Farbe",  zeigerFarbe, `upd(${d.id},'zeigerFarbe',true)`)}
         </div>
-      </div>` +
-    atProps(d.id, d);
+      </div>` ;
   },
 });
 

@@ -95,7 +95,6 @@ WIDGETS.push({
           ${toggleBtn("Klein", !d.lineaturGross, `upd(${d.id},'lineaturGross',false)`)}
           ${toggleBtn("Groß",  d.lineaturGross,  `upd(${d.id},'lineaturGross',true)`)}
         </div></div>` +
-      pr("Beschriftung", `<input value="${esc(d.label)}" placeholder="z.B. Antwort:" onchange="upd(${d.id},'label',this.value)">`) +
-    atProps(d.id, d);
+      pr("Beschriftung", `<input value="${esc(d.label)}" placeholder="z.B. Antwort:" onchange="upd(${d.id},'label',this.value)">`) ;
   },
 });

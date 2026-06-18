@@ -87,8 +87,7 @@ WIDGETS.push({
         onchange="upd(${d.id},'cols',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
                font-family:inherit;font-size:12px;text-align:center;">`)}
-      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}` +
-    atProps(d.id, d);
+      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}` ;
   },
 });
 

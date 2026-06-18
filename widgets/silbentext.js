@@ -175,7 +175,7 @@ WIDGETS.push({
     id, type: "silbentext",
     html: "Die Sonne scheint hell am Himmel.",
     font: "inherit",
-    fontSize: 13,
+    fontSize: 16,
     color1: "#e05252",
     color2: "#2255cc",
     ausnahmen: "", aufgabenNr:0, aufgabenText:''
@@ -183,7 +183,7 @@ WIDGETS.push({
 
   render: d => {
     const font     = d.font     || "inherit";
-    const fontSize = d.fontSize || 13;
+    const fontSize = d.fontSize || 16;
     const color1   = d.color1   || "#e05252";
     const color2   = d.color2   || "#2255cc";
 
@@ -206,7 +206,7 @@ WIDGETS.push({
 
   renderProps: d => {
     const font     = d.font     || "inherit";
-    const fontSize = d.fontSize || 13;
+    const fontSize = d.fontSize || 16;
     const color1   = d.color1   || "#e05252";
     const color2   = d.color2   || "#2255cc";
 
@@ -249,7 +249,6 @@ WIDGETS.push({
          style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;
                 border-radius:4px;padding:4px 6px;min-height:60px;resize:vertical;
                 box-sizing:border-box;"
-       >${esc(d.ausnahmen || '')}</textarea>` +
-    atProps(d.id, d);
+       >${esc(d.ausnahmen || '')}</textarea>` ;
   },
 });

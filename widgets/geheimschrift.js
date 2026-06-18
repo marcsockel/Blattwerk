@@ -227,8 +227,7 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Aus", !schreibfeld, `upd(${d.id},'schreibfeld',false)`)}
           ${toggleBtn("An",   schreibfeld, `upd(${d.id},'schreibfeld',true)`)}
-        </div></div>` +
-      atProps(d.id, d);
+        </div></div>` ;
   },
 });
 

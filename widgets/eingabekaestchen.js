@@ -128,8 +128,7 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();ekzClear(${d.id})"
         style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#f38ba8;color:#1e1e2e;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">✕ Alle Felder leeren</button>` +
-    atProps(d.id, d);
+               font-weight:700;cursor:pointer;">✕ Alle Felder leeren</button>` ;
   },
 });
 

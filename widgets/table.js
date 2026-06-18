@@ -56,8 +56,7 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Volle Breite", fw, `upd(${d.id},'fullWidth',true)`)}
           ${toggleBtn("Automatisch", !fw, `upd(${d.id},'fullWidth',false)`)}
-        </div></div>` +
-    atProps(d.id, d);
+        </div></div>` ;
   },
 });
 

@@ -11,7 +11,7 @@ WIDGETS.push({
     text:"Der [Elefant] heißt Elmar. Er ist sehr [bunt] und [fröhlich].",
     showLoesungen: false,
     font: "inherit",
-    fontSize: 14,
+    fontSize: 16,
     fontFeatures: "", aufgabenNr:0, aufgabenText:''
   }),
 
@@ -43,14 +43,14 @@ WIDGETS.push({
          </div>`
       : '';
 
-    const fontSize = d.fontSize || 14;
+    const fontSize = d.fontSize || 16;
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}">${content}</div>${solutionBand}`;
   },
 
   renderProps: d => {
     const sl           = d.showLoesungen || false;
     const font         = d.font || "inherit";
-    const fontSize     = d.fontSize || 14;
+    const fontSize     = d.fontSize || 16;
     const fontFeatures = d.fontFeatures || "";
 
     // Strip HTML tags for word-toggle display (replace block elements with spaces first)
@@ -99,8 +99,7 @@ WIDGETS.push({
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
           ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
         </div>
-      </div>` +
-    atProps(d.id, d);
+      </div>` ;
   },
 });
 

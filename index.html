@@ -109,6 +109,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
 .prow input,.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
+/* Standard-Props-Footer: einheitlicher, optisch abgesetzter Block am Ende jedes Widgets */
+.std-footer{margin:14px -14px 0;padding:12px 14px 6px;border-top:2px solid #d8d4c8;background:#eeebe2;}
+.sf-sec{margin-bottom:11px;}
+.sf-sec:last-child{margin-bottom:2px;}
+.sf-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;}
 /* misc */
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:0;}
@@ -1034,45 +1039,106 @@ function desel(){
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
 
+// ── Standard-Props-Footer ────────────────────────────────────────────
+// Einheitlicher, optisch abgesetzter Block am Ende JEDES Widgets.
+// Reihenfolge: Aufgabentext, Hintergrund, Rahmen, Layout.
+// Fähigkeiten werden ausgelassen, wenn das Widget sie nicht hat:
+//  - Aufgabentext/Hintergrund nur bei Widgets mit aufgabenNr/aufgabenText
+//    (z.B. Überschrift hat das nicht → wird weggelassen)
+//  - Rahmen nicht bei heading/subheading/divider
+//  - Layout immer
+function sfTaskBlock(id,w){
+  const nr=w.aufgabenNr||0, txt=w.aufgabenText||'';
+  return `<div class="sf-sec">
+    <div class="sf-h">Aufgabentext</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <span style="display:inline-flex;align-items:center;justify-content:center;
+          width:16px;height:16px;border-radius:50%;
+          border:1.5px solid ${nr>0?'#222':'#ddd'};
+          font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;
+          color:${nr>0?'#222':'#ccc'};flex-shrink:0;line-height:1;">${nr>0?nr:'–'}</span>
+      <input type="number" min="0" max="99" value="${nr}"
+        onclick="event.stopPropagation()"
+        onchange="upd(${id},'aufgabenNr',+this.value)"
+        style="width:44px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
+               font-family:inherit;font-size:12px;text-align:center;">
+      <span style="font-size:10px;color:#bbb;">0 = kein Kreis</span>
+    </div>
+    <input type="text" value="${esc(txt)}" placeholder="Aufgabentext …"
+      onclick="event.stopPropagation()"
+      onchange="upd(${id},'aufgabenText',this.value)"
+      style="width:100%;padding:4px 7px;border:1.5px solid #ddd;border-radius:4px;
+             font-family:inherit;font-size:12px;box-sizing:border-box;">
+  </div>`;
+}
+function sfBgBlock(id,w){
+  const bg=w.bgColor||'';
+  const sw=[['','✕'],['#f2f2f2',''],['#e0e0e0',''],['#cacaca','']].map(([color,label])=>{
+    const active=bg===color;
+    return `<button onclick="event.stopPropagation();upd(${id},'bgColor','${color}')"
+      title="${color||'Kein Hintergrund'}"
+      style="width:24px;height:24px;border-radius:4px;flex-shrink:0;
+             border:2px solid ${active?'#89b4fa':'#ddd'};
+             background:${color||'#fff'};cursor:pointer;
+             display:inline-flex;align-items:center;justify-content:center;
+             font-size:11px;color:#bbb;">${label}</button>`;
+  }).join('');
+  return `<div class="sf-sec">
+    <div class="sf-h">Hintergrund</div>
+    <div style="display:flex;gap:4px;">${sw}</div>
+  </div>`;
+}
+function sfBorderBlock(id,w){
+  const b=w.border||'';
+  return `<div class="sf-sec">
+    <div class="sf-h">Rahmen</div>
+    <select onchange="upd(${id},'border',this.value)"
+      style="width:100%;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
+      <option value=""            ${!b?'selected':''}>Kein Rahmen</option>
+      <optgroup label="Mit Rundung">
+      <option value="dashed"      ${b==='dashed'?'selected':''}>- - - Gestrichelt</option>
+      <option value="thin"        ${b==='thin'?'selected':''}>──── Leicht (1px)</option>
+      <option value="medium"      ${b==='medium'?'selected':''}>──── Mittel (2px)</option>
+      <option value="thick"       ${b==='thick'?'selected':''}>──── Dick (3px)</option>
+      </optgroup>
+      <optgroup label="Ohne Rundung">
+      <option value="dashed-rect" ${b==='dashed-rect'?'selected':''}>- - - Gestrichelt</option>
+      <option value="thin-rect"   ${b==='thin-rect'?'selected':''}>──── Leicht (1px)</option>
+      <option value="medium-rect" ${b==='medium-rect'?'selected':''}>──── Mittel (2px)</option>
+      <option value="thick-rect"  ${b==='thick-rect'?'selected':''}>──── Dick (3px)</option>
+      </optgroup>
+    </select>
+  </div>`;
+}
+function sfLayoutBlock(id,w){
+  const wf=w.widthFraction||(w.halfWidth?'1/2':'full');
+  const btns=[['1/4','▎ ¼'],['1/2','▬▬ ½'],['3/4','▬▬▬ ¾'],['full','⬛ Voll']].map(([val,lbl])=>`
+    <button onclick="setWidth(${id},'${val}')"
+      style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
+             background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:10px;font-weight:700;
+             cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('');
+  return `<div class="sf-sec">
+    <div class="sf-h">Layout</div>
+    <div style="display:flex;gap:4px;">${btns}</div>
+    ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
+  </div>`;
+}
+function standardFooter(id,w){
+  const hasTask=w.aufgabenNr!==undefined||w.aufgabenText!==undefined;
+  const noBorder=['heading','subheading','divider'].includes(w.type);
+  let inner='';
+  if(hasTask) inner+=sfTaskBlock(id,w)+sfBgBlock(id,w);
+  if(!noBorder) inner+=sfBorderBlock(id,w);
+  inner+=sfLayoutBlock(id,w);
+  return `<div class="std-footer">${inner}</div>`;
+}
+
 function renderProps(id){
   const w=widgets.find(x=>x.id===id);
   const p=document.getElementById("pi");
   if(!w){p.innerHTML='<span style="color:#bbb;">Widget auswählen</span>';return;}
   const def=WIDGET_MAP[w.type];
-  const wf=w.widthFraction||(w.halfWidth?'1/2':'full');
-  const halfToggle=`
-    <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
-      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Layout</div>
-      <div style="display:flex;gap:4px;">
-        ${[['1/4','▎ ¼'],['1/2','▬▬ ½'],['3/4','▬▬▬ ¾'],['full','⬛ Voll']].map(([val,lbl])=>`
-        <button onclick="setWidth(${id},'${val}')"
-          style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
-                 background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:10px;font-weight:700;
-                 cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('')}
-      </div>
-      ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
-    </div>`;
-  const borderToggle = ['heading','subheading','divider'].includes(w.type) ? '' : `
-    <div style="border-top:1px solid #e0ddd6;margin-top:12px;padding-top:10px;">
-      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;">Rahmen</div>
-      <select onchange="upd(${id},'border',this.value)"
-        style="width:100%;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
-        <option value=""             ${!w.border||w.border===''          ?'selected':''}>Kein Rahmen</option>
-        <optgroup label="Mit Rundung">
-        <option value="dashed"     ${w.border==='dashed'             ?'selected':''}>- - - Gestrichelt</option>
-        <option value="thin"       ${w.border==='thin'               ?'selected':''}>──── Leicht (1px)</option>
-        <option value="medium"     ${w.border==='medium'             ?'selected':''}>──── Mittel (2px)</option>
-        <option value="thick"      ${w.border==='thick'              ?'selected':''}>──── Dick (3px)</option>
-        </optgroup>
-        <optgroup label="Ohne Rundung">
-        <option value="dashed-rect" ${w.border==='dashed-rect'       ?'selected':''}>- - - Gestrichelt</option>
-        <option value="thin-rect"   ${w.border==='thin-rect'         ?'selected':''}>──── Leicht (1px)</option>
-        <option value="medium-rect" ${w.border==='medium-rect'       ?'selected':''}>──── Mittel (2px)</option>
-        <option value="thick-rect"  ${w.border==='thick-rect'        ?'selected':''}>──── Dick (3px)</option>
-        </optgroup>
-      </select>
-    </div>`;
-  p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${borderToggle}${halfToggle}`;
+  p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${standardFooter(id,w)}`;
   enhanceNumberInputs(p);
 }
 

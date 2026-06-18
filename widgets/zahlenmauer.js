@@ -169,7 +169,6 @@ WIDGETS.push({
       (basisInputs ? pr("Basissteine (von links)", `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${basisInputs}</div>`) : "") +
       `<button onclick="zmRandomBase(${d.id})"
         style="margin-top:8px;width:100%;background:#313244;color:#cdd6f4;border:none;border-radius:4px;padding:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;">
-        🎲 Zufällige Basiszahlen</button>` +
-    atProps(d.id, d);
+        🎲 Zufällige Basiszahlen</button>` ;
   },
 });

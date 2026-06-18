@@ -135,8 +135,7 @@ WIDGETS.push({
     `<button onclick="event.stopPropagation();wsReshuffle(${d.id})"
       style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#313244;
              color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
-      🔀 Neu generieren</button>` +
-    atProps(d.id, d);
+      🔀 Neu generieren</button>` ;
   },
 });
 

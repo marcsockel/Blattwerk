@@ -36,7 +36,6 @@ WIDGETS.push({
         ${btn("mittel","Mittel (20px)")}
         ${btn("gross","Groß (40px)")}
       </div></div>` +
-      pr("Zeilen", `<input type="number" min="2" max="40" value="${d.zeilen||8}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
-    atProps(d.id, d);
+      pr("Zeilen", `<input type="number" min="2" max="40" value="${d.zeilen||8}" onchange="upd(${d.id},'zeilen',+this.value)">`) ;
   },
 });

@@ -60,8 +60,7 @@ WIDGETS.push({
                    font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔍</button>
         </div>
         <div id="img-results-${d.id}" style="margin-top:6px;"></div>
-      </div>` +
-    atProps(d.id, d);
+      </div>` ;
   },
 });
 

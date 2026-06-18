@@ -215,8 +215,7 @@ WIDGETS.push({
       (modus !== 'ohne' ? pr(modus==='luecken' ? "Lücken" : "Zahlen (beliebig, kommagetrennt)",
         `<input value="${esc(d.gaps)}" placeholder="${modus==='luecken'?'z.B. 20,40':'z.B. 5,17,32'}" onchange="upd(${d.id},'gaps',this.value)">`) : '') +
       (modus !== 'luecken' && modus !== 'ohne' ? `<button onclick="nlRoll(${d.id})"
-        style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '') +
-    atProps(d.id, d);
+        style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '') ;
   },
 });
 

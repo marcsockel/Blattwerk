@@ -202,8 +202,7 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${togBtn("Geordnet",    !ungeordnet, `upd(${d.id},'ungeordnet',false)`)}
           ${togBtn("Ungeordnet",   ungeordnet, `upd(${d.id},'ungeordnet',true)`)}
-        </div></div>` +
-    atProps(d.id, d);
+        </div></div>` ;
   },
 });
 

@@ -159,8 +159,7 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'loesung',false)`)}
           ${toggleBtn("Einblenden",  sl, `upd(${d.id},'loesung',true)`)}
-        </div></div>` +
-    atProps(d.id, d);
+        </div></div>` ;
   },
 });
 

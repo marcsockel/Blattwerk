@@ -171,8 +171,7 @@ WIDGETS.push({
       <button onclick="event.stopPropagation();aeueWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
-    atProps(d.id, d);
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` ;
   },
 });
 

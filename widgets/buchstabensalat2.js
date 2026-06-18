@@ -310,8 +310,7 @@ WIDGETS.push({
         `<input type="text" value="${esc(beispielText)}"
           onchange="upd(${d.id},'beispielText',this.value)"
           style="width:100%;padding:3px 6px;border:1.5px solid #ddd;border-radius:4px;
-                 font-family:inherit;font-size:12px;">`) : "") +
-      atProps(d.id, d);
+                 font-family:inherit;font-size:12px;">`) : "") ;
   },
 });
 

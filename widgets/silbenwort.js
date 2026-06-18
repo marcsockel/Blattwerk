@@ -234,8 +234,7 @@ WIDGETS.push({
         style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;
                border-radius:4px;padding:4px 6px;min-height:60px;resize:vertical;
                box-sizing:border-box;"
-      >${esc(d.ausnahmen || '')}</textarea>` +
-    atProps(d.id, d);
+      >${esc(d.ausnahmen || '')}</textarea>` ;
   },
 });
 

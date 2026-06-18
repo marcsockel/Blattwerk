@@ -233,8 +233,7 @@ WIDGETS.push({
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
                font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
       pr(`Manuell bearbeiten${erg?" (_ = Lücke, z.B. 3 + _ = 10)":""}`,
-        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`) +
-    atProps(d.id, d);
+        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`) ;
   },
 });
 

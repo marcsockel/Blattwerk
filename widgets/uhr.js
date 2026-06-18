@@ -224,8 +224,7 @@ WIDGETS.push({
           ${toggleBtn("Farbe",  zeigerFarbe, `upd(${d.id},'zeigerFarbe',true)`)}
         </div>
       </div>` +
-      "" +
-    atProps(d.id, d);
+      "" ;
   },
 });
 
