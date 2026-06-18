@@ -99,7 +99,7 @@ WIDGETS.push({
 
     const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
     const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(594 * frac);
+    const avail   = Math.round(640 * frac);
     const svgW    = small ? (10*(14+2)+2) : (10*(22+3)+3);
     const colGap  = small ? 10 : 24;
     const rowGap  = small ? 36 : 48;

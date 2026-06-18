@@ -57,9 +57,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* Canvas */
 #canvas-area{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;align-items:center;background:var(--bg);}
 #canvas-area::-webkit-scrollbar{width:6px;}#canvas-area::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
-.page{width:180mm;min-height:267mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:12mm 14mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
+.page{width:190mm;min-height:280mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:8mm 10mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
 .page.page-active{border-top-color:var(--acc3);}
-.page-end{position:absolute;left:0;right:0;top:267mm;border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
+.page-end{position:absolute;left:0;right:0;top:280mm;border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
 .page-end::after{content:"Ende Seite";position:absolute;right:8px;top:3px;font-size:9px;color:rgba(255,0,170,.5);font-family:sans-serif;letter-spacing:.5px;}
 .page-hint{border:2.5px dashed #d0cec8;border-radius:9px;padding:28px;text-align:center;color:#bbb;font-size:14px;font-weight:600;margin-top:10px;}
 .page-spacer{height:16px;flex-shrink:0;}
@@ -111,18 +111,45 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
 /* misc */
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
-@page{size:A4 portrait;margin:5mm 0 0 10mm;}
-.pg-num{display:none;position:absolute;bottom:8mm;right:14mm;font-size:10px;color:#333;}
+@page{size:A4 portrait;margin:0;}
+.pg-num{display:none;position:absolute;bottom:8mm;right:10mm;font-size:10px;color:#333;}
 #solution-pages{display:none;}
 @media print{#solution-pages{display:block;}
-.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:180mm;}
+.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:190mm;}
 .solution-pages-inner .page{page-break-before:always;}}
 @media print{
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn{display:none!important;}
-  #canvas-area{padding:0;background:#fff;display:block;}
-  .page{box-shadow:none;border-top:none;border-radius:0;width:180mm;min-height:267mm;padding:12mm 14mm;page-break-after:auto;}
-  .page ~ .page{page-break-before:always;}
+  /* Safari/WebKit druckt box-shadow (Chrome nicht). Ein nach unten gerichteter Schatten
+     erscheint dort als grauer Balken unter dem Inhalt. Pauschal alle Schatten/Filter im
+     Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
+  * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+  #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  #layout{display:block;overflow:visible;}
+  #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
+  /* WebKit/Safari druckt den Scrollbalken-Thumb von #canvas-area (background:#ccc,
+     border-radius:4px) als grauen Rundbalken unten aufs Blatt — Chrome NICHT.
+     Im Druck Scrollen abschalten (overflow:visible oben) + Scrollbalken ausblenden. */
+  ::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
+  .page,.page.page-before-overflow,.page.page-overflow{box-shadow:none!important;border-top:none!important;border-radius:0!important;}
+  /* DRUCK: jede .page = EXAKT ein A4-Blatt (210×297mm) bei @page margin:0.
+     Die früheren Ränder (5mm @page + 8/10mm Seiten-Padding) sind ins Padding gewandert,
+     daher bleibt der Inhaltsbereich geometrisch identisch: 170mm breit, 15mm von links,
+     13mm von oben. Weil die Seite das Blatt exakt füllt und overflow:hidden gesetzt ist,
+     kann KEIN Pixel auf ein Folgeblatt "bluten" → keine Phantom-Leerseiten, keine Sliver.
+     Engine-übergreifend robust (insb. WebKit/Safari, das empfindlicher paginiert als Chrome). */
+  /* WICHTIG: NICHT exakt 297mm hoch! mm→Pixel-Rundung ergibt ~297,1mm > Blatt (297mm),
+     und WebKit/Safari lässt diese 0,1mm auf ein Folgeblatt bluten → Leerseite + Sliver.
+     Daher height:auto (Seite nur so hoch wie Inhalt, ~max 290mm) + harter Deckel max-height:296mm,
+     damit nie die Blattkante erreicht wird. Inhalt (≤277mm) wird dabei nicht abgeschnitten. */
+  .page{box-sizing:border-box;width:210mm;height:auto;min-height:0;max-height:296mm;overflow:hidden;
+        padding:13mm 25mm 13mm 15mm;page-break-inside:avoid;break-inside:avoid;}
+  body.print-ds .page:nth-of-type(even){padding-left:25mm;padding-right:15mm;} /* beidseitig: Bundsteg */
+  #canvas-area .page{page-break-after:always;break-after:page;}
+  #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
+  #solution-pages:empty{display:none!important;}
+  /* Editor-UI auf leeren Seiten NICHT mitdrucken: .page-hint ist das gestrichelte,
+     abgerundete Rechteck; .empty-del der ✕-Button der leeren Seite. */
+  .page-hint,.empty-del{display:none!important;}
   .page-end,.page-spacer{display:none;}
   body{background:#fff;height:auto;}
   .wwrap{outline:none!important;margin-bottom:12px;}
@@ -133,6 +160,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 <body>
 <div id="toolbar">
   <div class="logo">Blatt<span>werk</span></div>
+  <span id="build-stamp" style="background:#a6e3a1;color:#1e1e2e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:6px;letter-spacing:.5px;">DRUCK-FIX v7</span>
   <button class="tbtn" onclick="document.getElementById('blatt-open').click()">📂 Öffnen</button>
   <button class="tbtn" onclick="blattSave()">💾 Speichern</button>
   <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
@@ -149,7 +177,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
   <div class="spacer"></div>
   <span id="wcount" style="color:#6c7086;font-size:11px;">0 Widgets</span>
-  <button class="tbtn p" onclick="doDownloadPDF()">⬇ PDF</button>
+  <button class="tbtn p" onclick="document.getElementById('pdf-hint').style.display='flex'" title="Gestochen scharfes Vektor-PDF über den Druckdialog">⬇ PDF</button>
   <button class="tbtn p" onclick="document.getElementById('print-warning').style.display='flex'">🖨 Drucken</button>
   <div style="position:relative;display:inline-flex;">
     <button class="tbtn p" onclick="togglePrintPanel(event)">⚙ Optionen</button>
@@ -291,6 +319,7 @@ const WIDGETS = [];
 <script src="widgets/zahlenmauer.js"></script>
 <script src="widgets/zahlenhaus.js"></script>
 <script src="widgets/uhr.js"></script>
+<script src="widgets/zeitspanne.js"></script>
 <script src="widgets/kaestchen.js"></script>
 <script src="widgets/eingabekaestchen.js"></script>
 <script src="widgets/schriftlich_addition.js"></script>
@@ -319,11 +348,6 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js"></script>
 <script src="widgets/zwanzigerrahmen.js"></script>
 <script src="widgets/rechendreiecke.js"></script>
-<!-- Lokale Vendor-Libs statt CDN (offline-fähig) -->
-<!-- html-to-image statt html2canvas: rendert über SVG-foreignObject, d.h. die
-     Browser-Engine selbst rastert den Text (korrektes Kerning/Antialiasing) -->
-<script src="vendor/html-to-image.min.js"></script>
-<script src="vendor/jspdf.umd.min.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -614,6 +638,7 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     pageDiv.appendChild(hint);
     // X-Button zum Löschen der leeren Seite (entfernt den zugehörigen Pagebreak)
     const delBtn=document.createElement("button");
+    delBtn.className="empty-del";
     delBtn.textContent="✕";
     delBtn.title="Leere Seite löschen";
     delBtn.style.cssText="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:50%;border:none;background:#f38ba8;color:#fff;font-size:13px;font-weight:800;cursor:pointer;line-height:1;opacity:0.7;transition:opacity .15s;";
@@ -643,7 +668,7 @@ function render(){
   const ca=document.getElementById("canvas-area");
   ca.innerHTML="";
   const fab=document.createElement("button");
-  fab.title="Seitenübersicht";fab.textContent="⊞";fab.onclick=openOverview;
+  fab.title="Seitenübersicht";fab.textContent="⊞";fab.onclick=openOverview;fab.className="ov-fab";
   fab.style.cssText="position:sticky;top:12px;align-self:flex-start;z-index:50;width:32px;height:32px;border:none;border-radius:7px;background:rgba(0,0,0,0.22);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);flex-shrink:0;margin-bottom:-44px;";
   ca.appendChild(fab);
   const ranges=getPageRanges();
@@ -913,7 +938,8 @@ function checkOverflow(ranges){
     _ovfPasses=0;
     return;
   }
-  const pages=document.querySelectorAll('.page');
+  // Nur Content-Seiten — page-overflow Divs überspringen (sie verschieben sonst die Indices)
+  const pages=[...document.querySelectorAll('.page')].filter(p=>!p.classList.contains('page-overflow'));
 
   // ── Underflow: auto-Break entfernen wenn erste Widget der Folgeseite reinpasst ──
   for(let pi=0;pi<pages.length-1;pi++){
@@ -922,8 +948,8 @@ function checkOverflow(ranges){
     if(!range)continue;
     const breakIdx=range.end; // Index des Pagebreaks in widgets[]
     if(breakIdx>=widgets.length||widgets[breakIdx].type!=='pagebreak'||!widgets[breakIdx].auto)continue;
-    const pxPerMm=pageEl.offsetWidth/180;
-    const maxBottom=(267-12)*pxPerMm;
+    const pxPerMm=pageEl.offsetWidth/190;
+    const maxBottom=(280-8)*pxPerMm;
     const wraps=[...pageEl.querySelectorAll('.wwrap')];
     const pageBottom=wraps.length?wraps[wraps.length-1].offsetTop+wraps[wraps.length-1].offsetHeight:0;
     // Höhe des ersten Widgets der nächsten Seite messen
@@ -945,8 +971,8 @@ function checkOverflow(ranges){
     const pageEl=pages[pi];
     const range=ranges[pi];
     if(!range)continue;
-    const pxPerMm=pageEl.offsetWidth/180;
-    const maxBottom=(267-12)*pxPerMm;
+    const pxPerMm=pageEl.offsetWidth/190;
+    const maxBottom=(280-8)*pxPerMm;
     const wraps=[...pageEl.querySelectorAll('.wwrap')];
     for(let i=0;i<wraps.length;i++){
       if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
@@ -962,14 +988,29 @@ function checkOverflow(ranges){
 }
 
 function sel(id){
-  if(selId!==null)document.querySelector(`.wwrap[data-id="${selId}"]`)?.classList.remove('sel');
+  const prevId=selId;
+  if(prevId!==null)document.querySelector(`.wwrap[data-id="${prevId}"]`)?.classList.remove('sel');
   selId=id;
   document.querySelector(`.wwrap[data-id="${id}"]`)?.classList.add('sel');
+  // Re-render widget-Inhalt für vorheriges + neues Widget, damit isActive (Lösung) korrekt aktualisiert wird
+  [prevId,id].forEach(wid=>{
+    if(wid===null)return;
+    const w=widgets.find(x=>x.id===wid);if(!w)return;
+    const def=WIDGET_MAP[w.type];if(!def)return;
+    const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
+    if(winner)winner.innerHTML=def.render(w);
+  });
   renderProps(id);
 }
 function desel(){
-  if(selId!==null)document.querySelector(`.wwrap[data-id="${selId}"]`)?.classList.remove('sel');
+  const prevId=selId;
+  if(prevId!==null)document.querySelector(`.wwrap[data-id="${prevId}"]`)?.classList.remove('sel');
   selId=null;
+  // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
+  if(prevId!==null){
+    const w=widgets.find(x=>x.id===prevId);
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner)winner.innerHTML=def.render(w);}
+  }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
 
@@ -1165,8 +1206,26 @@ function addSample(){
 // ── SAVE / LOAD (.blatt) ─────────────────────────────────────────
 let _blattFilename = 'dokument.blatt';
 
+// JSZip wird erst bei Bedarf nachgeladen (nicht beim Start) – spart ~96 KB
+// Initial-Last. Wird nur für das .blatt-Speicherformat gebraucht.
+let _jszipPromise = null;
+function loadJSZip() {
+  if (window.JSZip) return Promise.resolve();
+  if (!_jszipPromise) {
+    _jszipPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'vendor/jszip.min.js';
+      s.onload = () => resolve();
+      s.onerror = () => { _jszipPromise = null; reject(new Error('JSZip konnte nicht geladen werden')); };
+      document.head.appendChild(s);
+    });
+  }
+  return _jszipPromise;
+}
+
 async function blattSave() {
-  if (!window.JSZip) { alert('JSZip wird geladen…'); return; }
+  try { await loadJSZip(); }
+  catch { alert('Speicher-Bibliothek konnte nicht geladen werden.'); return; }
   const nameEl = document.getElementById('blatt-name');
   const base = (nameEl?.value.trim() || 'dokument').replace(/\.blatt$/i, '');
   _blattFilename = base + '.blatt';
@@ -1198,7 +1257,8 @@ async function blattSave() {
 }
 
 async function blattOpen(file) {
-  if (!window.JSZip) { alert('JSZip wird geladen…'); return; }
+  try { await loadJSZip(); }
+  catch { alert('Speicher-Bibliothek konnte nicht geladen werden.'); return; }
   let doc;
   try {
     var zip = await JSZip.loadAsync(file);
@@ -1240,103 +1300,28 @@ let printOpts = { pageNumbers: false, doubleSided: false };
 
 function updatePrintStyle() {
   const ds = printOpts.doubleSided;
-  // margin:0 → Browser rendert keine eigenen Kopf-/Fußzeilen in der Druckvorschau.
-  // Seitenabstände kommen ausschließlich aus dem padding des .page-Divs (12mm 14mm).
-  let css = ds
-    ? `@page :right{margin:5mm 0 0 10mm;}@page :left{margin:5mm 10mm 0 0;}`
-    : `@page{margin:5mm 0 0 10mm;}`;
+  // Voll-Blatt-Modell: @page hat margin:0, die Seitenränder liegen im Padding der .page.
+  // Der Bundsteg für beidseitigen Druck wird über die Klasse body.print-ds gesteuert
+  // (CSS: body.print-ds .page:nth-of-type(even){...}), nicht mehr über @page :left/:right.
+  document.body.classList.toggle('print-ds', ds);
+  let css = `@page{margin:0;}`;
   if (printOpts.pageNumbers) {
     css += `.pg-num{display:block!important;}`;
-    if (ds) css += `.pg-num.pg-left{right:auto;left:14mm;}`;
+    if (ds) css += `.pg-num.pg-left{right:auto;left:10mm;}`;
   } else {
     css += `.pg-num{display:none!important;}`;
   }
   document.getElementById('dyn-print-style').textContent = css;
 }
 
-async function doDownloadPDF() {
-  if (!window.htmlToImage || !window.jspdf) {
-    alert('PDF-Bibliothek wird noch geladen, bitte kurz warten.'); return;
-  }
-  document.getElementById('print-panel').style.display = 'none';
-  const prevSel = selId; selId = null; render();
-  await document.fonts.ready;
-
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const pageEls = document.querySelectorAll('#canvas-area .page');
-
-  // Screen-only-Elemente vor dem Capture verstecken
-  const screenOnly = document.querySelectorAll('.page-end, .page-spacer, .wacts, .dh, .gmbtn, .wdz');
-  screenOnly.forEach(e => e.style.visibility = 'hidden');
-
-  // scale 3 ≈ 290 DPI (Druckqualität); PNG = verlustfrei.
-  const PDF_SCALE = 3;
-
-  for (let i = 0; i < pageEls.length; i++) {
-    const el = pageEls[i];
-    // Kurz vor dem Capture: screen-Only-Styles unterdrücken
-    el.style.boxShadow = 'none';
-    el.style.borderTop = 'none';
-    el.style.borderRadius = '0';
-
-    // Pixel-Raster-Sauberkeit: die Seite ist 180mm ≈ 680,3px breit — krumme
-    // Maße erzeugen Subpixel-Verschiebungen. Auf ganze CSS-Pixel runden und
-    // die Canvas-Größe als exaktes ganzzahliges Vielfaches davon festlegen.
-    const wPx = Math.round(el.offsetWidth);
-    const hPx = Math.round(el.offsetHeight);
-
-    // html-to-image rendert über SVG-foreignObject: die Browser-Engine selbst
-    // rastert Text und Layout (korrektes Kerning, Subpixel-Antialiasing) —
-    // deutlich schärfer als die nachgebaute Layout-Engine von html2canvas.
-    // Lokale Fonts/Bilder werden automatisch als Data-URLs eingebettet.
-    const canvas = await htmlToImage.toCanvas(el, {
-      backgroundColor: '#ffffff',
-      width: wPx,
-      height: hPx,
-      canvasWidth: wPx * PDF_SCALE,
-      canvasHeight: hPx * PDF_SCALE,
-      pixelRatio: PDF_SCALE,
-    });
-
-    // Styles zurücksetzen
-    el.style.boxShadow = '';
-    el.style.borderTop = '';
-    el.style.borderRadius = '';
-
-    const imgData = canvas.toDataURL('image/png');
-    // mm aus den GERUNDETEN CSS-Pixeln ableiten, damit das Bild im PDF exakt
-    // 1:1 zur Canvas-Größe platziert wird (kein Nachskalieren durch jsPDF).
-    const cssPxPerMm = 96 / 25.4;
-    const wMm = wPx / cssPxPerMm;
-    const hMm = hPx / cssPxPerMm;
-
-    if (i > 0) pdf.addPage('a4', 'portrait');
-
-    // Bundsteg: links größer (für Lochung), rechts kleiner
-    // Bei beidseitigem Druck: gerade Seiten spiegeln
-    const ds = printOpts.doubleSided;
-    const isEvenPage = (i % 2 === 1); // 0-basiert: Seite 2, 4, 6 …
-    const xOff = (ds && isEvenPage) ? 10 : 20; // mm vom linken Blattrand
-    const yOff = 5;
-    pdf.addImage(imgData, 'PNG', xOff, yOff, wMm, hMm, undefined, 'FAST');
-  }
-
-  // Screen-only-Elemente wiederherstellen
-  screenOnly.forEach(e => e.style.visibility = '');
-
-  const name = (document.getElementById('blatt-name')?.value?.trim() || 'dokument')
-    .replace(/\.blatt$/i, '');
-  pdf.save(`${name}.pdf`);
-  selId = prevSel; render();
-}
-
 function doPrint() {
   document.getElementById('print-panel').style.display = 'none';
   const prevSel = selId; selId = null; render();
+  // FAB explizit per inline-style verstecken — position:sticky kann @media print überlisten
+  document.querySelectorAll('.ov-fab').forEach(el => el.style.display = 'none');
   updatePrintStyle();
   window.print();
-  selId = prevSel; render();
+  selId = prevSel; render(); // render() erstellt FAB neu, kein Restore nötig
 }
 
 function doPrintSolutions() {
@@ -1399,11 +1384,18 @@ addSample();
 })();
 updatePrintStyle();
 </script>
-<script src="vendor/jszip.min.js"></script>
 <script>
+// Service Worker entfernt: Desktop-App braucht keinen Offline-Cache und das
+// Cache-First-Verhalten verhinderte, dass Datei-Änderungen geladen wurden.
+// Dieser Block deregistriert einen evtl. früher installierten SW und löscht
+// dessen Caches – nötig, damit Altinstallationen die alte index.html loswerden.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js')
-    .catch(err => console.warn('SW-Registrierung fehlgeschlagen:', err));
+  navigator.serviceWorker.getRegistrations()
+    .then(regs => regs.forEach(r => r.unregister()))
+    .catch(() => {});
+}
+if (window.caches && caches.keys) {
+  caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
 }
 </script>
 </body>

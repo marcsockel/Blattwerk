@@ -128,7 +128,7 @@ WIDGETS.push({
     );
     const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
     const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(594 * frac);
+    const avail   = Math.round(640 * frac);
     const itemW   = Math.round(n * 54 + 2);
     const _perRow = Math.max(1, Math.floor((avail + 20) / (itemW + 20)));
     return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:12px 20px;justify-content:space-between;">${svgs.join("")}</div>`;

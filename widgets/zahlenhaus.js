@@ -88,7 +88,7 @@ WIDGETS.push({
     // Verfügbare Breite je nach widthFraction
     const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
     const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(594 * frac);
+    const avail   = Math.round(640 * frac);
 
     // Automatisch berechnen: wie viele passen pro Zeile?
     const itemW  = (s === 3 ? 38 : 48) * s + 4;
