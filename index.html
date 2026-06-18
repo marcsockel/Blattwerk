@@ -469,6 +469,7 @@ function makeBtn(w,color){
 function filterW(val){searchFilter=val;buildList();}
 
 // ── CANVAS ────────────────────────────────────────────────────────
+let _followAddedToPage=false;
 function addWidget(type){
   const def=WIDGET_MAP[type];if(!def)return;
   saveHistory();
@@ -480,7 +481,14 @@ function addWidget(type){
   const selOnThisPage=selIdx>=0&&ranges[activePage]&&selIdx>=ranges[activePage].start&&selIdx<ranges[activePage].end;
   const insertAt=selOnThisPage?selIdx+1:pageEnd;
   widgets.splice(insertAt,0,w);
-  selId=w.id;render();renderProps(w.id);
+  selId=w.id;
+  // Ein gerade eingefügtes Widget kann per Overflow auf eine Folgeseite rutschen.
+  // activePage soll ihm folgen, damit das NÄCHSTE Hinzufügen direkt dahinter (auf
+  // derselben Overflow-Seite) landet — sonst wird jedes weitere Widget erneut ans
+  // Ende der vollen Ausgangsseite gehängt und erzeugt pro Widget eine eigene
+  // Overflow-Seite. Ausgewertet in checkOverflow, sobald der Layout-Lauf stabil ist.
+  _followAddedToPage=true;
+  render();renderProps(w.id);
 }
 
 function scrollToActivePage(){
@@ -936,6 +944,7 @@ function checkOverflow(ranges){
   if(_ovfPasses>widgets.length+10){
     console.warn('checkOverflow: Abbruch nach',_ovfPasses,'Durchläufen (Oszillation?)');
     _ovfPasses=0;
+    _followAddedToPage=false;
     return;
   }
   // Nur Content-Seiten — page-overflow Divs überspringen (sie verschieben sonst die Indices)
@@ -985,6 +994,17 @@ function checkOverflow(ranges){
     }
   }
   _ovfPasses=0; // stabil — keine Änderung in diesem Durchlauf
+  // activePage dem zuletzt hinzugefügten/selektierten Widget folgen lassen (siehe
+  // addWidget): erst jetzt, im stabilen Zustand, steht die finale Seite fest.
+  if(_followAddedToPage){
+    _followAddedToPage=false;
+    if(selId!=null){
+      const r=getPageRanges();
+      const idx=widgets.findIndex(x=>x.id===selId);
+      const pi=r.findIndex(rg=>idx>=rg.start&&idx<rg.end);
+      if(pi>=0)activePage=pi;
+    }
+  }
 }
 
 function sel(id){
