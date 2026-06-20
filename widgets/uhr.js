@@ -183,7 +183,7 @@ WIDGETS.push({
     }).join("");
 
     return pr("Anzahl Uhren",
-        `<input type="number" min="1" max="12" value="${anzahl}" onchange="uhrUpdAnzahl(${d.id},+this.value)">`) +
+        `<input type="number" min="1" max="60" value="${anzahl}" onchange="uhrUpdAnzahl(${d.id},+this.value)">`) +
       pr("Größe (px)",
         `<input type="number" min="60" max="200" step="10" value="${size}" onchange="upd(${d.id},'size',+this.value)">`) +
       pr("Zufalls-Stufe", `<select onchange="upd(${d.id},'stufe',this.value)">${stufeOpts}</select>`) +

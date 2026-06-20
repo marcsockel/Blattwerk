@@ -57,7 +57,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* Canvas */
 #canvas-area{flex:1;overflow-y:auto;padding:24px 28px;display:flex;flex-direction:column;align-items:center;background:var(--bg);}
 #canvas-area::-webkit-scrollbar{width:6px;}#canvas-area::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
-.page{width:190mm;min-height:280mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:8mm 10mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
+/* Bildschirmseite spiegelt das Druck-Blatt (A4 297mm, 13mm oben / 5mm unten),
+   damit der Abstand am Bildschirm dem Druck entspricht (WYSIWYG). */
+.page{width:190mm;min-height:297mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:13mm 10mm 5mm 10mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
 .page.page-active{border-top-color:var(--acc3);}
 .page-end{position:absolute;left:0;right:0;top:280mm;border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
 .page-end::after{content:"Ende Seite";position:absolute;right:8px;top:3px;font-size:9px;color:rgba(255,0,170,.5);font-family:sans-serif;letter-spacing:.5px;}
@@ -93,11 +95,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
 .wacts{display:none;position:absolute;top:-13px;right:3px;gap:3px;z-index:10;}
-.wwrap:hover .wacts,.wwrap.sel .wacts{display:flex;}
+.wwrap:hover > .wacts,.wwrap.sel > .wacts{display:flex;}
 .wa{background:var(--acc3);border:none;border-radius:3px;color:#1e1e2e;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;font-family:inherit;}
 .wa.del{background:var(--acc);}
 .dh{display:none;position:absolute;left:-20px;top:50%;transform:translateY(-50%);cursor:grab;color:#bbb;font-size:15px;user-select:none;}
-.wwrap:hover .dh{display:block;}
+.wwrap:hover > .dh{display:block;}
 .winner{padding:7px 9px;}
 /* widget internals */
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
@@ -128,27 +130,36 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      erscheint dort als grauer Balken unter dem Inhalt. Pauschal alle Schatten/Filter im
      Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
-  #toolbar,#sidebar,#props,.wacts,.dh,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
   /* WebKit/Safari druckt den Scrollbalken-Thumb von #canvas-area (background:#ccc,
      border-radius:4px) als grauen Rundbalken unten aufs Blatt — Chrome NICHT.
      Im Druck Scrollen abschalten (overflow:visible oben) + Scrollbalken ausblenden. */
   ::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
-  .page,.page.page-before-overflow,.page.page-overflow{box-shadow:none!important;border-top:none!important;border-radius:0!important;}
+  /* border-top als 5px TRANSPARENT (nicht none): erhält den 5px-Layout-Versatz vom
+     Bildschirm (.page hat border-top:5px solid #ccc) → Druck-Layout deckungsgleich mit
+     App (WYSIWYG), aber ohne die graue Linie zu drucken. */
+  .page,.page.page-before-overflow,.page.page-overflow{box-shadow:none!important;border-top:5px solid transparent!important;border-radius:0!important;}
   /* DRUCK: jede .page = EXAKT ein A4-Blatt (210×297mm) bei @page margin:0.
      Die früheren Ränder (5mm @page + 8/10mm Seiten-Padding) sind ins Padding gewandert,
-     daher bleibt der Inhaltsbereich geometrisch identisch: 170mm breit, 15mm von links,
-     13mm von oben. Weil die Seite das Blatt exakt füllt und overflow:hidden gesetzt ist,
-     kann KEIN Pixel auf ein Folgeblatt "bluten" → keine Phantom-Leerseiten, keine Sliver.
+     Inhaltsbereich: 170mm breit, 25mm von links (Lochrand), 13mm von oben, 5mm von unten. Weil die
+     Seite das Blatt (fast) füllt und overflow:hidden gesetzt ist, kann KEIN Pixel auf ein
+     Folgeblatt "bluten" → keine Phantom-Leerseiten, keine Sliver.
      Engine-übergreifend robust (insb. WebKit/Safari, das empfindlicher paginiert als Chrome). */
   /* WICHTIG: NICHT exakt 297mm hoch! mm→Pixel-Rundung ergibt ~297,1mm > Blatt (297mm),
      und WebKit/Safari lässt diese 0,1mm auf ein Folgeblatt bluten → Leerseite + Sliver.
-     Daher height:auto (Seite nur so hoch wie Inhalt, ~max 290mm) + harter Deckel max-height:296mm,
-     damit nie die Blattkante erreicht wird. Inhalt (≤277mm) wird dabei nicht abgeschnitten. */
-  .page{box-sizing:border-box;width:210mm;height:auto;min-height:0;max-height:296mm;overflow:hidden;
-        padding:13mm 25mm 13mm 15mm;page-break-inside:avoid;break-inside:avoid;}
-  body.print-ds .page:nth-of-type(even){padding-left:25mm;padding-right:15mm;} /* beidseitig: Bundsteg */
+     Daher height:auto (Seite nur so hoch wie Inhalt) + harter Deckel max-height:296mm,
+     damit nie die Blattkante erreicht wird. Inhalt (Unterkante ≤280mm, Padding 5mm unten
+     → Seite ≤~285mm) wird dabei nicht abgeschnitten; maxBottom in checkOverflow hält das ein. */
+  /* min-height:294mm → Druckseite hat IMMER (fast) volle Blatthöhe, unabhängig vom Inhalt.
+     Nötig, damit die absolut positionierte Seitenzahl (.pg-num, bottom) fix am Blattende
+     sitzt statt mit dem Inhalt nach oben zu wandern. 294mm < max-height:296mm < 297mm Blatt
+     → kein WebKit-Bleed (overflow:hidden bleibt als Netz). Inhalt ≤285mm < 294mm, wird nicht berührt. */
+  .page{box-sizing:border-box;width:210mm;height:auto;min-height:294mm;max-height:296mm;overflow:hidden;
+        padding:13mm 15mm 5mm 25mm;page-break-inside:avoid;break-inside:avoid;}
+  /* Standard (einseitig + beidseitig-Vorderseiten): breiter Rand LINKS (25mm) zum Lochen. */
+  body.print-ds .page.page-back{padding-left:15mm;padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
   #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
   #solution-pages:empty{display:none!important;}
@@ -157,7 +168,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   .page-hint,.empty-del{display:none!important;}
   .page-end,.page-spacer{display:none;}
   body{background:#fff;height:auto;}
-  .wwrap{outline:none!important;margin-bottom:12px;}
+  .wwrap{outline:none!important;margin-bottom:14px;} /* = Bildschirm-Abstand → WYSIWYG (war 12px, Druck dadurch enger) */
 }
 </style>
 <style id="dyn-print-style"></style>
@@ -202,6 +213,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
       <div style="margin-top:8px;">
         <button onclick="document.getElementById('print-panel').style.display='none';document.getElementById('pdf-hint').style.display='flex'" title="Gestochen scharfes Vektor-PDF über den Druckdialog" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Vektor-PDF (Druckdialog)</button>
       </div>
+    </div>
+  </div>
+  <div style="position:relative;display:inline-flex;margin-left:8px;">
+    <button class="tbtn" onmousedown="event.preventDefault()" onclick="toggleUniPanel(event)" title="Sonderzeichen am Cursor des fokussierten Textfelds einfügen" style="background:#a6e3a1;color:#1e1e2e;font-weight:800;font-size:15px;padding:5px 11px;">Ω</button>
+    <div id="uni-panel" onmousedown="event.preventDefault()" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:12px;z-index:200;width:276px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:10px;">Sonderzeichen einfügen</div>
+      <div id="uni-grid" style="display:flex;flex-wrap:wrap;gap:5px;max-height:280px;overflow-y:auto;"></div>
+      <div style="font-size:10px;color:#6c7086;margin-top:10px;line-height:1.4;">Erst in ein Textfeld klicken, dann das Zeichen wählen.</div>
     </div>
   </div>
 </div>
@@ -353,6 +372,8 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js"></script>
 <script src="widgets/zwanzigerrahmen.js"></script>
 <script src="widgets/rechendreiecke.js"></script>
+<script src="widgets/multitool.js"></script>
+<script src="widgets/group.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -477,6 +498,12 @@ function filterW(val){searchFilter=val;buildList();}
 let _followAddedToPage=false;
 function addWidget(type){
   const def=WIDGET_MAP[type];if(!def)return;
+  // In eine Gruppe einfügen, wenn die Auswahl in einer Gruppe liegt
+  // (außer wir fügen selbst eine Gruppe ein — keine Verschachtelung).
+  if(type!=='group'){
+    const gid=currentGroupContext();
+    if(gid!=null){groupAddChild(gid,type);return;}
+  }
   saveHistory();
   const w=def.createData(++idC);
   const ranges=getPageRanges();
@@ -484,8 +511,16 @@ function addWidget(type){
   // Only insert after selId if it's on the current activePage
   const selIdx=selId!=null?widgets.findIndex(x=>x.id===selId):-1;
   const selOnThisPage=selIdx>=0&&ranges[activePage]&&selIdx>=ranges[activePage].start&&selIdx<ranges[activePage].end;
-  const insertAt=selOnThisPage?selIdx+1:pageEnd;
-  widgets.splice(insertAt,0,w);
+  let insertAt=selOnThisPage?selIdx+1:pageEnd;
+  if(type==='group'){
+    // Nicht in eine bestehende Gruppe verschachteln → hinter deren Ende einfügen
+    const gid=currentGroupContext();
+    if(gid!=null){let ge=widgets.findIndex(x=>x.id===gid)+1;while(ge<widgets.length&&widgets[ge].type!=='groupEnd')ge++;insertAt=Math.min(ge+1,widgets.length);}
+    widgets.splice(insertAt,0,w);
+    widgets.splice(insertAt+1,0,{id:++idC,type:'groupEnd'}); // End-Marker direkt dahinter
+  }else{
+    widgets.splice(insertAt,0,w);
+  }
   selId=w.id;
   // Ein gerade eingefügtes Widget kann per Overflow auf eine Folgeseite rutschen.
   // activePage soll ihm folgen, damit das NÄCHSTE Hinzufügen direkt dahinter (auf
@@ -593,30 +628,24 @@ function setWidth(id,val){
   render();renderProps(id);
 }
 
-function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
-  const isActive=pageIdx===activePage;
-  const pageDiv=document.createElement("div");
-  pageDiv.className="page"+(isActive?" page-active":"")+(isAutoPage?" page-overflow":"")+(nextIsAuto?" page-before-overflow":"");
-  pageDiv.onclick=e=>{
-    if(!e.target.closest(".wwrap")){
-      if(activePage!==pageIdx){activePage=pageIdx;render();return;}
-      desel();
-    }
-  };
-
-  const wc=document.createElement("div");
+// Legt eine Liste von Widgets mit der ½/¼-Reihen-Logik in einen Container.
+// base = globaler Index (in widgets[]) des ersten Elements von list.
+// Wird sowohl von renderPage (Seite) als auch von makeGroupWrap (Gruppenrahmen)
+// genutzt, damit Gruppen dasselbe Layout wie die Seite verwenden.
+function layoutInto(wc, list, base){
   let i=0;
-  while(i<pageWidgets.length){
-    const w=pageWidgets[i],next=pageWidgets[i+1];
-    const gIdx=range.start+i,gIdxNext=range.start+i+1;
+  while(i<list.length){
+    const w=list[i];
+    const gIdx=base+i;
     const fu=Math.round(widthFrac(w)*4); // Viertel-Einheiten: 1=¼, 2=½, 3=¾, 4=voll
     if(fu>=4){
       const div=makeWrap(w,gIdx);if(div)wc.appendChild(div);i++;
     } else {
+      const rowStart=gIdx;
       const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
       let rem=4;
-      while(i<pageWidgets.length&&rem>0){
-        const cw=pageWidgets[i],cgIdx=range.start+i;
+      while(i<list.length&&rem>0){
+        const cw=list[i],cgIdx=base+i;
         const cfu=Math.round(widthFrac(cw)*4);
         if(cfu>=4||cfu>rem) break;
         const div=makeWrap(cw,cgIdx);
@@ -624,7 +653,7 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
         rem-=cfu;i++;
       }
       if(rem>0){
-        const hIdx=gIdx;
+        const hIdx=rowStart;
         const dz=document.createElement("div");
         dz.className='wdz';
         dz.style.cssText=`flex:${rem};border:2px dashed #ddd;border-radius:8px;min-height:40px;transition:border-color .12s,box-shadow .12s;`;
@@ -642,6 +671,39 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
       }
       wc.appendChild(row);
     }
+  }
+}
+
+function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
+  const isActive=pageIdx===activePage;
+  const pageDiv=document.createElement("div");
+  pageDiv.className="page"+(isActive?" page-active":"")+(isAutoPage?" page-overflow":"")+(nextIsAuto?" page-before-overflow":"")+(pageIdx%2===1?" page-back":"");
+  pageDiv.onclick=e=>{
+    if(!e.target.closest(".wwrap")){
+      if(activePage!==pageIdx){activePage=pageIdx;render();return;}
+      desel();
+    }
+  };
+
+  const wc=document.createElement("div");
+  let i=0;
+  while(i<pageWidgets.length){
+    const w=pageWidgets[i];
+    if(w.type==='groupEnd'){i++;continue;} // verwaister End-Marker → überspringen
+    if(w.type==='group'){
+      // Kinder = alles bis zum passenden groupEnd (oder Seitenende)
+      const kids=[];let j=i+1;
+      while(j<pageWidgets.length&&pageWidgets[j].type!=='groupEnd'){kids.push(pageWidgets[j]);j++;}
+      const gw=makeGroupWrap(w,range.start+i,kids,range.start+i+1);
+      if(gw)wc.appendChild(gw);
+      i=(j<pageWidgets.length)?j+1:j; // hinter groupEnd weiter
+      continue;
+    }
+    // Normaler Lauf: Widgets bis zur nächsten Gruppe sammeln und ½/¼-layouten
+    const seg=[];let k=i;
+    while(k<pageWidgets.length&&pageWidgets[k].type!=='group'&&pageWidgets[k].type!=='groupEnd'){seg.push(pageWidgets[k]);k++;}
+    layoutInto(wc,seg,range.start+i);
+    i=k;
   }
   pageDiv.appendChild(wc);
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
@@ -685,7 +747,7 @@ function render(){
   fab.style.cssText="position:sticky;top:12px;align-self:flex-start;z-index:50;width:32px;height:32px;border:none;border-radius:7px;background:rgba(0,0,0,0.22);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);flex-shrink:0;margin-bottom:-44px;";
   ca.appendChild(fab);
   const ranges=getPageRanges();
-  const total=widgets.filter(w=>w.type!=='pagebreak').length;
+  const total=widgets.filter(w=>w.type!=='pagebreak'&&w.type!=='groupEnd').length;
   ranges.forEach((range,pageIdx)=>{
     const pw=widgets.slice(range.start,range.end);
     const isAutoPage=pageIdx>0&&widgets[ranges[pageIdx-1].end]?.auto;
@@ -696,11 +758,7 @@ function render(){
   document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
   requestAnimationFrame(()=>{
     document.querySelectorAll('textarea[data-autoresize]').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
-    document.querySelectorAll('svg.kaestchen-svg').forEach(svg=>{
-      const cs=+svg.dataset.cs;
-      const w=svg.parentElement.offsetWidth;
-      svg.setAttribute('width',Math.floor(w/cs)*cs);
-    });
+    document.querySelectorAll('svg.kaestchen-svg').forEach(svg=>fitKaestchenSvg(svg));
     if(gen !== _renderGen) return; // veralteter Render — kein Overflow-Check mehr
     checkOverflow(ranges);
   });
@@ -745,7 +803,7 @@ function openOverview(oldPositions = null, draggedStableId = null, scrollTop = 0
       const pw = page.offsetWidth;
 
       const clone = page.cloneNode(true);
-      clone.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
+      clone.querySelectorAll('.wacts,.dh,.group-handle,.page-end').forEach(el => el.remove());
       clone.style.cssText = clone.style.cssText +
         `;transform:scale(${scale});transform-origin:top left;margin:0;
          cursor:default;pointer-events:none;box-shadow:none;border-radius:0;
@@ -952,8 +1010,11 @@ function checkOverflow(ranges){
     _followAddedToPage=false;
     return;
   }
-  // Nur Content-Seiten — page-overflow Divs überspringen (sie verschieben sonst die Indices)
-  const pages=[...document.querySelectorAll('.page')].filter(p=>!p.classList.contains('page-overflow'));
+  // Alle Canvas-Seiten in Reihenfolge → 1:1 an ranges ausgerichtet (render() erzeugt
+  // genau eine .page pro Range, inkl. Overflow-Seiten). Overflow-Seiten NICHT
+  // herausfiltern: sonst verschiebt sich pages[] gegenüber ranges[] ab der ersten
+  // Overflow-Seite (→ Underflow/Zurückfließen misst die falsche Folgeseite).
+  const pages=[...document.querySelectorAll('#canvas-area .page')];
 
   // ── Underflow: auto-Break entfernen wenn erste Widget der Folgeseite reinpasst ──
   for(let pi=0;pi<pages.length-1;pi++){
@@ -963,12 +1024,14 @@ function checkOverflow(ranges){
     const breakIdx=range.end; // Index des Pagebreaks in widgets[]
     if(breakIdx>=widgets.length||widgets[breakIdx].type!=='pagebreak'||!widgets[breakIdx].auto)continue;
     const pxPerMm=pageEl.offsetWidth/190;
-    const maxBottom=(280-8)*pxPerMm;
-    const wraps=[...pageEl.querySelectorAll('.wwrap')];
+    const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
+    // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
+    // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame'));
     const pageBottom=wraps.length?wraps[wraps.length-1].offsetTop+wraps[wraps.length-1].offsetHeight:0;
     // Höhe des ersten Widgets der nächsten Seite messen
     const nextPage=pages[pi+1];
-    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')]:[];
+    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')):[];
     const firstNextH=nextWraps.length?nextWraps[0].offsetHeight+14:Infinity; // +14px Margin
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
@@ -986,13 +1049,16 @@ function checkOverflow(ranges){
     const range=ranges[pi];
     if(!range)continue;
     const pxPerMm=pageEl.offsetWidth/190;
-    const maxBottom=(280-8)*pxPerMm;
-    const wraps=[...pageEl.querySelectorAll('.wwrap')];
+    const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
+    // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame'));
     for(let i=0;i<wraps.length;i++){
       if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
-        if(i===0)break; // einzelnes Widget zu groß — kann nicht gesplittet werden
+        if(i===0)break; // einzelnes Widget/Gruppe zu groß — kann nicht gesplittet werden
         _ovfPasses++;
-        widgets.splice(range.start+i,0,{id:++idC,type:'pagebreak',auto:true});
+        // Globalen Index aus dem Wrap lesen (robust gegen Gruppen, deren Kinder
+        // zusätzliche Array-Plätze belegen) statt range.start+i.
+        widgets.splice(+wraps[i].dataset.idx,0,{id:++idC,type:'pagebreak',auto:true});
         render();
         return;
       }
@@ -1022,6 +1088,10 @@ function sel(id){
     if(wid===null)return;
     const w=widgets.find(x=>x.id===wid);if(!w)return;
     const def=WIDGET_MAP[w.type];if(!def)return;
+    // selSafe-Widgets (z.B. eingabekaestchen) NICHT neu rendern: ihr Inhalt
+    // hängt nicht von der Auswahl ab, und ein innerHTML-Re-Render würde dem
+    // gerade bearbeiteten Eingabefeld den Fokus/Cursor stehlen.
+    if(def.meta&&def.meta.selSafe)return;
     const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
     if(winner)winner.innerHTML=def.render(w);
   });
@@ -1034,7 +1104,7 @@ function desel(){
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
     const w=widgets.find(x=>x.id===prevId);
-    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner)winner.innerHTML=def.render(w);}
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe))winner.innerHTML=def.render(w);}
   }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
@@ -1049,20 +1119,34 @@ function desel(){
 //  - Layout immer
 function sfTaskBlock(id,w){
   const nr=w.aufgabenNr||0, txt=w.aufgabenText||'';
+  const stil=w.aufgabenStil||'kreis';
+  const stilBtn=(val,radius,fill)=>{
+    const active=stil===val;
+    return `<button onclick="event.stopPropagation();upd(${id},'aufgabenStil','${val}')"
+      style="flex:1;display:inline-flex;align-items:center;justify-content:center;padding:5px 0;cursor:pointer;
+             border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};background:${active?'#e8f0ff':'#fff'};">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;
+             border-radius:${radius};border:1.5px solid #222;background:${fill?'#222':'transparent'};
+             font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;color:${fill?'#fff':'#222'};line-height:1;">1</span>
+    </button>`;
+  };
   return `<div class="sf-sec">
     <div class="sf-h">Aufgabentext</div>
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <span style="display:inline-flex;align-items:center;justify-content:center;
-          width:16px;height:16px;border-radius:50%;
-          border:1.5px solid ${nr>0?'#222':'#ddd'};
+          width:16px;height:16px;border-radius:${stil.startsWith('quadrat')?'3px':'50%'};
+          border:1.5px solid ${nr>0?'#222':'#ddd'};background:${nr>0&&stil.endsWith('-fill')?'#222':'transparent'};
           font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;
-          color:${nr>0?'#222':'#ccc'};flex-shrink:0;line-height:1;">${nr>0?nr:'–'}</span>
+          color:${nr>0?(stil.endsWith('-fill')?'#fff':'#222'):'#ccc'};flex-shrink:0;line-height:1;">${nr>0?nr:'–'}</span>
       <input type="number" min="0" max="99" value="${nr}"
         onclick="event.stopPropagation()"
         onchange="upd(${id},'aufgabenNr',+this.value)"
         style="width:44px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
                font-family:inherit;font-size:12px;text-align:center;">
-      <span style="font-size:10px;color:#bbb;">0 = kein Kreis</span>
+      <span style="font-size:10px;color:#bbb;">0 = keine Zahl</span>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:6px;">
+      ${stilBtn('kreis','50%',false)}${stilBtn('kreis-fill','50%',true)}${stilBtn('quadrat','3px',false)}${stilBtn('quadrat-fill','3px',true)}
     </div>
     <input type="text" value="${esc(txt)}" placeholder="Aufgabentext …"
       onclick="event.stopPropagation()"
@@ -1251,8 +1335,47 @@ function mv(idx,d){
 function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]));c.id=++idC;widgets.splice(idx+1,0,c);render();sel(c.id);}
 function clearCanvas(){saveHistory();widgets=[];selId=null;activePage=0;render();desel();}
 
-function addSample(){
+// Lädt ein zufälliges Beispiel aus dem Ordner beispiele/ (Liste in beispiele/index.json).
+// Fällt auf das eingebaute Beispiel zurück, wenn der Ordner fehlt oder fetch blockiert
+// ist (z.B. wenn die App per file:// statt über einen Server geöffnet wurde).
+async function addSample(){
   if(widgets.length)saveHistory();
+  try{
+    const list=await fetch('beispiele/index.json',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    if(Array.isArray(list)&&list.length){
+      const pick=list[Math.floor(Math.random()*list.length)];
+      const resp=await fetch('beispiele/'+encodeURIComponent(pick),{cache:'no-store'});
+      if(resp.ok && await loadBeispielBlob(await resp.blob())) return;
+    }
+  }catch(e){ /* file:// oder kein Ordner → Fallback unten */ }
+  addSampleBuiltin();
+}
+
+// Lädt ein .blatt aus einem Blob (für Beispiele). Gibt true bei Erfolg zurück.
+async function loadBeispielBlob(blob){
+  try{ await loadJSZip(); }catch{ return false; }
+  let doc, zip;
+  try{
+    zip=await JSZip.loadAsync(blob);
+    const e=zip.file('document.json'); if(!e) return false;
+    doc=JSON.parse(await e.async('string'));
+  }catch{ return false; }
+  const loaded=doc.widgets||[];
+  const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml'};
+  for(const w of loaded){
+    if(w.src&&w.src.startsWith('images/')){
+      const entry=zip.file(w.src);
+      if(entry){ const b64=await entry.async('base64'); const ext=w.src.split('.').pop().toLowerCase(); w.src=`data:${mimeMap[ext]||'image/png'};base64,${b64}`; }
+    }
+  }
+  widgets=loaded;
+  idC=doc.idC||Math.max(0,...loaded.map(w=>w.id),0);
+  selId=null; activePage=0;
+  render(); desel();
+  return true;
+}
+
+function addSampleBuiltin(){
   widgets=[];selId=null;activePage=0;
   const add=type=>{const def=WIDGET_MAP[type];if(!def)return;const w=def.createData(++idC);widgets.push(w);return w;};
 
@@ -1388,7 +1511,7 @@ function updatePrintStyle() {
   const ds = printOpts.doubleSided;
   // Voll-Blatt-Modell: @page hat margin:0, die Seitenränder liegen im Padding der .page.
   // Der Bundsteg für beidseitigen Druck wird über die Klasse body.print-ds gesteuert
-  // (CSS: body.print-ds .page:nth-of-type(even){...}), nicht mehr über @page :left/:right.
+  // (CSS: body.print-ds .page.page-back{...}), nicht mehr über @page :left/:right.
   document.body.classList.toggle('print-ds', ds);
   let css = `@page{margin:0;}`;
   if (printOpts.pageNumbers) {
@@ -1419,7 +1542,7 @@ function doPrintSolutions() {
     const pw = widgets.slice(range.start, range.end);
     const pageDiv = renderPage(pw, pageIdx, range);
     pageDiv.classList.remove('page-active');
-    pageDiv.querySelectorAll('.wacts,.dh,.page-end').forEach(el => el.remove());
+    pageDiv.querySelectorAll('.wacts,.dh,.group-handle,.page-end').forEach(el => el.remove());
     sc.appendChild(pageDiv);
   });
   _solutionsMode = false;
@@ -1434,9 +1557,76 @@ function togglePrintPanel(e) {
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
 
+// ── Sonderzeichen-Palette (universell) ───────────────────────────
+// Fügt das Zeichen am Cursor des zuletzt fokussierten Textfeldes ein.
+// Button & Palette nutzen onmousedown=preventDefault, damit das Feld den
+// Fokus/Cursor behält. Funktioniert für <input>/<textarea> und contenteditable.
+const UNI_CHARS = [
+  // Mathe & Text
+  '×','÷','·','−','±','≤','≥','≠','≈','°','€','½','¼','¾','⅓','⅔','²','³','√',
+  '→','←','↔','„','“','‚','‘','«','»','…','–','—','•','✓','✗',
+  // Symbole & Emoji
+  '⌛','⚠','☠','🌏','🍀','👀','✏','✂','✎','✄','✍','❤','❅','✭','🌹','🌻','✟','☀','☁','🌙','🚀',
+  // Kartenfarben (schwarz + weiß je Farbe)
+  '♠','♤','♥','♡','♦','♢','♣','♧',
+  // Schachfiguren (weiß + schwarz)
+  '♔','♕','♖','♗','♘','♙','♚','♛','♜','♝','♞','♟',
+  '🍔','🍕','🍜','🍩','🍫','👑','⚽','🏀','🏆','🏁','🏈','🚲','☞','☟','🎤','🚩','♺','♻','⛄','⛔','🛪','💪','👏','👌','☂','🚫','🔥','🔍','★'];
+
+// Zuletzt fokussiertes editierbares Feld merken (überlebt das Anklicken der Palette).
+let _uniEl = null;
+function _uniEditable(el) {
+  if (!el) return false;
+  if (el.isContentEditable) return true;
+  if (el.tagName === 'TEXTAREA') return true;
+  if (el.tagName === 'INPUT') return ['text','search','tel','url','email','number',''].includes((el.type||'text').toLowerCase());
+  return false;
+}
+document.addEventListener('focusin', e => { if (_uniEditable(e.target)) _uniEl = e.target; });
+function buildUniPanel() {
+  const grid = document.getElementById('uni-grid');
+  if (!grid || grid.dataset.built) return;
+  grid.dataset.built = '1';
+  UNI_CHARS.forEach(ch => {
+    const b = document.createElement('button');
+    b.textContent = ch;
+    b.style.cssText = 'width:30px;height:30px;border:1px solid #45475a;background:#313244;color:#cdd6f4;'
+      + 'border-radius:5px;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;';
+    b.addEventListener('mousedown', e => e.preventDefault()); // Fokus im Textfeld behalten
+    b.addEventListener('click', e => { e.stopPropagation(); uniInsert(ch); });
+    grid.appendChild(b);
+  });
+}
+function toggleUniPanel(e) {
+  e.stopPropagation();
+  buildUniPanel();
+  const p = document.getElementById('uni-panel');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  const pp = document.getElementById('print-panel'); if (pp) pp.style.display = 'none';
+}
+function uniInsert(ch) {
+  // gemerktes Feld bevorzugen (activeElement kann durch den Klick verloren gehen)
+  let el = (_uniEl && _uniEl.isConnected) ? _uniEl
+         : (_uniEditable(document.activeElement) ? document.activeElement : null);
+  if (!el) return;
+  el.focus();
+  // insertText fügt am Caret ein (input/textarea/contenteditable) und feuert 'input'
+  const ok = document.execCommand('insertText', false, ch);
+  if (!ok && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+    const s = el.selectionStart ?? el.value.length, en = el.selectionEnd ?? s;
+    el.value = el.value.slice(0, s) + ch + el.value.slice(en);
+    const pos = s + ch.length;
+    try { el.setSelectionRange(pos, pos); } catch (_) {}
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+}
+
 document.addEventListener('click', () => {
   const p = document.getElementById('print-panel');
   if (p) p.style.display = 'none';
+  const u = document.getElementById('uni-panel');
+  if (u) u.style.display = 'none';
 });
 
 // ── INIT ─────────────────────────────────────────────────────────

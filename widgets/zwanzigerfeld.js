@@ -143,7 +143,7 @@ WIDGETS.push({
           ${toggleBtn("Nur −",   op==='-',    `zfSet(${d.id},'op','-')`)}
           ${toggleBtn("+ und −", op==='both', `zfSet(${d.id},'op','both')`)}
         </div></div>` : '') +
-      pr("Anzahl", `<input type="number" min="1" max="18" value="${anz}" onchange="zfSet(${d.id},'anzahl',+this.value)">`) +
+      pr("Anzahl", `<input type="number" min="1" max="24" value="${anz}" onchange="zfSet(${d.id},'anzahl',+this.value)">`) +
       `<button onclick="zfRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">

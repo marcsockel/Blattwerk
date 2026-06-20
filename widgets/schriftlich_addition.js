@@ -127,8 +127,10 @@ function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
     });
   }
 
+  // Weiße Fläche hinter dem Gitter → Kästchen bleiben weiß, auch wenn der
+  // Widget-Hintergrund gefärbt ist.
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
-    style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
+    style="display:block;flex-shrink:0;"><rect width="${W}" height="${H}" fill="#fff"/>${grid}${texts}</svg>`;
 }
 
 WIDGETS.push({
@@ -193,7 +195,7 @@ WIDGETS.push({
           ${toggleBtn("Mit",   ue, `saUpdProp(${d.id},'uebertrag',true)`)}
         </div></div>` +
       pr("Anzahl Aufgaben",
-        `<input type="number" min="1" max="12" value="${anz}" onchange="saUpdProp(${d.id},'anzahl',+this.value)">`) +
+        `<input type="number" min="1" max="70" value="${anz}" onchange="saUpdProp(${d.id},'anzahl',+this.value)">`) +
       `<button onclick="event.stopPropagation();saRoll(${d.id})"
         style="margin-top:2px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

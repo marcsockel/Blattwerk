@@ -141,7 +141,7 @@ WIDGETS.push({
         </select>`) +
       pr("Leerfeld", `<select onchange="zhUpdProp(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl Häuser",
-        `<input type="number" min="1" max="12" value="${haeuser}" onchange="zhUpdProp(${d.id},'haeuser',+this.value)">`) +
+        `<input type="number" min="1" max="40" value="${haeuser}" onchange="zhUpdProp(${d.id},'haeuser',+this.value)">`) +
       `<button onclick="event.stopPropagation();zhRoll(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

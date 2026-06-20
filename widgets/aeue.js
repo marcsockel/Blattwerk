@@ -140,7 +140,7 @@ WIDGETS.push({
           ${togBtn('äu', modi.includes('äu'), `aeueToggleModus(${d.id},'äu')`)}
         </div>
       </div>
-      ${pr('Anzahl', `<input type="number" min="1" max="${poolSize}"
+      ${pr('Anzahl', `<input type="number" min="1" max="30"
         value="${anzahl}" onclick="event.stopPropagation()"
         onchange="aeueSetAnzahl(${d.id},+this.value)"
         style="width:54px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
@@ -156,7 +156,7 @@ WIDGETS.push({
         </div>
         <textarea onclick="event.stopPropagation()"
           onfocus="edFocus()" onblur="edBlur()"
-          oninput="updq(${d.id},'text',this.value)"
+          oninput="aeueUpdText(${d.id},this.value)"
           style="width:100%;height:150px;font-family:inherit;font-size:12px;
                  border:none;outline:none;padding:8px 10px;
                  resize:vertical;box-sizing:border-box;line-height:1.6;display:block;"
@@ -190,6 +190,14 @@ function aeueToggleModus(id, m) {
   w.modi = modi;
   w.text = aeueGenText(modi, w.anzahl || 6);
   render(); renderProps(id);
+}
+
+// Manuelles Bearbeiten des Textfelds: Anzahl an die tatsächliche Zeilenzahl
+// koppeln, damit sie mitwächst. Fokus bleibt erhalten (updq → kein renderProps).
+function aeueUpdText(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  w.anzahl = Math.max(1, aeueParseText(val).length);
+  updq(id, 'text', val);
 }
 
 function aeueSetAnzahl(id, anzahl) {

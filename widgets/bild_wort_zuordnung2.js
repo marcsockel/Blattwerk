@@ -33,7 +33,7 @@ WIDGETS.push({
     const size          = d.imageSize    || 70;
     const zeilenabstand = d.zeilenabstand ?? 10;
     const checkbox = `<span style="display:inline-block;width:13px;height:13px;border:1.5px solid #555;
-                        border-radius:2px;flex-shrink:0;"></span>`;
+                        border-radius:2px;flex-shrink:0;background:#fff;"></span>`;
 
     const items = (d.aufgaben || []).map(a => {
       const src      = a.src || anlautDefaultSrc(a.anlaut);
@@ -56,8 +56,11 @@ WIDGETS.push({
       </div>`;
     });
 
+    // Spalten je Layoutbreite: voll/¾ → 3, ½ → 2, ¼ → 1 Item pro Zeile
+    const frac = d.widthFraction || (d.halfWidth ? '1/2' : 'full');
+    const cols = { 'full':3, '3/4':3, '1/2':2, '1/4':1 }[frac] || 3;
     return atHtml(d) +
-      `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px 24px;">${items.join("")}</div>`;
+      `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 24px;">${items.join("")}</div>`;
   },
 
   renderProps: d => {

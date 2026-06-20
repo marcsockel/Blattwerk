@@ -13,6 +13,8 @@ WIDGETS.push({
       ops: ["+", "-"],
       ergaenzung: false,
       zeichen: false,
+      vergleich: false,
+      vergleichSeiten: "gemischt",
       luecke: "erste",
       showLoesungen: false, aufgabenNr:0, aufgabenText:'',
     };
@@ -24,7 +26,7 @@ WIDGETS.push({
     const isActive = d.id === selId || _solutionsMode;
     const numCols = d.cols || 2;
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
-    const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
+    const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
     const blueVal = v => `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
 
     // Parse a task string into parts.
@@ -37,6 +39,21 @@ WIDGETS.push({
       // Ergänzung pattern: "a op _ = r" or "_ op a = r"
       const mErg = norm.match(/^(-?\d+|_)\s*([+\-·:])\s*(-?\d+|_)\s*=\s*(-?\d+)$/);
       if (mErg) return { left: mErg[1], op: mErg[2], right: mErg[3], result: mErg[4] };
+
+      // Vergleich pattern: "LEFT <?> RIGHT" (Seiten = Zahl oder Aufgabe)
+      const mVgl = norm.match(/^(.+?)\s*<\?>\s*(.+)$/);
+      if (mVgl) {
+        const evalSide = s => {
+          s = s.trim();
+          const mm = s.match(/^(-?\d+(?:[.,]\d+)?)\s*([+\-·:])\s*(-?\d+(?:[.,]\d+)?)$/);
+          if (mm) { const a=+mm[1].replace(',','.'), b=+mm[3].replace(',','.'), op=mm[2];
+            return op==='+'?a+b:op==='-'?a-b:op==='·'?a*b:a/b; }
+          return +s.replace(',','.');
+        };
+        const lv = evalSide(mVgl[1]), rv = evalSide(mVgl[2]);
+        const sym = lv < rv ? '<' : lv > rv ? '>' : '=';
+        return { isVergleich:true, left: mVgl[1].trim(), right: mVgl[2].trim(), sym };
+      }
 
       // Zeichen-Modus pattern: "a ? b = c"
       const mZeichen = norm.match(/^(-?\d+(?:[.,]\d+)?)\s*\?\s*(-?\d+(?:[.,]\d+)?)\s*=\s*(-?\d+(?:[.,]\d+)?)$/);
@@ -65,7 +82,7 @@ WIDGETS.push({
     // Collect answers for the Lösungen band
     const answers = [];
     parsed.forEach(p => {
-      if (p.raw !== undefined) return;
+      if (p.raw !== undefined || p.isVergleich) return;
       if (p.result !== null) {
         // Ergänzung: the missing value is the one that was "_"
         answers.push(p.left === "_" ? p.left_val : p.right_val);
@@ -130,7 +147,16 @@ WIDGETS.push({
           const ans = p.hasEq ? (isActive ? `&thinsp;=&thinsp;${blueVal(computeAns(p)??'?')}` : `&thinsp;=&thinsp;${box}`) : "";
           return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
         }
-        const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;"></span>`;
+        const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+        if (p.isVergleich) {
+          const cmpBox = `<span style="display:inline-block;width:24px;height:24px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+          const mid = isActive ? blueVal(p.sym) : cmpBox;
+          return `<tr>
+            <td style="text-align:right;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(p.left)}</td>
+            <td style="text-align:center;padding:3px 8px;">${mid}</td>
+            <td style="text-align:left;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(p.right)}</td>
+          </tr>`;
+        }
         const opCell = p.isZeichen
           ? `<td style="text-align:center;padding:3px 6px;">${isActive ? blueVal(p.op) : sqBox}</td>`
           : `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
@@ -190,10 +216,11 @@ WIDGETS.push({
 
     return `
       <div class="prow"><label>Modus</label>
-        <div style="display:flex;gap:4px;">
-          ${toggleBtn("Rechenaufgaben", !erg && !d.zeichen, `arithSetModus(${d.id},'normal')`)}
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${toggleBtn("Rechenaufgaben", !erg && !d.zeichen && !d.vergleich, `arithSetModus(${d.id},'normal')`)}
           ${toggleBtn("Ergänzung",      erg,                `arithSetModus(${d.id},'ergaenzung')`)}
           ${toggleBtn("Rechenzeichen",  d.zeichen||false,   `arithSetModus(${d.id},'zeichen')`)}
+          ${toggleBtn("Größer/Kleiner", d.vergleich||false, `arithSetModus(${d.id},'vergleich')`)}
         </div>
       </div>
       ${erg ? `<div class="prow"><label>Lücke</label>
@@ -203,11 +230,18 @@ WIDGETS.push({
           ${toggleBtn("Zufall",  luecke==="zufall", `arithSetLuecke(${d.id},'zufall')`)}
         </div>
       </div>` : ''}
-      <div class="prow"><label>Rechenzeichen</label>
+      ${d.vergleich ? `<div class="prow"><label>Seiten</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Zahlen",   (d.vergleichSeiten||'gemischt')==='zahlen',   `arithSetVglSeiten(${d.id},'zahlen')`)}
+          ${toggleBtn("Aufgaben", (d.vergleichSeiten||'gemischt')==='aufgaben', `arithSetVglSeiten(${d.id},'aufgaben')`)}
+          ${toggleBtn("Gemischt", (d.vergleichSeiten||'gemischt')==='gemischt', `arithSetVglSeiten(${d.id},'gemischt')`)}
+        </div>
+      </div>` : ''}
+      ${!d.vergleich ? `<div class="prow"><label>Rechenzeichen</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">
           ${opBtn("+","+")}${opBtn("-","−")}${opBtn("·","·")}${opBtn(":","÷")}
         </div>
-      </div>` +
+      </div>` : ''}` +
       pr("Zahlenraum",
         `<select onchange="upd(${d.id},'zahlenraum',+this.value)">
           ${[10,20,100,1000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
@@ -221,13 +255,13 @@ WIDGETS.push({
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
-        `<input type="number" min="1" max="12" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
-      `<div class="prow"><label>Lösungen anzeigen</label>
+        `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
+      (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
           ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
         </div>
-      </div>` +
+      </div>` : '') +
       `<button onclick="event.stopPropagation();arithGenerate(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
@@ -261,7 +295,18 @@ function arithSetModus(id, modus) {
   saveHistory();
   w.ergaenzung = modus === 'ergaenzung';
   w.zeichen    = modus === 'zeichen';
+  w.vergleich  = modus === 'vergleich';
   if (modus === 'ergaenzung') w.luecke = w.luecke || 'erste';
+  if (modus === 'vergleich')  w.vergleichSeiten = w.vergleichSeiten || 'gemischt';
+  // Lösung anzeigen gibt es bei Rechenzeichen/Vergleich nicht → abwählen
+  if (modus === 'zeichen' || modus === 'vergleich') w.showLoesungen = false;
+  arithGenerate(id);
+}
+
+function arithSetVglSeiten(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  w.vergleichSeiten = val;
   arithGenerate(id);
 }
 
@@ -288,6 +333,8 @@ function arithDoGenerate(w) {
   const ops    = w.ops || ["+", "-"];
   const erg    = w.ergaenzung || false;
   const zeichen= w.zeichen || false;
+  const vergleich = w.vergleich || false;
+  const vglSeiten = w.vergleichSeiten || 'gemischt';
   const luecke = w.luecke || "erste";
   const total = app * cols;
 
@@ -388,10 +435,29 @@ function arithDoGenerate(w) {
     return `${a} ? ${b} = ${result}`;
   };
 
+  // Vergleich: jede Seite ist Zahl oder Aufgabe (je nach vglSeiten); dazwischen ein Kästchen für < > =
+  const makeVergleichSide = () => {
+    const expr = vglSeiten === 'aufgaben' ? true : vglSeiten === 'zahlen' ? false : Math.random() < 0.5;
+    if (!expr) return String(rand(0, zr));
+    const op = ops[Math.floor(Math.random() * ops.length)];
+    let a, b, tries = 0;
+    do {
+      tries++;
+      if (op === "+") { a = rand(1, zr - 1); b = rand(1, zr - a); }
+      else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
+      else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
+      else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
+      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      break;
+    } while (tries < 200);
+    return `${a} ${op} ${b}`;
+  };
+  const makeVergleich = () => `${makeVergleichSide()} <?> ${makeVergleichSide()}`;
+
   const lines = [];
   for (let i = 0; i < total; i++) {
     const op = ops[Math.floor(Math.random() * ops.length)];
-    lines.push(zeichen ? makeZeichen(op) : erg ? makeErgaenzung(op) : makeNormal(op));
+    lines.push(vergleich ? makeVergleich() : zeichen ? makeZeichen(op) : erg ? makeErgaenzung(op) : makeNormal(op));
   }
   w.tasks = lines.join("\n");
 }

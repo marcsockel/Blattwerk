@@ -6,8 +6,24 @@ const GELD_SCHEINE = [5000, 2000, 1000, 500];          // 50€, 20€, 10€, 5
 const GELD_EURO    = [200, 100];                        // 2€, 1€
 const GELD_CENT    = [50, 20, 10, 5, 2, 1];            // 50ct … 1ct
 
+// Hintergrundfarben im Farbmodus (Wert in Cent → RGB, vom Nutzer vorgegeben).
+// Euromünzen (100/200) folgen später. 10000 = 100€-Schein (kommt derzeit nicht vor).
+const GELD_FARBEN = {
+  10000: 'rgb(207,226,207)', // 100€
+  5000:  'rgb(240,213,186)', // 50€
+  2000:  'rgb(188,216,234)', // 20€
+  1000:  'rgb(242,152,141)', // 10€
+  500:   'rgb(183,198,183)', // 5€
+  50: 'rgb(237,212,153)', 20: 'rgb(237,212,153)', 10: 'rgb(237,212,153)', // Gold-Cents
+  5:  'rgb(235,159,119)', 2:  'rgb(235,159,119)', 1:  'rgb(235,159,119)',  // Kupfer-Cents
+  // Euromünzen sind zweifarbig: { outer = Ring/Fläche außen, inner = Scheibe innen }
+  200: { outer: 'rgb(202,202,202)', inner: 'rgb(238,225,183)' }, // 2€: außen silber, innen gold
+  100: { outer: 'rgb(211,180,121)', inner: 'rgb(225,225,225)' }, // 1€: außen gold, innen silber
+};
+
 function geldLabel(val) {
-  return val >= 100 ? `${val/100}€` : `${val}ct`;
+  // Nur die Zahl, ohne Einheit (kein € / ct auf Münzen und Scheinen)
+  return val >= 100 ? `${val/100}` : `${val}`;
 }
 
 // Generiert eine zufällige Kombination von Scheinen/Münzen
@@ -50,41 +66,47 @@ function geldPseudoRand(seed) {
 }
 
 // ── SVG-Zeichenfunktionen ─────────────────────────────────────────
-function drawSchein(val, cx, cy, sc=1) {
+function drawSchein(val, cx, cy, sc=1, fill) {
   const {w, h} = geldItemSize(val, sc);
   const label = geldLabel(val);
   const fs = Math.round((w < 40 ? 9 : w < 46 ? 10 : 11) * sc);
-  const rx = Math.round(3 * sc);
-  const pad = Math.round(3 * sc);
+  // Eckige Ecken, kein innerer Rahmen. Weißer Streifen links (~1/4 der Breite, innerhalb
+  // des Rands). Trennlinie rechts, damit er auch in S/W (off-white) sichtbar ist.
+  // Zahl mittig im gefärbten Bereich (rechts vom Streifen), nicht in der Gesamtmitte.
+  const sw = Math.round(w * 0.25);
+  const stripeX = 1.5, R = stripeX + sw;
+  const labelX = (R + (w - 1.5)) / 2;
   return `<g transform="translate(${cx - w/2},${cy - h/2})">
-    <rect x="0.75" y="0.75" width="${w-1.5}" height="${h-1.5}" rx="${rx}"
-      fill="#fdfdf8" stroke="#666" stroke-width="1.5"/>
-    <rect x="${pad}" y="${pad}" width="${w-pad*2}" height="${h-pad*2}" rx="${Math.max(1,rx-1.5)}"
-      fill="none" stroke="#bbb" stroke-width="0.8"/>
-    <text x="${w/2}" y="${h/2+Math.round(4*sc)}" text-anchor="middle"
+    <rect x="0.75" y="0.75" width="${w-1.5}" height="${h-1.5}"
+      fill="${fill || '#fdfdf8'}" stroke="#666" stroke-width="1.5"/>
+    <rect x="${stripeX}" y="1.5" width="${sw}" height="${h-3}" fill="#fff"/>
+    <line x1="${R}" y1="1.5" x2="${R}" y2="${h-1.5}" stroke="#bbb" stroke-width="0.8"/>
+    <text x="${labelX}" y="${h/2+Math.round(4*sc)}" text-anchor="middle"
       font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#222">${label}</text>
   </g>`;
 }
 
-function drawEuro(val, cx, cy, sc=1) {
+function drawEuro(val, cx, cy, sc=1, fill) {
   const r = Math.round(13 * sc);
   const label = geldLabel(val);
   const fs = Math.round(10 * sc);
+  // fill (Farbmodus) = { outer, inner }; ohne Farbe: off-white außen, innen nur Kontur
+  const outerFill = fill ? fill.outer : '#fdfdf5';
+  const innerFill = fill ? fill.inner : 'none';
   return `<g>
-    <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="#fdfdf5" stroke="#888" stroke-width="1.5"/>
-    <circle cx="${cx}" cy="${cy}" r="${r-Math.round(4*sc)}" fill="none" stroke="#ccc" stroke-width="0.8"/>
+    <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="${outerFill}" stroke="#888" stroke-width="1.5"/>
+    <circle cx="${cx}" cy="${cy}" r="${r-Math.round(4*sc)}" fill="${innerFill}" stroke="#888" stroke-width="1"/>
     <text x="${cx}" y="${cy+Math.round(4*sc)}" text-anchor="middle"
       font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#222">${label}</text>
   </g>`;
 }
 
-function drawCent(val, cx, cy, sc=1) {
+function drawCent(val, cx, cy, sc=1, fill) {
   const r = Math.round((val >= 10 ? 11 : 9) * sc);
   const label = geldLabel(val);
   const fs = Math.round((label.length > 3 ? 7 : 9) * sc);
   return `<g>
-    <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="#faf8f0" stroke="#aaa" stroke-width="1.5"/>
-    <circle cx="${cx}" cy="${cy}" r="${r-Math.round(3.5*sc)}" fill="none" stroke="#ddd" stroke-width="0.7"/>
+    <circle cx="${cx}" cy="${cy}" r="${r-0.75}" fill="${fill || '#faf8f0'}" stroke="#aaa" stroke-width="1.5"/>
     <text x="${cx}" y="${cy+Math.round(3*sc)}" text-anchor="middle"
       font-size="${fs}" font-family="sans-serif" font-weight="700" fill="#444">${label}</text>
   </g>`;
@@ -103,7 +125,7 @@ function geldItemSize(val, sc=1) {
 }
 
 // ── Haupt-SVG für eine Aufgabe ────────────────────────────────────
-function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
+function geldSvg(aufgabe, mitCent, modus, isActive, gross=false, farbe=false) {
   const amountCents = aufgabe.betrag;
   const showGeld   = modus !== 'betrag';
   const blueGeld   = modus === 'betrag' && isActive;
@@ -174,10 +196,11 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false) {
 
     for (const {val, cx, cy, rot} of positions) {
       const ox = pad + cx, oy = pad + cy;
+      const fill = farbe ? (GELD_FARBEN[val] || null) : null;
       let el = '';
-      if (val >= 500) el = drawSchein(val, ox, oy, sc);
-      else if (val >= 100) el = drawEuro(val, ox, oy, sc);
-      else el = drawCent(val, ox, oy, sc);
+      if (val >= 500) el = drawSchein(val, ox, oy, sc, fill);
+      else if (val >= 100) el = drawEuro(val, ox, oy, sc, fill);
+      else el = drawCent(val, ox, oy, sc, fill);
       // Leichte zufällige Drehung
       if (rot) el = `<g transform="rotate(${rot.toFixed(1)},${ox},${oy})">${el}</g>`;
 
@@ -230,7 +253,7 @@ WIDGETS.push({
   meta: { type:"geld", label:"Geld", desc:"Scheine und Münzen zählen", icon:"€", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld' , aufgabenNr:0, aufgabenText:''};
+    const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld', farbe:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"geld", ...cfg,
       aufgaben: geldGen(cfg.anzahl, cfg.maxEuro*100, cfg.mitCent) };
   },
@@ -246,7 +269,8 @@ WIDGETS.push({
     const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
     const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
     const avail   = Math.round(640 * frac);
-    const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive, gross)}</div>`);
+    const farbe    = d.farbe || false;
+    const items   = aufgaben.map(a => `<div>${geldSvg(a, mitCent, modus, isActive, gross, farbe)}</div>`);
     const _perRow = Math.max(1, Math.floor((avail + 20) / (itemW + 20)));
     return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
   },
@@ -257,6 +281,7 @@ WIDGETS.push({
     const mitCent = d.mitCent || false;
     const modus   = d.modus   || 'geld';
     const gross   = d.gross   || false;
+    const farbe   = d.farbe   || false;
 
     const togBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -295,7 +320,13 @@ WIDGETS.push({
       <button onclick="event.stopPropagation();geldWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` ;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>
+      <div class="prow" style="margin-top:8px;"><label>Darstellung</label>
+        <div style="display:flex;gap:4px;">
+          ${togBtn("S/W",   !farbe, `upd(${d.id},'farbe',false)`)}
+          ${togBtn("Farbe",  farbe, `upd(${d.id},'farbe',true)`)}
+        </div>
+      </div>` ;
   },
 });
 

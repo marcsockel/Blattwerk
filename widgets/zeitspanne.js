@@ -80,7 +80,7 @@ WIDGETS.push({
       if (isActive) {
         return `<div style="width:100%;box-sizing:border-box;padding:3px 6px;border:1.5px solid #2563eb;border-radius:3px;font-size:13px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;text-align:center;">${spanH}h ${spanM}min</div>`;
       }
-      return `<div style="width:100%;box-sizing:border-box;padding:3px 6px;border:1.5px solid #555;border-radius:3px;font-size:13px;font-family:'DidactGothic7',sans-serif;color:#333;text-align:center;">_____ h _____ min</div>`;
+      return `<div style="width:100%;box-sizing:border-box;padding:3px 6px;border:1.5px solid #555;border-radius:3px;font-size:13px;font-family:'DidactGothic7',sans-serif;color:#333;display:flex;"><span style="flex:1;text-align:right;">h</span><span style="flex:1;text-align:right;">min</span></div>`;
     };
 
     const arrow = `<div style="width:100%;height:18px;display:flex;align-items:center;">
@@ -159,7 +159,7 @@ WIDGETS.push({
       </div>`).join("");
 
     return pr("Anzahl Items",
-        `<input type="number" min="1" max="8" value="${anzahl}" onchange="zeitspanneUpdAnzahl(${d.id},+this.value)">`) +
+        `<input type="number" min="1" max="18" value="${anzahl}" onchange="zeitspanneUpdAnzahl(${d.id},+this.value)">`) +
       pr("Zufalls-Stufe", `<select onchange="upd(${d.id},'stufe',this.value)">${stufeOpts}</select>`) +
       `<div class="prow"><label>Stunden</label>
         <div style="display:flex;gap:4px;">

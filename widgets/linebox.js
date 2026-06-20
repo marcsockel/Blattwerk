@@ -84,7 +84,7 @@ WIDGETS.push({
     `;
 
     return textEditor +
-      pr("Anzahl Zeilen", `<input type="number" min="1" max="20" value="${d.lines}" onchange="upd(${d.id},'lines',+this.value)">`) +
+      pr("Anzahl Zeilen", `<input type="number" min="1" max="30" value="${d.lines}" onchange="upd(${d.id},'lines',+this.value)">`) +
       pr("Lineatur", `<select onchange="upd(${d.id},'lineatur',+this.value)">
         <option value="0" ${lin===0?"selected":""}>Einfach</option>
         <option value="1" ${lin===1?"selected":""}>Lineatur 1 (1. Klasse)</option>

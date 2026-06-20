@@ -53,18 +53,38 @@ function atHtml(d) {
   const nr  = d.aufgabenNr || 0;
   const txt = (d.aufgabenText || '').trim();
   if (!nr && !txt) return '';
+  // Stil der Nummer: kreis | kreis-fill | quadrat | quadrat-fill
+  const stil   = d.aufgabenStil || 'kreis';
+  const radius = stil.startsWith('quadrat') ? '3px' : '50%';
+  const fill   = stil.endsWith('-fill');
   return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
     ${nr > 0
       ? `<span style="display:inline-flex;align-items:center;justify-content:center;
-           width:16px;height:16px;border-radius:50%;border:1.5px solid #222;
+           width:16px;height:16px;border-radius:${radius};border:1.5px solid #222;
+           background:${fill ? '#222' : 'transparent'};
            font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;
-           color:#222;flex-shrink:0;line-height:1;">${nr}</span>`
+           color:${fill ? '#fff' : '#222'};flex-shrink:0;line-height:1;">${nr}</span>`
       : ''}
     ${txt
       ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:13px;
            color:#222;">${esc(txt)}</span>`
       : ''}
   </div>`;
+}
+
+// Ausrichtungs-Toggle (Links / Mitte / Rechts) für Text-Widgets.
+// Setzt d.align ('left' | 'center' | 'right'); im Render text-align nutzen.
+function alignToggle(id, align) {
+  const cur = align || 'left';
+  const btn = (val, label) =>
+    `<button onclick="event.stopPropagation();upd(${id},'align','${val}')"
+      style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${cur===val?'#89b4fa':'#ddd'};
+             background:${cur===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;color:${cur===val?'#1e1e2e':'#999'};">${label}</button>`;
+  return `<div class="prow"><label>Ausrichtung</label>
+    <div style="display:flex;gap:4px;">
+      ${btn('left','Links')}${btn('center','Mitte')}${btn('right','Rechts')}
+    </div></div>`;
 }
 
 // Hinweis: Der frühere Helfer atProps() (Hintergrund + Aufgabentext) wurde

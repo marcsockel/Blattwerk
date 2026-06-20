@@ -61,7 +61,25 @@ function zmGenShown(n, fillMode) {
 
 function zmMakeMauer(n, fillMode, zahlenraum) {
   const max = zahlenraum || 10;
-  const base = Array.from({length: n}, () => Math.floor(Math.random() * (max - 1)) + 1);
+  // Zahlenraum bezieht sich auf den OBERSTEN Stein (Spitze), nicht die Basis.
+  // Spitze = Σ base[i] · C(n-1, i) (Binomialgewichte der Basiszeile).
+  const coeffs = [];
+  let bin = 1;
+  for (let i = 0; i < n; i++) { coeffs.push(bin); bin = bin * (n - 1 - i) / (i + 1); }
+  const coeffSum = coeffs.reduce((a, b) => a + b, 0); // = 2^(n-1) = kleinstmögliche Spitze (alle Basissteine = 1)
+  // Start: alle Basissteine 1 (Spitze = coeffSum). Restbudget bis max zufällig verteilen;
+  // jeder +1 auf base[i] erhöht die Spitze um coeffs[i] → Spitze bleibt garantiert ≤ max.
+  const base = Array(n).fill(1);
+  let budget = max - coeffSum; // < 0 falls selbst die Minimalspitze > max (großes n, kleiner Zahlenraum) → Basis bleibt alle 1 (best effort)
+  let guard = 0;
+  while (budget > 0 && guard++ < 2000) {
+    const affordable = [];
+    for (let i = 0; i < n; i++) if (coeffs[i] <= budget) affordable.push(i);
+    if (!affordable.length) break;
+    if (Math.random() < 0.05) break; // gelegentlich früher stoppen → mehr Variation
+    const i = affordable[Math.floor(Math.random() * affordable.length)];
+    base[i]++; budget -= coeffs[i];
+  }
   return { base, shown: zmGenShown(n, fillMode) };
 }
 
@@ -112,7 +130,7 @@ WIDGETS.push({
 
   createData: id => {
     const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;
-    const mauern = Array.from({length: anzahl}, () => ({ base:[3,5,2,4], shown: zmGenShown(n, fillMode) }));
+    const mauern = Array.from({length: anzahl}, () => zmMakeMauer(n, fillMode, zahlenraum));
     return { id, type:"zahlenmauer", rows_count:n, fillMode, anzahl, zahlenraum, mauern , aufgabenNr:0, aufgabenText:''};
   },
 

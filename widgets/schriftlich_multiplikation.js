@@ -66,7 +66,7 @@ function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
     pStr.split("").forEach((d, j) =>
       texts += smPlace(d, aCols - pStr.length + j, 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
-    style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
+    style="display:block;flex-shrink:0;"><rect width="${W}" height="${H}" fill="#fff"/>${grid}${texts}</svg>`;
 }
 
 // ── Zweistellig (Teilprodukte) ────────────────────────────────────
@@ -104,7 +104,7 @@ function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
       texts += smPlace(d, aCols - pStr.length + j, rows - 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
-    style="display:block;flex-shrink:0;">${grid}${texts}</svg>`;
+    style="display:block;flex-shrink:0;"><rect width="${W}" height="${H}" fill="#fff"/>${grid}${texts}</svg>`;
 }
 
 // ── Widget ────────────────────────────────────────────────────────
@@ -173,7 +173,7 @@ WIDGETS.push({
           ${toggleBtn("Mit",   ue, `smUpdProp(${d.id},'uebertrag',true)`)}
         </div></div>` : "") +
       pr("Anzahl Aufgaben",
-        `<input type="number" min="1" max="12" value="${anz}" onchange="smUpdProp(${d.id},'anzahl',+this.value)">`) +
+        `<input type="number" min="1" max="70" value="${anz}" onchange="smUpdProp(${d.id},'anzahl',+this.value)">`) +
       `<button onclick="event.stopPropagation();smRoll(${d.id})"
         style="margin-top:2px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

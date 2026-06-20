@@ -99,7 +99,7 @@ WIDGETS.push({
   render: d => {
     const dreiecke = d.dreiecke || rdGen(d.anzahl||4, d.zahlenraum||100, d.leerfeld||"seiten");
     const active = d.id === selId || _solutionsMode;
-    const basis = d.gross ? 250 : 150;
+    const basis = d.gross ? 250 : 188; // klein: 150 → 188 (+25 % pro Item)
     const spacers = Array(6).fill(`<div style="flex:1 1 ${basis}px;max-width:${basis}px;height:0;min-width:0;"></div>`).join('');
     const items = dreiecke.map(t => `<div style="flex:1 1 ${basis}px;max-width:${basis}px;">${rdSvg(t, active)}</div>`).join('');
     return atHtml(d) + `<div style="display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:space-between;">${items}${spacers}</div>`;
@@ -119,7 +119,7 @@ WIDGETS.push({
       pr("Leerfelder",
         `<select onchange="rdSet(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl",
-        `<input type="number" min="1" max="12" value="${anzahl}" onchange="rdSet(${d.id},'anzahl',+this.value)">`) +
+        `<input type="number" min="1" max="15" value="${anzahl}" onchange="rdSet(${d.id},'anzahl',+this.value)">`) +
       `<button onclick="rdRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">

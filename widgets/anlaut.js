@@ -41,7 +41,7 @@ WIDGETS.push({
       ).join("");
 
       const choiceBox = buchstabenAus ? "" :
-        `<div style="display:flex;border:1.5px solid #bbb;border-radius:5px;overflow:hidden;width:${size}px;margin-top:5px;">${cells}</div>`;
+        `<div style="display:flex;border:1.5px solid #bbb;border-radius:5px;overflow:hidden;width:${size}px;margin-top:5px;background:#fff;">${cells}</div>`;
 
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
     });

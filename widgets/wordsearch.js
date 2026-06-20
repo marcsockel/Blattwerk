@@ -123,12 +123,12 @@ WIDGETS.push({
       </div>` +
     `<div class="prow"><label>Gittergröße (Spalten × Zeilen)</label>
       <div style="display:flex;align-items:center;gap:6px;">
-        <input type="number" min="6" max="25" value="${cols}"
-          oninput="wsUpdSize(${d.id},'cols',+this.value)"
+        <input type="number" min="6" max="30" value="${cols}"
+          onchange="wsUpdSize(${d.id},'cols',+this.value)"
           style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;">
         <span style="color:#aaa;font-size:13px;">×</span>
-        <input type="number" min="6" max="25" value="${rows}"
-          oninput="wsUpdSize(${d.id},'rows',+this.value)"
+        <input type="number" min="6" max="30" value="${rows}"
+          onchange="wsUpdSize(${d.id},'rows',+this.value)"
           style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;">
       </div>
     </div>` +

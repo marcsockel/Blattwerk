@@ -143,14 +143,15 @@ WIDGETS.push({
     id, type:"text",
     html:"Hier steht ein Text.",
     font:"inherit",
-    fontSize: 16, aufgabenNr:0, aufgabenText:''
+    fontSize: 16, align:"left", aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
     const font     = d.font     || "inherit";
     const fontSize = d.fontSize || 16;
+    const align    = d.align    || "left";
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;"
+                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;text-align:${align};"
             >${d.html}</div>`;
   },
 
@@ -168,6 +169,7 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) ;
+      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) +
+      alignToggle(d.id, d.align) ;
   },
 });

@@ -1,16 +1,16 @@
 // Widget: Eingabekästchen (ein Zeichen pro Zelle)
 
 WIDGETS.push({
-  meta: { type:'eingabekaestchen', label:'Eingabekästchen', desc:'Ein Zeichen pro Kästchen', icon:'⊡', category:'mathematik' },
+  meta: { type:'eingabekaestchen', label:'Eingabekästchen', desc:'Ein Zeichen pro Kästchen', icon:'⊡', category:'mathematik', selSafe:true },
 
   createData: id => ({ id, type:'eingabekaestchen', groesse:'mittel', zeilen:4, values:{}, lines:[], mode:'schreiben', font:'inherit' , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
     const sizes  = { klein: 15, mittel: 20, gross: 40 };
     const cs     = sizes[d.groesse || 'mittel'];
-    const fullCols = { klein: 37, mittel: 28, gross: 14 }[d.groesse || 'mittel'];
+    const fullCols = { klein: 42, mittel: 31, gross: 15 }[d.groesse || 'mittel'];
     const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
-    const cols   = Math.round(fullCols*({'1/4':0.25,'1/2':0.5,'3/4':0.75,'full':1}[_frac]||1));
+    const cols   = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/2':0.5,'3/4':0.75,'full':1}[_frac]||1)));
     const rows   = d.zeilen || 4;
     const w      = cols * cs;
     const h      = rows * cs;
@@ -102,7 +102,7 @@ WIDGETS.push({
         ${sizeBtn('gross','Groß')}
       </div></div>` +
 
-      pr('Zeilen', `<input type="number" min="1" max="20" value="${rows}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
+      pr('Zeilen', `<input type="number" min="1" max="50" value="${rows}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
       pr('Schrift', `<select onchange="upd(${d.id},'font',this.value)">
         ${GAP_FONTS.map(f => `<option value="${f.value}" ${(d.font||'inherit')===f.value?'selected':''}>${f.label}</option>`).join('')}
       </select>`) +

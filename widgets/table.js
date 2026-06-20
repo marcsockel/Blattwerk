@@ -9,7 +9,7 @@ function tblResize(data, rows, cols) {
 }
 
 WIDGETS.push({
-  meta: { type:"table", label:"Tabelle", desc:"Zeilen & Spalten", icon:"⊞", category:"allgemein" },
+  meta: { type:"table", label:"Tabelle", desc:"Zeilen & Spalten", icon:"⊞", category:"allgemein", selSafe:true },
 
   createData: id => ({
     id, type:"table", rows:3, cols:3, hasHeader:true, fullWidth:true,

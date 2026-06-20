@@ -203,7 +203,7 @@ WIDGETS.push({
           ${togBtn("Ende",     zeigeEnde,     `zkSetZeige(${d.id},'zeigeEnde',${!zeigeEnde})`)}
           ${togBtn("Ops",      zeigeOps,      `zkSetZeige(${d.id},'zeigeOps',${!zeigeOps})`)}
         </div></div>` +
-      pr('Anzahl Ketten', `<input type="number" min="1" max="12" value="${anzahl}"
+      pr('Anzahl Ketten', `<input type="number" min="1" max="24" value="${anzahl}"
         onclick="event.stopPropagation()" onchange="zkSetLayout(${d.id},'anzahl',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
       pr('Zahlenraum', `<select onchange="zkSetLayout(${d.id},'zahlenraum',+this.value)"

@@ -139,7 +139,7 @@ function sdSvg(a, b, showResult, blueResult, forceCols, forceSteps, showLinien) 
   });
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">
-    ${grid}${thickLines}${texts}
+    <rect width="${W}" height="${H}" fill="#fff"/>${grid}${thickLines}${texts}
   </svg>`;
 }
 
@@ -243,7 +243,7 @@ WIDGETS.push({
           ${toggle('Mit Rest',   mr, `sdUpdProp(${d.id},'mitRest',true)`)}
         </div></div>` +
       pr('Anzahl Aufgaben',
-        `<input type="number" min="1" max="8" value="${anz}"
+        `<input type="number" min="1" max="16" value="${anz}"
           onclick="event.stopPropagation()"
           onchange="sdUpdProp(${d.id},'anzahl',+this.value)"
           style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
