@@ -99,7 +99,7 @@ function mtRenderCell(d, cell, i) {
 
 WIDGETS.push({
   meta: { type:'multitool', label:'Multitool (Beta)', desc:'Raster mit frei wählbaren Feldern',
-          icon:'🧩', category:'allgemein', selSafe:true },
+          icon:'🧩', category:'allgemein', section:'Profi-Tools', selSafe:true },
 
   createData: id => ({
     id, type:'multitool', gx:2, gy:2,

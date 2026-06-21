@@ -113,7 +113,7 @@ function zmSvg(mauer, n, fillMode, isActive=false) {
       const isShown = shown[key];
       const val = grid[gridRow][col];
       rects += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}"
-        fill="${isShown?'#f0ede6':'#ffffff'}" stroke="#999" stroke-width="${stroke}"/>`;
+        fill="#ffffff" stroke="#999" stroke-width="${stroke}"/>`;
       if (isShown)
         texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
           font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#222">${val}</text>`;

@@ -100,6 +100,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wa.del{background:var(--acc);}
 .dh{display:none;position:absolute;left:-20px;top:50%;transform:translateY(-50%);cursor:grab;color:#bbb;font-size:15px;user-select:none;}
 .wwrap:hover > .dh{display:block;}
+/* Kind-Widget im schwebenden Rahmen: eigene Sortier-/Lösch-Buttons & Ziehgriff ausblenden */
+.float-child .wacts,.float-child .dh{display:none!important;}
+.float-child .wwrap{margin-bottom:0!important;}
+/* Schwebender Rahmen ohne gewählten Rahmen: nur Bildschirm-Hilfslinie (Druck: weg) */
+.float-noborder > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
 .winner{padding:7px 9px;}
 /* widget internals */
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
@@ -130,7 +135,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      erscheint dort als grauer Balken unter dem Inhalt. Pauschal alle Schatten/Filter im
      Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
-  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
   /* WebKit/Safari druckt den Scrollbalken-Thumb von #canvas-area (background:#ccc,
@@ -208,10 +214,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
         Beidseitiger Druck
       </label>
       <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
-        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
-      </div>
-      <div style="margin-top:8px;">
-        <button onclick="document.getElementById('print-panel').style.display='none';document.getElementById('pdf-hint').style.display='flex'" title="Gestochen scharfes Vektor-PDF über den Druckdialog" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Vektor-PDF (Druckdialog)</button>
+        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken (Beta)</button>
       </div>
     </div>
   </div>
@@ -372,8 +375,11 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js"></script>
 <script src="widgets/zwanzigerrahmen.js"></script>
 <script src="widgets/rechendreiecke.js"></script>
+<script src="widgets/zahlenrad.js"></script>
+<script src="widgets/rechentabelle.js"></script>
 <script src="widgets/multitool.js"></script>
 <script src="widgets/group.js"></script>
+<script src="widgets/floatbox.js"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -455,8 +461,16 @@ function buildList(){
   } else {
     const sec=document.createElement("div");sec.className="wcat";
     const renderedGroups=new Set();
+    const renderedSections=new Set();
     toShow.forEach(w=>{
       const color=CATEGORIES[w.meta.category].color;
+      // Zwischenüberschrift (z.B. „Profi-Tools") einmal vor dem ersten Widget des Abschnitts
+      if(w.meta.section && !renderedSections.has(w.meta.section)){
+        renderedSections.add(w.meta.section);
+        const lbl=document.createElement("div");
+        lbl.className="catlabel";lbl.style.marginTop="12px";lbl.textContent=w.meta.section;
+        sec.appendChild(lbl);
+      }
       if(w.meta.group){
         if(renderedGroups.has(w.meta.group))return;
         renderedGroups.add(w.meta.group);
@@ -499,15 +513,25 @@ let _followAddedToPage=false;
 function addWidget(type){
   const def=WIDGET_MAP[type];if(!def)return;
   // In eine Gruppe einfügen, wenn die Auswahl in einer Gruppe liegt
-  // (außer wir fügen selbst eine Gruppe ein — keine Verschachtelung).
-  if(type!=='group'){
+  // (außer wir fügen selbst eine Gruppe oder einen schwebenden Rahmen ein).
+  if(type!=='group' && !(def.meta&&def.meta.floating)){
     const gid=currentGroupContext();
     if(gid!=null){groupAddChild(gid,type);return;}
+    const fid=currentFloatContext();
+    if(fid!=null){fbAddChild(fid,type);return;}
   }
   saveHistory();
   const w=def.createData(++idC);
   const ranges=getPageRanges();
   const pageEnd=(ranges[activePage]||ranges[ranges.length-1]).end;
+  // Schwebender Rahmen: an aktuelle Seite pinnen, ans Seitenende ins Array (Fluss ignoriert ihn)
+  if(def.meta&&def.meta.floating){
+    w.page=activePage;
+    widgets.splice(pageEnd,0,w);
+    selId=w.id;
+    render();renderProps(w.id);
+    return;
+  }
   // Only insert after selId if it's on the current activePage
   const selIdx=selId!=null?widgets.findIndex(x=>x.id===selId):-1;
   const selOnThisPage=selIdx>=0&&ranges[activePage]&&selIdx>=ranges[activePage].start&&selIdx<ranges[activePage].end;
@@ -689,11 +713,11 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   let i=0;
   while(i<pageWidgets.length){
     const w=pageWidgets[i];
-    if(w.type==='groupEnd'){i++;continue;} // verwaister End-Marker → überspringen
+    if(w.type==='groupEnd'||w.floating||w.parent){i++;continue;} // End-Marker / schwebende Rahmen / Rahmen-Kinder nicht im Fluss
     if(w.type==='group'){
-      // Kinder = alles bis zum passenden groupEnd (oder Seitenende)
+      // Kinder = alles bis zum passenden groupEnd (oder Seitenende); schwebende Boxen & Rahmen-Kinder ausgenommen
       const kids=[];let j=i+1;
-      while(j<pageWidgets.length&&pageWidgets[j].type!=='groupEnd'){kids.push(pageWidgets[j]);j++;}
+      while(j<pageWidgets.length&&pageWidgets[j].type!=='groupEnd'){if(!pageWidgets[j].floating&&!pageWidgets[j].parent)kids.push(pageWidgets[j]);j++;}
       const gw=makeGroupWrap(w,range.start+i,kids,range.start+i+1);
       if(gw)wc.appendChild(gw);
       i=(j<pageWidgets.length)?j+1:j; // hinter groupEnd weiter
@@ -701,9 +725,8 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     }
     // Normaler Lauf: Widgets bis zur nächsten Gruppe sammeln und ½/¼-layouten
     const seg=[];let k=i;
-    while(k<pageWidgets.length&&pageWidgets[k].type!=='group'&&pageWidgets[k].type!=='groupEnd'){seg.push(pageWidgets[k]);k++;}
-    layoutInto(wc,seg,range.start+i);
-    i=k;
+    while(k<pageWidgets.length&&pageWidgets[k].type!=='group'&&pageWidgets[k].type!=='groupEnd'&&!pageWidgets[k].floating&&!pageWidgets[k].parent){seg.push(pageWidgets[k]);k++;}
+    if(seg.length){layoutInto(wc,seg,range.start+i);i=k;} else {i++;}
   }
   pageDiv.appendChild(wc);
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
@@ -755,6 +778,12 @@ function render(){
     ca.appendChild(renderPage(pw,pageIdx,range,isAutoPage,nextIsAuto));
     if(pageIdx<ranges.length-1){const sp=document.createElement("div");sp.className="page-spacer"+(nextIsAuto?" auto":"");ca.appendChild(sp);}
   });
+  // Schwebende Rahmen als Overlay auf ihrer Seite zeichnen (außerhalb des Flusses)
+  const _pageEls=[...ca.querySelectorAll('.page')];
+  widgets.filter(w=>w.floating).forEach(f=>{
+    const pe=_pageEls[f.page||0];
+    if(pe && typeof makeFloatEl==='function'){ pe.style.position='relative'; pe.appendChild(makeFloatEl(f)); }
+  });
   document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
   requestAnimationFrame(()=>{
     document.querySelectorAll('textarea[data-autoresize]').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
@@ -803,7 +832,7 @@ function openOverview(oldPositions = null, draggedStableId = null, scrollTop = 0
       const pw = page.offsetWidth;
 
       const clone = page.cloneNode(true);
-      clone.querySelectorAll('.wacts,.dh,.group-handle,.page-end').forEach(el => el.remove());
+      clone.querySelectorAll('.wacts,.dh,.group-handle,.float-grip,.float-resize,.page-end').forEach(el => el.remove());
       clone.style.cssText = clone.style.cssText +
         `;transform:scale(${scale});transform-origin:top left;margin:0;
          cursor:default;pointer-events:none;box-shadow:none;border-radius:0;
@@ -1027,11 +1056,11 @@ function checkOverflow(ranges){
     const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
     // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
     const pageBottom=wraps.length?wraps[wraps.length-1].offsetTop+wraps[wraps.length-1].offsetHeight:0;
     // Höhe des ersten Widgets der nächsten Seite messen
     const nextPage=pages[pi+1];
-    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')):[];
+    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox')):[];
     const firstNextH=nextWraps.length?nextWraps[0].offsetHeight+14:Infinity; // +14px Margin
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
@@ -1051,7 +1080,7 @@ function checkOverflow(ranges){
     const pxPerMm=pageEl.offsetWidth/190;
     const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
     // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
     for(let i=0;i<wraps.length;i++){
       if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
         if(i===0)break; // einzelnes Widget/Gruppe zu groß — kann nicht gesplittet werden
@@ -1542,7 +1571,7 @@ function doPrintSolutions() {
     const pw = widgets.slice(range.start, range.end);
     const pageDiv = renderPage(pw, pageIdx, range);
     pageDiv.classList.remove('page-active');
-    pageDiv.querySelectorAll('.wacts,.dh,.group-handle,.page-end').forEach(el => el.remove());
+    pageDiv.querySelectorAll('.wacts,.dh,.group-handle,.float-grip,.float-resize,.page-end').forEach(el => el.remove());
     sc.appendChild(pageDiv);
   });
   _solutionsMode = false;

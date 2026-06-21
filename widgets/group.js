@@ -10,8 +10,8 @@
 // automatisch, da das Gruppen-Datenobjekt aufgabenNr/aufgabenText/border/bgColor hat.
 
 WIDGETS.push({
-  meta: { type:'group', label:'Gruppe (Beta)', desc:'Rahmen für mehrere Widgets',
-          icon:'🗂', category:'allgemein', selSafe:true },
+  meta: { type:'group', label:'Gruppe', desc:'Rahmen für mehrere Widgets',
+          icon:'🗂', category:'allgemein', section:'Profi-Tools', selSafe:true },
 
   // createData wird beim Einfügen genutzt; das passende groupEnd-Marker-Objekt
   // setzt addWidget() in index.html direkt dahinter.
