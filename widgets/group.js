@@ -81,9 +81,10 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
   div.dataset.id  = g.id;
   div.style.marginBottom = '14px';
 
-  const frameStyle = groupBorderCss(g.border)
+  const frameStyle = frameDeco(g)
     + (g.bgColor ? `background:${g.bgColor};` : '')
     + 'position:relative;min-height:54px;';
+  const noBorder = !frameBorder(g);
 
   // Padding NICHT auf den Rahmen, sondern getrennt:
   //  - Aufgabentext: fester Abstand (10px), unabhängig vom Toggle.
@@ -104,7 +105,7 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
       <button class="wa del" onclick="event.stopPropagation();groupDelete(${g.id})"
         title="Gruppierung auflösen (Inhalte bleiben)">✕</button>
     </div>
-    <div class="group-frame" style="${frameStyle}">
+    <div class="group-frame${g.schatten?' fx-shadow':''}${noBorder?' frame-noborder':''}" style="${frameStyle}">
       ${taskRendered ? `<div style="padding:10px 10px 0 10px;">${taskRendered}</div>` : ''}
       <div class="group-kids" style="padding:${kidsTop}px ${ip}px ${ip}px ${ip}px;"></div>
       ${kids.length ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:6px;">

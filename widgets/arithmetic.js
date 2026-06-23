@@ -8,7 +8,7 @@ WIDGETS.push({
       tasks:"",
       cols: 2,
       zahlenraum: 20,
-      ueberschreitung: false,
+      ueberschreitung: 'ohne',
       aufgabenProPaeckchen: 4,
       ops: ["+", "-"],
       ergaenzung: false,
@@ -193,7 +193,9 @@ WIDGETS.push({
   renderProps: d => {
     const ops  = d.ops || ["+", "-"];
     const zr   = d.zahlenraum || 20;
-    const ue   = d.ueberschreitung || false;
+    const ueMode = d.ueberschreitung === true ? 'gemischt'
+                 : (d.ueberschreitung === false || d.ueberschreitung == null) ? 'ohne'
+                 : d.ueberschreitung;
     const app  = d.aufgabenProPaeckchen || 4;
     const cols = d.cols || 2;
     const erg    = d.ergaenzung || false;
@@ -247,10 +249,11 @@ WIDGETS.push({
           ${[10,20,100,1000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
         </select>`) +
       `<div class="prow"><label>Zehnerübergang</label>
-        <label style="display:flex;align-items:center;gap:5px;font-weight:400;cursor:pointer;">
-          <input type="checkbox" ${ue?"checked":""} onchange="upd(${d.id},'ueberschreitung',this.checked)">
-          erlaubt
-        </label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Ohne",     ueMode==='ohne',     `arithSetLayout(${d.id},'ueberschreitung','ohne')`)}
+          ${toggleBtn("Gemischt", ueMode==='gemischt', `arithSetLayout(${d.id},'ueberschreitung','gemischt')`)}
+          ${toggleBtn("Nur mit",  ueMode==='nur',      `arithSetLayout(${d.id},'ueberschreitung','nur')`)}
+        </div>
       </div>` +
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
@@ -327,7 +330,9 @@ function arithSetLayout(id, key, value) {
 
 function arithDoGenerate(w) {
   const zr   = w.zahlenraum || 20;
-  const ue     = w.ueberschreitung || false;
+  // Zehnerübergang: 'ohne' | 'gemischt' | 'nur' (Legacy bool: false→ohne, true→gemischt)
+  const _u = w.ueberschreitung;
+  const ueMode = _u === true ? 'gemischt' : (_u === false || _u == null) ? 'ohne' : _u;
   const app    = w.aufgabenProPaeckchen || 4;
   const cols   = w.cols || 2;
   const ops    = w.ops || ["+", "-"];
@@ -360,6 +365,13 @@ function arithDoGenerate(w) {
     return true;
   };
 
+  // Prüft eine Aufgabe gegen den Zehnerübergang-Modus (nur bei +/− relevant).
+  const ueOk = (a, b, op) => {
+    if (op !== "+" && op !== "-") return true;
+    const carry = !noCarry(a, b, op);
+    return ueMode === 'ohne' ? !carry : ueMode === 'nur' ? carry : true;
+  };
+
   const makeNormal = op => {
     let a, b, tries = 0;
     do {
@@ -377,7 +389,7 @@ function arithDoGenerate(w) {
         const q = rand(1, Math.max(1, Math.floor(zr / b)));
         a = q * b;
       }
-      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      if (!ueOk(a, b, op)) continue;
       break;
     } while (tries < 200);
     return `${a} ${op} ${b} =`;
@@ -400,7 +412,7 @@ function arithDoGenerate(w) {
         const q = rand(1, Math.max(1, Math.floor(zr / b)));
         a = q * b;
       }
-      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      if (!ueOk(a, b, op)) continue;
       break;
     } while (tries < 200);
 
@@ -428,7 +440,7 @@ function arithDoGenerate(w) {
       else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
       else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
       else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
-      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      if (!ueOk(a, b, op)) continue;
       break;
     } while (tries < 200);
     const result = op === "+" ? a+b : op === "-" ? a-b : op === "·" ? a*b : a/b;
@@ -447,7 +459,7 @@ function arithDoGenerate(w) {
       else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
       else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
       else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
-      if (!ue && (op === "+" || op === "-") && !noCarry(a, b, op)) continue;
+      if (!ueOk(a, b, op)) continue;
       break;
     } while (tries < 200);
     return `${a} ${op} ${b}`;

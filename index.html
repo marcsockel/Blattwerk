@@ -105,7 +105,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .float-child .wwrap{margin-bottom:0!important;}
 /* Schwebender Rahmen ohne gewählten Rahmen: nur Bildschirm-Hilfslinie (Druck: weg) */
 .float-noborder > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
+.frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
 .winner{padding:7px 9px;}
+/* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
+.fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22);}
 /* widget internals */
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
 .ws-cell{width:24px;height:24px;background:none;border:1px solid #e0ddd6;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Grundschrift',sans-serif;font-size:12px;font-weight:500;color:#333;}
@@ -114,7 +117,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 #props h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;}
 .prow{margin-bottom:9px;}
 .prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
-.prow input,.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
+.prow input:not([type=checkbox]):not([type=radio]),.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
+.prow input[type=checkbox],.prow input[type=radio]{width:auto;flex-shrink:0;}
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
 /* Standard-Props-Footer: einheitlicher, optisch abgesetzter Block am Ende jedes Widgets */
 .std-footer{margin:14px -14px 0;padding:12px 14px 6px;border-top:2px solid #d8d4c8;background:#eeebe2;}
@@ -135,8 +139,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      erscheint dort als grauer Balken unter dem Inhalt. Pauschal alle Schatten/Filter im
      Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
+  .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
   #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
+  .frame-noborder{outline:none!important;}
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
   /* WebKit/Safari druckt den Scrollbalken-Thumb von #canvas-area (background:#ccc,
@@ -182,7 +188,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 <body>
 <div id="toolbar">
   <div class="logo">Blatt<span>werk</span></div>
-  <span id="build-stamp" style="background:#a6e3a1;color:#1e1e2e;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;margin-left:6px;letter-spacing:.5px;">DRUCK-FIX v7</span>
   <button class="tbtn" onclick="document.getElementById('blatt-open').click()">📂 Öffnen</button>
   <button class="tbtn" onclick="blattSave()">💾 Speichern</button>
   <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
@@ -201,8 +206,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <span id="wcount" style="color:#6c7086;font-size:11px;">0 Widgets</span>
   <button class="tbtn p" onclick="document.getElementById('pdf-hint').style.display='flex'" title="Gestochen scharfes Vektor-PDF über den Druckdialog">⬇ PDF</button>
   <button class="tbtn p" onclick="document.getElementById('print-warning').style.display='flex'">🖨 Drucken</button>
-  <div style="position:relative;display:inline-flex;">
-    <button class="tbtn p" onclick="togglePrintPanel(event)">⚙ Optionen</button>
+  <div style="position:relative;display:inline-flex;align-self:stretch;">
+    <button class="tbtn p" onclick="togglePrintPanel(event)" style="height:100%;">⚙ Optionen</button>
     <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:12px;">Druckoptionen</div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
@@ -377,6 +382,9 @@ const WIDGETS = [];
 <script src="widgets/rechendreiecke.js"></script>
 <script src="widgets/zahlenrad.js"></script>
 <script src="widgets/rechentabelle.js"></script>
+<script src="widgets/hunderterfeld.js"></script>
+<script src="widgets/zahlentafel.js"></script>
+<script src="widgets/diagramm.js"></script>
 <script src="widgets/multitool.js"></script>
 <script src="widgets/group.js"></script>
 <script src="widgets/floatbox.js"></script>
@@ -589,6 +597,16 @@ function dupPage(){
   scrollToActivePage();
 }
 
+// Rahmen/Ecken zentral: Ecken (rund/eckig) getrennt vom Rahmen-Strich.
+// Verträgt Altdaten: border-Werte mit Suffix '-rect' = eckig.
+function frameBorder(w){ const b=w.border||''; return b.endsWith('-rect')?b.slice(0,-5):b; }
+function frameEcken(w){ if(w.ecken==='rund'||w.ecken==='eckig') return w.ecken; return (w.border||'').endsWith('-rect')?'eckig':'rund'; }
+function frameDeco(w){
+  const lines={dashed:'1.5px dashed #555',thin:'1px solid #333',medium:'2px solid #333',thick:'3px solid #333'};
+  const bw=lines[frameBorder(w)]||'';
+  return (bw?`border:${bw};`:'')+`border-radius:${frameEcken(w)==='rund'?6:0}px;`;
+}
+
 function makeWrap(w, idx) {
   const def=WIDGET_MAP[w.type];if(!def)return null;
   const div=document.createElement("div");
@@ -602,17 +620,7 @@ function makeWrap(w, idx) {
       <button class="wa" onclick="event.stopPropagation();dup(${idx})"   title="Duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
     </div>
-    <div class="winner" style="${{
-      dashed:        'border:1.5px dashed #555;border-radius:6px;padding:8px;',
-      thin:          'border:1px solid #333;border-radius:6px;padding:8px;',
-      medium:        'border:2px solid #333;border-radius:6px;padding:8px;',
-      thick:         'border:3px solid #333;border-radius:6px;padding:8px;',
-      'dashed-rect':  'border:1.5px dashed #555;padding:8px;',
-      'thin-rect':    'border:1px solid #333;padding:8px;',
-      'medium-rect':  'border:2px solid #333;padding:8px;',
-      'thick-rect':   'border:3px solid #333;padding:8px;',
-
-    }[w.border]||''}${w.bgColor?`background:${w.bgColor};`:''}">${def.render(w)}</div>`;
+    <div class="winner${w.schatten?' fx-shadow':''}" style="${frameDeco(w)}${frameBorder(w)?'padding:8px;':''}${w.bgColor?`background:${w.bgColor};`:''}${w.flush?'padding:0;':''}">${def.render(w)}</div>`;
   div.addEventListener('click',()=>sel(w.id),true); // capture: feuert vor innerem stopPropagation
   div.onclick=e=>e.stopPropagation();               // bubble: verhindert page-desel
   div.ondragstart=e=>{dragSrc=idx;e.dataTransfer.effectAllowed="move";};
@@ -1202,25 +1210,27 @@ function sfBgBlock(id,w){
   </div>`;
 }
 function sfBorderBlock(id,w){
-  const b=w.border||'';
+  const b=frameBorder(w);
+  const ecken=frameEcken(w);
+  const ebtn=(label,val)=>{const on=ecken===val;return `<button onclick="event.stopPropagation();upd(${id},'ecken','${val}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;};
   return `<div class="sf-sec">
+    <div class="sf-h">Ecken</div>
+    <div style="display:flex;gap:4px;margin-bottom:9px;">${ebtn('Eckig','eckig')}${ebtn('Rund','rund')}</div>
     <div class="sf-h">Rahmen</div>
     <select onchange="upd(${id},'border',this.value)"
       style="width:100%;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
-      <option value=""            ${!b?'selected':''}>Kein Rahmen</option>
-      <optgroup label="Mit Rundung">
-      <option value="dashed"      ${b==='dashed'?'selected':''}>- - - Gestrichelt</option>
-      <option value="thin"        ${b==='thin'?'selected':''}>──── Leicht (1px)</option>
-      <option value="medium"      ${b==='medium'?'selected':''}>──── Mittel (2px)</option>
-      <option value="thick"       ${b==='thick'?'selected':''}>──── Dick (3px)</option>
-      </optgroup>
-      <optgroup label="Ohne Rundung">
-      <option value="dashed-rect" ${b==='dashed-rect'?'selected':''}>- - - Gestrichelt</option>
-      <option value="thin-rect"   ${b==='thin-rect'?'selected':''}>──── Leicht (1px)</option>
-      <option value="medium-rect" ${b==='medium-rect'?'selected':''}>──── Mittel (2px)</option>
-      <option value="thick-rect"  ${b==='thick-rect'?'selected':''}>──── Dick (3px)</option>
-      </optgroup>
+      <option value=""        ${!b?'selected':''}>Kein Rahmen</option>
+      <option value="dashed"  ${b==='dashed'?'selected':''}>- - - Gestrichelt</option>
+      <option value="thin"    ${b==='thin'?'selected':''}>──── Leicht (1px)</option>
+      <option value="medium"  ${b==='medium'?'selected':''}>──── Mittel (2px)</option>
+      <option value="thick"   ${b==='thick'?'selected':''}>──── Dick (3px)</option>
     </select>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Schatten</span>
+      <div style="display:flex;gap:4px;flex:1;">
+        ${[['Aus',false],['An',true]].map(([lbl,val])=>{const on=!!w.schatten===val;return `<button onclick="event.stopPropagation();upd(${id},'schatten',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
+      </div>
+    </div>
   </div>`;
 }
 function sfLayoutBlock(id,w){

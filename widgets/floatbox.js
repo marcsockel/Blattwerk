@@ -11,7 +11,7 @@ WIDGETS.push({
   createData: id => ({
     id, type:'floatbox', floating:true, page:0,
     x:28, y:28, w:44, h:22,            // % der Seite
-    border:'thin', bgColor:'',         // kein Hintergrund, außer man wählt einen
+    border:'', bgColor:'',             // standardmäßig ohne Rahmen und ohne Hintergrund
     aufgabenNr:0, aufgabenText:'',
   }),
 
@@ -56,13 +56,12 @@ function makeFloatEl(f) {
   const div = document.createElement('div');
   // Ohne gewählten Rahmen: KEIN echter Rahmen (nur eine Bildschirm-Hilfslinie via .float-noborder,
   // die im Druck ausgeblendet wird) — sonst druckt der gestrichelte groupBorderCss-Fallback mit.
-  div.className = 'wwrap floatbox' + (f.border ? '' : ' float-noborder') + (selId === f.id ? ' sel' : '');
+  div.className = 'wwrap floatbox' + (frameBorder(f) ? '' : ' float-noborder') + (selId === f.id ? ' sel' : '');
   div.dataset.id = f.id;
   div.style.cssText = `position:absolute;left:${f.x}%;top:${f.y}%;width:${f.w}%;`
     + `min-height:${f.h}%;z-index:40;box-sizing:border-box;margin:0;`;
 
-  const bcss = f.border ? (typeof groupBorderCss === 'function' ? groupBorderCss(f.border) : '') : '';
-  const frameStyle = bcss
+  const frameStyle = frameDeco(f)
     + (f.bgColor ? `background:${f.bgColor};` : '')   // ohne Auswahl transparent
     + 'box-sizing:border-box;padding:8px;min-height:100%;';
 
@@ -74,9 +73,10 @@ function makeFloatEl(f) {
              padding:1px 7px;border-radius:5px;background:#89b4fa;color:#1e1e2e;font-size:10px;font-weight:700;
              cursor:move;line-height:1.7;box-shadow:0 1px 2px rgba(0,0,0,.18);user-select:none;">⠿ Rahmen</div>
     <div class="wacts">
+      <button class="wa" onclick="event.stopPropagation();fbDup(${f.id})" title="Rahmen duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();fbDelete(${f.id})" title="Rahmen löschen">✕</button>
     </div>
-    <div class="winner" style="${frameStyle}">
+    <div class="winner${f.schatten?' fx-shadow':''}" style="${frameStyle}">
       ${atHtml(f)}
       <div class="float-child">${child ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:10px;">Leerer Rahmen – rechts ein Widget einsetzen</div>`}</div>
     </div>
@@ -134,6 +134,27 @@ function fbRemoveChild(floatId) {
   saveHistory();
   widgets.splice(ci, 1);
   render(); renderProps(floatId);
+}
+
+// Rahmen inkl. Kind-Widget duplizieren (neue IDs, leicht versetzt, gleiche Seite).
+function fbDup(floatId) {
+  const f = widgets.find(x => x.id === floatId); if (!f) return;
+  saveHistory();
+  const copy = JSON.parse(JSON.stringify(f));
+  copy.id = ++idC;
+  copy.x = Math.min(100 - (copy.w || 10), (f.x || 0) + 4);
+  copy.y = Math.min(99, (f.y || 0) + 4);
+  const fi = widgets.findIndex(x => x.id === floatId);
+  widgets.splice(fi + 1, 0, copy);
+  const child = widgets.find(x => x.parent === floatId);
+  if (child) {
+    const cc = JSON.parse(JSON.stringify(child));
+    cc.id = ++idC;
+    cc.parent = copy.id;
+    widgets.splice(widgets.findIndex(x => x.id === copy.id) + 1, 0, cc);
+  }
+  selId = copy.id;
+  render(); renderProps(copy.id);
 }
 
 // Rahmen löschen → Kind mitlöschen (sonst bliebe es unsichtbar im Array zurück).

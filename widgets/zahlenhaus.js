@@ -30,7 +30,7 @@ function zhGen(count, summands, stockwerke, zahlenraum, leerfeld) {
   });
 }
 
-function zhSvg(house, summands, isActive=false) {
+function zhSvg(house, summands, isActive=false, farbig=false) {
   const { dach, dachLeer, floors } = house;
   const bw = summands === 3 ? 38 : 48;
   const bh = 34;
@@ -40,13 +40,27 @@ function zhSvg(house, summands, isActive=false) {
   const H  = rh + bh * stockwerke + 2;
   const cx = W / 2;
 
-  const roof = `<polygon points="${cx},3 2,${rh} ${W-2},${rh}"
-    fill="#f5f3ef" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>`;
+  // Dach + Schornstein als EINE Form (eine geschlossene Umrisslinie).
+  const rTop  = 10;                          // flacher Dachfirst (Trapez-Oberkante)
+  const inset = Math.round(W * 0.30);        // Einzug der Oberkante
+  const chW   = Math.max(9, Math.round(W * 0.11));
+  const chX   = Math.round(W * 0.72);        // Schornstein auf der rechten Dachseite
+  const sx0 = W - inset, sy0 = rTop, sx1 = W - 2, sy1 = rh;     // rechte Dachschräge
+  const slopeY = x => (sy0 + (sy1 - sy0) * (x - sx0) / (sx1 - sx0)).toFixed(1);
+  const roofFill = farbig ? '#b5443a' : '#f5f3ef';             // Kaminrot / hell
+  const pts = `2,${rh} ${inset},${rTop} ${W-inset},${rTop} ${chX},${slopeY(chX)} ${chX},2 ${chX+chW},2 ${chX+chW},${slopeY(chX+chW)} ${W-2},${rh}`;
+  const roof = `<polygon points="${pts}" fill="${roofFill}" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>`;
 
-  const dachEl = dachLeer
-    ? (isActive ? `<text x="${cx}" y="${rh-11}" text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${dach}</text>` : "")
-    : `<text x="${cx}" y="${rh-11}" text-anchor="middle"
-        font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#222">${dach}</text>`;
+  // Dachzahl in einem weißen Rechteck (gut lesbar auch auf farbigem Dach)
+  const numCY  = rh - 16;
+  const digits = String(dach).length;
+  const rectW  = Math.max(24, digits * 11 + 8), rectH = 19;
+  const numRect = `<rect x="${(cx - rectW/2).toFixed(1)}" y="${numCY - 10}" width="${rectW}" height="${rectH}" rx="2" fill="#fff" stroke="#888" stroke-width="1"/>`;
+  const showNum = !dachLeer || isActive;
+  const numText = showNum
+    ? `<text x="${cx}" y="${numCY + 5}" text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="${dachLeer ? '#2563eb' : '#222'}">${dach}</text>`
+    : '';
+  const dachEl = numRect + numText;
 
   let floorsHtml = "";
   floors.forEach((floor, fi) => {
@@ -74,7 +88,7 @@ WIDGETS.push({
   meta: { type:"zahlenhaus", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik" },
 
   createData: id => {
-    const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links" , aufgabenNr:0, aufgabenText:''};
+    const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};
     return { id, type:"zahlenhaus", ...cfg, houses: zhGen(cfg.haeuser, cfg.summands, cfg.stockwerke, cfg.zahlenraum, cfg.leerfeld) };
   },
 
@@ -83,7 +97,8 @@ WIDGETS.push({
     const st     = d.stockwerke || 4;
     const houses = d.houses || zhGen(d.haeuser||3, s, st, d.zahlenraum||10, d.leerfeld||"links");
     const active = d.id === selId || _solutionsMode;
-    const svgs   = houses.map(h => zhSvg(h, s, active));
+    const farbig = d.farbe === 'farbig';
+    const svgs   = houses.map(h => zhSvg(h, s, active, farbig));
 
     // Verfügbare Breite je nach widthFraction
     const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
@@ -119,6 +134,8 @@ WIDGETS.push({
     const haeuser    = d.haeuser    || 3;
     const stockwerke = d.stockwerke || 4;
     const leerfeld   = d.leerfeld   || "links";
+    const farbe      = d.farbe      || "sw";
+    const ftgl = (val,label) => { const on=farbe===val; return `<button onclick="event.stopPropagation();upd(${d.id},'farbe','${val}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`; };
 
     const leerOpts = [
       ["dach",     "Dach leer (Summe berechnen)"],
@@ -142,6 +159,9 @@ WIDGETS.push({
       pr("Leerfeld", `<select onchange="zhUpdProp(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl Häuser",
         `<input type="number" min="1" max="40" value="${haeuser}" onchange="zhUpdProp(${d.id},'haeuser',+this.value)">`) +
+      `<div class="prow"><label>Farbe</label>
+        <div style="display:flex;gap:4px;">${ftgl('sw','S/W')}${ftgl('farbig','Farbig (Kaminrot)')}</div>
+      </div>` +
       `<button onclick="event.stopPropagation();zhRoll(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

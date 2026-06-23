@@ -12,7 +12,7 @@ WIDGETS.push({
   meta: { type:"table", label:"Tabelle", desc:"Zeilen & Spalten", icon:"⊞", category:"allgemein", selSafe:true },
 
   createData: id => ({
-    id, type:"table", rows:3, cols:3, hasHeader:true, fullWidth:true,
+    id, type:"table", rows:3, cols:3, hasHeader:true, hasHeaderCol:false, fullWidth:true,
     data: tblResize([], 3, 3), aufgabenNr:0, aufgabenText:''
   }),
 
@@ -23,13 +23,13 @@ WIDGETS.push({
     for (let r = 0; r < d.rows; r++) {
       html += "<tr>";
       for (let c = 0; c < d.cols; c++) {
-        const hdr = d.hasHeader && r === 0;
+        const hdr = (d.hasHeader && r === 0) || (d.hasHeaderCol && c === 0);
         const val = esc((data[r] && data[r][c]) || "");
-        html += `<td style="border:1px solid #ddd;padding:0;min-width:60px;${fw?'':'white-space:nowrap;'}">
+        html += `<td style="border:1px solid #888;padding:0;min-width:60px;${fw?'':'white-space:nowrap;'}">
           <div contenteditable="true"
             onclick="event.stopPropagation()"
             style="padding:7px 10px;font-size:13px;min-height:22px;outline:none;word-break:break-word;
-                   ${hdr ? 'font-weight:700;background:#f5f3ef;' : ''}"
+                   ${hdr ? 'font-weight:700;background:#d9d9d9;' : ''}"
             oninput="tblUpdCell(${d.id},${r},${c},this.innerText)"
           >${val}</div>
         </td>`;
@@ -51,6 +51,10 @@ WIDGETS.push({
       pr("Kopfzeile", `<select onchange="upd(${d.id},'hasHeader',this.value==='true')">
         <option value="true"  ${d.hasHeader?"selected":""}>Ja</option>
         <option value="false" ${!d.hasHeader?"selected":""}>Nein</option>
+      </select>`) +
+      pr("Kopfspalte", `<select onchange="upd(${d.id},'hasHeaderCol',this.value==='true')">
+        <option value="true"  ${d.hasHeaderCol?"selected":""}>Ja</option>
+        <option value="false" ${!d.hasHeaderCol?"selected":""}>Nein</option>
       </select>`) +
       `<div class="prow"><label>Breite</label>
         <div style="display:flex;gap:4px;">

@@ -2,14 +2,21 @@
 WIDGETS.push({
   meta: { type:"image", label:"Bild", desc:"Bildplatzhalter / Drag & Drop", icon:"🖼", category:"allgemein" },
 
-  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center" , aufgabenNr:0, aufgabenText:''}),
+  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center", flush:false , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
     const align = d.align || "center";
     const marginH = align === "center" ? "auto" : align === "right" ? "0 0 0 auto" : "0";
     if (d.src) {
+      // Bildeffekte via CSS (druckt in Chrome mit print-color-adjust:exact)
+      const fil = d.grayscale ? 'filter:grayscale(100%);' : '';
+      const tfa = [];
+      if (d.rotate) tfa.push(`rotate(${d.rotate}deg)`);
+      if (d.flipH)  tfa.push('scaleX(-1)');
+      if (d.flipV)  tfa.push('scaleY(-1)');
+      const tf = tfa.length ? `transform:${tfa.join(' ')};` : '';
       return `<div style="text-align:${align};">
-        <img src="${d.src}" style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:6px;display:block;margin:${marginH};"
+        <img src="${d.src}" style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:6px;display:block;margin:${marginH};${fil}${tf}"
           ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;
@@ -28,6 +35,11 @@ WIDGETS.push({
 
   renderProps: d => {
     const align = d.align || "center";
+    const efx = (label, active, onclick) =>
+      `<button onclick="event.stopPropagation();${onclick}"
+        style="flex:1;min-width:60px;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
+               background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
     const removeBtn = d.src
       ? `<button onclick="event.stopPropagation();upd(${d.id},'src','')"
            style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#fde8ec;
@@ -42,6 +54,19 @@ WIDGETS.push({
         <option value="center" ${align==="center"?"selected":""}>Zentriert</option>
         <option value="right"  ${align==="right" ?"selected":""}>Rechts</option>
       </select>`) +
+      `<div class="prow"><label>Innenabstand</label>
+        <div style="display:flex;gap:4px;">
+          ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!d.flush===val;return `<button onclick="event.stopPropagation();upd(${d.id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
+        </div></div>` +
+      (d.src ? `<div class="prow"><label>Bildeffekte</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${efx('S/W',        d.grayscale, `upd(${d.id},'grayscale',${!d.grayscale})`)}
+          ${efx('Spiegeln ↔', d.flipH,     `upd(${d.id},'flipH',${!d.flipH})`)}
+          ${efx('Spiegeln ↕', d.flipV,     `upd(${d.id},'flipV',${!d.flipV})`)}
+          ${efx('Drehen 90°', !!d.rotate,  `imgRotate(${d.id})`)}
+        </div>
+        ${d.rotate ? `<div style="font-size:10px;color:#aaa;margin-top:3px;">Drehung: ${d.rotate}° — bei 90°/270° ggf. Höhe anpassen.</div>` : ''}
+      </div>` : '') +
       `<div class="prow"><label>Bild</label>
         ${d.src
           ? `<div style="font-size:11px;color:#888;margin-bottom:4px;">✓ Bild geladen</div>`
@@ -65,6 +90,13 @@ WIDGETS.push({
 });
 
 // ── Image helpers ─────────────────────────────────────────────────
+function imgRotate(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  w.rotate = ((w.rotate || 0) + 90) % 360;
+  render(); renderProps(id);
+}
+
 function imgDrop(id, e) {
   e.preventDefault();
   const file = e.dataTransfer.files[0];
