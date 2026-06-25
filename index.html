@@ -103,8 +103,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* Kind-Widget im schwebenden Rahmen: eigene Sortier-/Lösch-Buttons & Ziehgriff ausblenden */
 .float-child .wacts,.float-child .dh{display:none!important;}
 .float-child .wwrap{margin-bottom:0!important;}
-/* Schwebender Rahmen ohne gewählten Rahmen: nur Bildschirm-Hilfslinie (Druck: weg) */
-.float-noborder > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
+/* Schwebender Rahmen ohne gewählten Rahmen: Bildschirm-Hilfslinie nur bei Auswahl (Druck: weg) */
+.float-noborder.sel > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
 .winner{padding:7px 9px;}
 /* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
@@ -196,7 +196,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     onfocus="this.select()">
   <input type="file" id="blatt-open" accept=".blatt" style="display:none" onchange="if(this.files[0])blattOpen(this.files[0]);this.value=''">
   <div style="width:1px;background:#313244;height:20px;margin:0 4px;"></div>
-  <button class="tbtn" onclick="addSample()">📄 Beispiel</button>
+  <div style="position:relative;display:inline-flex;align-self:stretch;">
+    <button class="tbtn" onclick="toggleSamplePanel(event)" style="height:100%;">📄 Beispiel</button>
+    <div id="sample-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:8px;z-index:200;width:240px;max-height:340px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin:4px 6px 8px;">Beispiel wählen</div>
+      <div id="sample-list"></div>
+    </div>
+  </div>
   <button class="tbtn" onclick="clearCanvas()">🗑 Leeren</button>
   <button class="tbtn" onclick="addPage()">＋ Neue Seite</button>
   <button class="tbtn" onclick="dupPage()" title="Aktuelle Seite duplizieren">⧉ Seite duplizieren</button>
@@ -1390,6 +1396,56 @@ async function addSample(){
   addSampleBuiltin();
 }
 
+// ── Beispiel-Auswahl-Panel ───────────────────────────────────────
+function closeSamplePanel(){ const p=document.getElementById('sample-panel'); if(p)p.style.display='none'; }
+
+async function toggleSamplePanel(e){
+  e.stopPropagation();
+  const p=document.getElementById('sample-panel'); if(!p) return;
+  // andere Panels schließen
+  const pp=document.getElementById('print-panel'); if(pp)pp.style.display='none';
+  const u=document.getElementById('uni-panel');   if(u)u.style.display='none';
+  if(p.style.display!=='none'){ p.style.display='none'; return; }
+  await buildSamplePanel();
+  p.style.display='block';
+}
+
+async function buildSamplePanel(){
+  const list=document.getElementById('sample-list'); if(!list) return;
+  const item=(label,onclick)=>{
+    const b=document.createElement('button');
+    b.textContent=label;
+    b.onclick=ev=>{ ev.stopPropagation(); onclick(); };
+    b.style.cssText='display:block;width:100%;text-align:left;padding:7px 9px;margin-bottom:3px;border:none;'
+      +'border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;cursor:pointer;';
+    b.onmouseenter=()=>b.style.background='#45475a';
+    b.onmouseleave=()=>b.style.background='#313244';
+    return b;
+  };
+  let names=[];
+  try{
+    const j=await fetch('beispiele/index.json',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    if(Array.isArray(j)) names=j;
+  }catch(e){ /* file:// → kein Ordner */ }
+  list.innerHTML='';
+  if(names.length){
+    list.appendChild(item('🎲 Zufällig', ()=>{ closeSamplePanel(); addSample(); }));
+    names.forEach(n=> list.appendChild(item(n.replace(/\.blatt$/i,''), ()=>loadSampleByName(n))));
+  }else{
+    list.appendChild(item('Eingebautes Beispiel', ()=>{ closeSamplePanel(); addSampleBuiltin(); }));
+  }
+}
+
+async function loadSampleByName(name){
+  closeSamplePanel();
+  if(widgets.length)saveHistory();
+  try{
+    const resp=await fetch('beispiele/'+encodeURIComponent(name),{cache:'no-store'});
+    if(resp.ok && await loadBeispielBlob(await resp.blob())) return;
+  }catch(e){ /* Fallback */ }
+  addSampleBuiltin();
+}
+
 // Lädt ein .blatt aus einem Blob (für Beispiele). Gibt true bei Erfolg zurück.
 async function loadBeispielBlob(blob){
   try{ await loadJSZip(); }catch{ return false; }
@@ -1666,6 +1722,8 @@ document.addEventListener('click', () => {
   if (p) p.style.display = 'none';
   const u = document.getElementById('uni-panel');
   if (u) u.style.display = 'none';
+  const s = document.getElementById('sample-panel');
+  if (s) s.style.display = 'none';
 });
 
 // ── INIT ─────────────────────────────────────────────────────────

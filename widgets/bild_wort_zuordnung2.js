@@ -19,6 +19,7 @@ WIDGETS.push({
     return {
       id, type: "bildwort2",
       imageSize: 70,
+      gross: false,
       zeilenabstand: 10,
       aufgaben: [
         mkAufgabe("A",  ["Birne","Haus"]),
@@ -30,9 +31,13 @@ WIDGETS.push({
   },
 
   render: d => {
-    const size          = d.imageSize    || 70;
+    const gross         = !!d.gross;
+    const baseSize      = d.imageSize    || 70;
+    const size          = gross ? Math.round(baseSize * 1.4) : baseSize;
+    const fontSize      = Math.round(size * 0.18) + 2;     // Text skaliert mit Bildgröße
+    const cb            = Math.max(12, Math.round(fontSize * 0.95));
     const zeilenabstand = d.zeilenabstand ?? 10;
-    const checkbox = `<span style="display:inline-block;width:13px;height:13px;border:1.5px solid #555;
+    const checkbox = `<span style="display:inline-block;width:${cb}px;height:${cb}px;border:1.5px solid #555;
                         border-radius:2px;flex-shrink:0;background:#fff;"></span>`;
 
     const items = (d.aufgaben || []).map(a => {
@@ -45,7 +50,7 @@ WIDGETS.push({
         `<div style="display:flex;flex-direction:column;gap:${zeilenabstand}px;min-width:0;flex:1;">` +
         words.map(w =>
           `<div style="display:flex;align-items:center;gap:7px;min-width:0;">${checkbox}
-            <span style="font-size:14px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(w)}</span>
+            <span style="font-size:${fontSize}px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(w)}</span>
           </div>`
         ).join("") +
         `</div>`;
@@ -56,17 +61,27 @@ WIDGETS.push({
       </div>`;
     });
 
-    // Spalten je Layoutbreite: voll/¾ → 3, ½ → 2, ¼ → 1 Item pro Zeile
+    // Spalten: klein → 3 / groß → 2 Items pro Zeile (voll Breite), schmalere Layouts entsprechend weniger
     const frac = d.widthFraction || (d.halfWidth ? '1/2' : 'full');
-    const cols = { 'full':3, '3/4':3, '1/2':2, '1/4':1 }[frac] || 3;
+    const colMap = gross
+      ? { 'full':2, '3/4':2, '1/2':1, '1/4':1 }
+      : { 'full':3, '3/4':3, '1/2':2, '1/4':1 };
+    const cols = colMap[frac] || (gross ? 2 : 3);
     return atHtml(d) +
       `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 24px;">${items.join("")}</div>`;
   },
 
   renderProps: d => {
     const size          = d.imageSize    || 70;
+    const gross         = !!d.gross;
     const zeilenabstand = d.zeilenabstand ?? 10;
     const aufgaben = d.aufgaben || [];
+
+    const grBtn = (label, active, val) =>
+      `<button onclick="event.stopPropagation();upd(${d.id},'gross',${val})"
+        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
+               background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
 
@@ -118,7 +133,12 @@ WIDGETS.push({
       </div>`;
     }).join("");
 
-    return pr("Bildgröße (px)",
+    return `<div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          ${grBtn("Klein (3)", !gross, false)}${grBtn("Groß (2)", gross, true)}
+        </div>
+      </div>` +
+      pr("Bildgröße (Basis, px)",
         `<input type="number" min="40" max="200" step="10" value="${size}"
            onchange="upd(${d.id},'imageSize',+this.value)">`) +
       pr("Zeilenabstand",

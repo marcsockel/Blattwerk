@@ -44,7 +44,7 @@ WIDGETS.push({
     const words = "ELMAR,ELEFANT,BUNT,FREUND".split(",").map(w => w.trim().toUpperCase());
     const cols = 10, rows = 10;
     const opts = { horizontal:true, vertikal:true, diagonal:true, rueckwaerts:false };
-    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, ...opts, grid: wsGenGrid(words, cols, rows, opts) , aufgabenNr:0, aufgabenText:''};
+    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, align:'left', ...opts, grid: wsGenGrid(words, cols, rows, opts) , aufgabenNr:0, aufgabenText:'Finde die Wörter'};
   },
 
   render: d => {
@@ -86,10 +86,10 @@ WIDGETS.push({
     }).join("")).join("");
 
     const wl = words.map(w => `<span style="font-family:monospace;font-size:12px;background:#f0eee8;padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;">${w}</span>`).join("");
-    return atHtml(d) + `<div>
-      <div style="font-size:11px;color:#888;font-weight:700;margin-bottom:5px;">Finde die Wörter:</div>
+    const align = d.align || 'left';
+    return atHtml(d) + `<div style="text-align:${align};">
       <div style="margin-bottom:7px;">${wl}</div>
-      <div style="display:inline-grid;grid-template-columns:repeat(${C},${cs}px);gap:0;">${cells}</div>
+      <div style="display:inline-grid;grid-template-columns:repeat(${C},${cs}px);gap:0;text-align:left;">${cells}</div>
     </div>`;
   },
 
@@ -121,6 +121,7 @@ WIDGETS.push({
           ${toggleBtn("Groß",   gross, `upd(${d.id},'gross',true)`)}
         </div>
       </div>` +
+    alignToggle(d.id, d.align) +
     `<div class="prow"><label>Gittergröße (Spalten × Zeilen)</label>
       <div style="display:flex;align-items:center;gap:6px;">
         <input type="number" min="6" max="30" value="${cols}"
