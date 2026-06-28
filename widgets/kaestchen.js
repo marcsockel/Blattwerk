@@ -24,9 +24,9 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${g===val?'#1e1e2e':'#999'};">${label}</button>`;
     return `<div class="prow"><label>Kästchengröße</label>
       <div style="display:flex;gap:4px;">
-        ${btn("klein","Klein (16px)")}
-        ${btn("mittel","Mittel (20px)")}
-        ${btn("gross","Groß (40px)")}
+        ${btn("klein","Klein")}
+        ${btn("mittel","Mittel")}
+        ${btn("gross","Groß")}
       </div></div>` +
       pr("Zeilen", `<input type="number" min="2" max="50" value="${d.zeilen||8}" onchange="upd(${d.id},'zeilen',+this.value)">`) ;
   },

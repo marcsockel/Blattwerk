@@ -36,7 +36,7 @@ function zeitspanneGen(count, stufe, stundenbereich) {
 }
 
 WIDGETS.push({
-  meta: { type:"zeitspanne", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik" },
+  meta: { type:"zeitspanne", group:"zeit", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik" },
 
   createData: id => {
     const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", zeigerFarbe:false, aufgabenNr:0, aufgabenText:'' };

@@ -21,6 +21,7 @@ WIDGETS.push({
       imageSize: 70,
       gross: false,
       zeilenabstand: 10,
+      itemAbstand: 20,
       aufgaben: [
         mkAufgabe("A",  ["Birne","Haus"]),
         mkAufgabe("B",  ["Apfel","Auto"]),
@@ -37,6 +38,7 @@ WIDGETS.push({
     const fontSize      = Math.round(size * 0.18) + 2;     // Text skaliert mit Bildgröße
     const cb            = Math.max(12, Math.round(fontSize * 0.95));
     const zeilenabstand = d.zeilenabstand ?? 10;
+    const itemAbstand   = d.itemAbstand   ?? 20;
     const checkbox = `<span style="display:inline-block;width:${cb}px;height:${cb}px;border:1.5px solid #555;
                         border-radius:2px;flex-shrink:0;background:#fff;"></span>`;
 
@@ -68,13 +70,14 @@ WIDGETS.push({
       : { 'full':3, '3/4':3, '1/2':2, '1/4':1 };
     const cols = colMap[frac] || (gross ? 2 : 3);
     return atHtml(d) +
-      `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 24px;">${items.join("")}</div>`;
+      `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${itemAbstand}px 24px;">${items.join("")}</div>`;
   },
 
   renderProps: d => {
     const size          = d.imageSize    || 70;
     const gross         = !!d.gross;
     const zeilenabstand = d.zeilenabstand ?? 10;
+    const itemAbstand   = d.itemAbstand   ?? 20;
     const aufgaben = d.aufgaben || [];
 
     const grBtn = (label, active, val) =>
@@ -141,13 +144,21 @@ WIDGETS.push({
       pr("Bildgröße (Basis, px)",
         `<input type="number" min="40" max="200" step="10" value="${size}"
            onchange="upd(${d.id},'imageSize',+this.value)">`) +
-      pr("Zeilenabstand",
+      pr("Zeilenabstand Wort",
         `<div style="display:flex;gap:6px;align-items:center;">
           <input type="range" min="4" max="40" value="${zeilenabstand}"
             oninput="this.nextElementSibling.textContent=this.value+'px'"
             onchange="upd(${d.id},'zeilenabstand',+this.value)"
             style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:34px;">${zeilenabstand}px</span>
+        </div>`) +
+      pr("Zeilenabstand",
+        `<div style="display:flex;gap:6px;align-items:center;">
+          <input type="range" min="0" max="80" value="${itemAbstand}"
+            oninput="this.nextElementSibling.textContent=this.value+'px'"
+            onchange="upd(${d.id},'itemAbstand',+this.value)"
+            style="flex:1;accent-color:#7287fd;">
+          <span style="font-size:11px;color:#666;min-width:34px;">${itemAbstand}px</span>
         </div>`) +
       `<div class="prow">
         <label>Buchstaben</label>
@@ -174,12 +185,32 @@ function bw2Shuffle(n) {
   return arr;
 }
 
+// Zufällige Ablenkwörter aus dem Pool aller Anlautbilder (ohne das richtige Wort).
+function bw2RandDistractors(correctWord, n) {
+  const pool = [];
+  const seen = new Set([correctWord]);
+  Object.values(ANLAUT_BILDER || {}).forEach(variants => {
+    variants.forEach(src => {
+      const word = anlautWortFromSrc(src);
+      if (word && !seen.has(word)) { seen.add(word); pool.push(word); }
+    });
+  });
+  // Fisher-Yates auf einer Kopie, dann die ersten n nehmen
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const out = pool.slice(0, n);
+  while (out.length < n) out.push("");   // Auffüllen, falls Pool zu klein
+  return out;
+}
+
 function bw2AddAufgabe(id, anlaut) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   const src  = anlautDefaultSrc(anlaut);
   const word = anlautWortFromSrc(src) || anlaut;
-  w.aufgaben.push({ anlaut, src, word, distractors: ["",""], order: bw2Shuffle(3) });
+  w.aufgaben.push({ anlaut, src, word, distractors: bw2RandDistractors(word, 2), order: bw2Shuffle(3) });
   render(); renderProps(id);
 }
 

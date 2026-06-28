@@ -1,6 +1,6 @@
 // Widget: Uhr
 
-function uhrSvg(h, m, size, showHands=true, farbe=false) {
+function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
   const cx = size/2, cy = size/2, r = size/2 - 3;
 
   // Tick marks — nur 5-Minuten-Marken, einheitliche Dicke, kurz
@@ -12,8 +12,8 @@ function uhrSvg(h, m, size, showHands=true, farbe=false) {
       stroke="#444" stroke-width="1.5"/>`;
   }).join("");
 
-  // Hour numbers (12, 3, 6, 9)
-  const nums = [12,1,2,3,4,5,6,7,8,9,10,11].map((n, i) => {
+  // Hour numbers (1–12) – optional
+  const nums = !showNums ? "" : [12,1,2,3,4,5,6,7,8,9,10,11].map((n, i) => {
     const angle = (i * 30 - 90) * Math.PI / 180;
     const fs = size < 100 ? 9 : 11;
     const nr = r * 0.82;
@@ -79,10 +79,10 @@ function uhrZeitText(size, bh=24, fs=12) {
 }
 
 WIDGETS.push({
-  meta: { type:"uhr", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik" },
+  meta: { type:"uhr", group:"zeit", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik" },
 
   createData: id => {
-    const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", gross:false, zeigerAus:false, zeigerFarbe:false, size:120 , aufgabenNr:0, aufgabenText:''};
+    const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", gross:false, zeigerAus:false, zeigerFarbe:false, zahlenAus:false, size:120 , aufgabenNr:0, aufgabenText:''};
     return { id, type:"uhr", ...cfg, uhren: uhrGen(cfg.anzahl, cfg.stufe) };
   },
 
@@ -97,6 +97,7 @@ WIDGETS.push({
     const isActive   = d.id === selId || _solutionsMode;
     const zeigerAus  = !!d.zeigerAus;
     const zeigerFarbe = !!d.zeigerFarbe;
+    const zahlenAus  = !!d.zahlenAus;
     // Rückwärtskompatibilität: alter boolean-Wert
     const tf = d.textfeld === true ? "eine" : (d.textfeld === false ? "none" : (d.textfeld || "none"));
     const pad2 = n => String(n).padStart(2,'0');
@@ -108,7 +109,7 @@ WIDGETS.push({
       `<div style="margin-top:4px;width:${size}px;height:${bh}px;border:1.5px solid #555;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
         <span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#222;font-weight:700;">${text} Uhr</span></div>`;
     const items = uhren.map(u => {
-      const svg = uhrSvg(u.h, u.m, size, !zeigerAus, zeigerFarbe);
+      const svg = uhrSvg(u.h, u.m, size, !zeigerAus, zeigerFarbe, !zahlenAus);
       let label = "";
       if (zeigerAus) {
         // Zeiger aus → Zeit als Aufgabenstellung (immer sichtbar, schwarz)
@@ -148,6 +149,7 @@ WIDGETS.push({
     const gross         = !!d.gross;
     const zeigerAus     = !!d.zeigerAus;
     const zeigerFarbe   = !!d.zeigerFarbe;
+    const zahlenAus     = !!d.zahlenAus;
     const stundenbereich = d.stundenbereich || "1-12";
 
     const stufeOpts = [
@@ -216,6 +218,12 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Anzeigen",  !zeigerAus, `upd(${d.id},'zeigerAus',false)`)}
           ${toggleBtn("Ausblenden", zeigerAus, `upd(${d.id},'zeigerAus',true)`)}
+        </div>
+      </div>` +
+      `<div class="prow"><label>Zahlen</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Anzeigen",  !zahlenAus, `upd(${d.id},'zahlenAus',false)`)}
+          ${toggleBtn("Ausblenden", zahlenAus, `upd(${d.id},'zahlenAus',true)`)}
         </div>
       </div>` +
       `<div class="prow"><label>Farbe</label>

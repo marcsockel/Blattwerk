@@ -123,7 +123,7 @@ function bdSetColor(id, s, hex) {
 }
 
 WIDGETS.push({
-  meta: { type:'diagramm', label:'Säulen-/Balkendiagramm', desc:'Daten als Säulen oder Balken (auch gruppiert)', icon:'📊', category:'mathematik' },
+  meta: { type:'diagramm', group:'diagramme', label:'Säulen-/Balkendiagramm', desc:'Daten als Säulen oder Balken (auch gruppiert)', icon:'📊', category:'mathematik' },
 
   createData: id => ({
     id, type:'diagramm',

@@ -66,7 +66,7 @@ WIDGETS.push({
   meta: { type:"zwanzigerrahmen", label:"Zwanzigerrahmen", desc:"Zahl ablesen ZR 20", icon:"⬭", category:"mathematik" },
 
   createData: id => ({
-    id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, small:false,
+    id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, gross:true,
     zahlen: zrGen(6, 20), aufgabenNr:0, aufgabenText:''
   }),
 
@@ -76,7 +76,8 @@ WIDGETS.push({
     const showRes  = d.loesung || isActive;
     const blue     = isActive && !d.loesung;
     const bw    = d.bw    || false;
-    const small = d.small || false;
+    const gross = d.gross !== undefined ? !!d.gross : !d.small; // Migration: früher 'small'
+    const small = !gross;
     const fs    = small ? 15 : 20;
 
     const items = zahlen.map(n => {
@@ -115,7 +116,7 @@ WIDGETS.push({
     const zr    = d.zahlenraum  || 20;
     const sl    = d.loesung     || false;
     const bw    = d.bw          || false;
-    const small = d.small       || false;
+    const gross = d.gross !== undefined ? !!d.gross : !d.small; // Migration: früher 'small'
 
     const toggleBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -132,8 +133,8 @@ WIDGETS.push({
       `<button onclick="zrRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
-          ${toggleBtn("Groß",  !small, `upd(${d.id},'small',false)`)}
-          ${toggleBtn("Klein",  small, `upd(${d.id},'small',true)`)}
+          ${toggleBtn("Klein", !gross, `upd(${d.id},'gross',false)`)}
+          ${toggleBtn("Groß",   gross, `upd(${d.id},'gross',true)`)}
         </div></div>` +
       `<div class="prow"><label>Farbe</label>
         <div style="display:flex;gap:4px;">

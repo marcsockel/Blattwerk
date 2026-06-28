@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#1e1e2e">
-<link rel="manifest" href="manifest.json">
 <title>Blattwerk – Worksheet Builder</title>
 <!-- Lokale Schriften statt Google-Fonts-CDN (offline-fähig) -->
 <link rel="stylesheet" href="fonts/vendor/fonts.css">
@@ -66,6 +65,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .page-hint{border:2.5px dashed #d0cec8;border-radius:9px;padding:28px;text-align:center;color:#bbb;font-size:14px;font-weight:600;margin-top:10px;}
 .page-spacer{height:16px;flex-shrink:0;}
 .page-spacer.auto{height:0;}
+.page-dz{min-height:40px;margin-top:10px;border:2px dashed transparent;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;transition:border-color .12s,background .12s,color .12s;}
+.page-dz.active{border-color:#89b4fa;background:#f0f6ff;color:#89b4fa;}
 .page.page-before-overflow{border-radius:4px 4px 0 0;box-shadow:0 -2px 8px rgba(0,0,0,.08);}
 .page.page-overflow{border-top:2px dashed #d0cec8;border-radius:0 0 4px 4px;box-shadow:0 4px 22px rgba(0,0,0,.12);}
 /* Seitenübersicht */
@@ -140,7 +141,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
-  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .frame-noborder{outline:none!important;}
   #layout{display:block;overflow:visible;}
@@ -320,6 +321,9 @@ const CATEGORIES = {
 const WIDGET_GROUPS = {
   rechnen: { label: "Schriftl. Rechnen", icon: "✏" },
   anlaut:  { label: "Anfangsunterricht",  icon: "🔤" },
+  diagramme: { label: "Diagramme", icon: "📊" },
+  groessen: { label: "Größen", icon: "📏" },
+  zeit: { label: "Zeit", icon: "🕐" },
 };
 const _groupOpen = {};
 
@@ -331,9 +335,6 @@ const pr  = (l,inp) => `<div class="prow"><label>${l}</label>${inp}</div>`;
 const WIDGETS = [];
 </script>
 
-<!-- ── Neutralino (nur aktiv wenn als Desktop-App gestartet) ── -->
-<script src="/neutralino.js" onerror="console.log('Browser-Modus')"></script>
-<script src="neutralino-bridge.js"></script>
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
 <script src="main/helpers.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
@@ -388,9 +389,13 @@ const WIDGETS = [];
 <script src="widgets/rechendreiecke.js"></script>
 <script src="widgets/zahlenrad.js"></script>
 <script src="widgets/rechentabelle.js"></script>
+<script src="widgets/groessen.js"></script>
+<script src="widgets/groessentafel.js"></script>
 <script src="widgets/hunderterfeld.js"></script>
 <script src="widgets/zahlentafel.js"></script>
 <script src="widgets/diagramm.js"></script>
+<script src="widgets/kuchendiagramm.js"></script>
+<script src="widgets/strichliste.js"></script>
 <script src="widgets/multitool.js"></script>
 <script src="widgets/group.js"></script>
 <script src="widgets/floatbox.js"></script>
@@ -403,6 +408,9 @@ const WIDGET_MAP = Object.fromEntries(WIDGETS.map(w=>[w.meta.type,w]));
 let widgets=[],selId=null,idC=0,dragSrc=null,activeTab="allgemein",searchFilter="",activePage=0;
 let _history=[],_future=[];
 let _solutionsMode=false;
+// Ungespeicherte Änderungen? Steuert die beforeunload-Warnung. Wird bei jeder
+// Mutation (saveHistory) auf true gesetzt und nach Speichern/Laden zurückgesetzt.
+let _dirty=false;
 // History-Snapshots: Base64-Bilddaten (w.src="data:…") werden NICHT in jeden
 // Snapshot kopiert, sondern einmalig im _imgPool abgelegt und nur referenziert.
 // Sonst hielten 50 Snapshots × Bilddaten schnell hunderte MB im Speicher.
@@ -410,7 +418,7 @@ const _imgPool=[];
 function _imgRef(src){let i=_imgPool.indexOf(src);if(i<0){i=_imgPool.length;_imgPool.push(src);}return i;}
 function _snap(){return JSON.stringify(widgets,(k,v)=>typeof v==="string"&&v.startsWith("data:")?{__img:_imgRef(v)}:v);}
 function _unsnap(s){return JSON.parse(s,(k,v)=>v&&typeof v==="object"&&"__img"in v?_imgPool[v.__img]:v);}
-function saveHistory(snap){_history.push(snap||_snap());if(_history.length>50)_history.shift();_future=[];}
+function saveHistory(snap){_history.push(snap||_snap());if(_history.length>50)_history.shift();_future=[];_dirty=true;scheduleDraftSave();}
 // Editier-Sitzung für Inputs, die beim Tippen direkt in die Daten schreiben:
 // onfocus=edFocus() merkt den Vorher-Zustand, onblur=edBlur() pusht ihn in die History.
 let _editSnapshot=null;
@@ -423,13 +431,13 @@ function undo(){
   if(!_history.length)return;
   _future.push(_snap());
   widgets=_unsnap(_history.pop());
-  selId=null;render();desel();
+  selId=null;_dirty=true;scheduleDraftSave();render();desel();
 }
 function redo(){
   if(!_future.length)return;
   _history.push(_snap());
   widgets=_unsnap(_future.pop());
-  selId=null;render();desel();
+  selId=null;_dirty=true;scheduleDraftSave();render();desel();
 }
 
 function getPageRanges(){
@@ -712,6 +720,23 @@ function layoutInto(wc, list, base){
   }
 }
 
+// Drop-Ziel am Seitenende: löst ein gezogenes Widget aus einer Gruppe und legt es
+// als Top-Level-Widget ans Ende der Seite (vor den Seitenumbruch). Nötig, weil der
+// Gruppen-Rahmen sonst jeden Drop wieder in die Gruppe zieht und es ohne anderes
+// Top-Level-Widget kein Ziel außerhalb gibt.
+function dropOutToPage(range){
+  if(dragSrc===null) return;
+  const dragged=widgets[dragSrc];
+  if(!dragged||dragged.type==='group'||dragged.type==='groupEnd'){dragSrc=null;return;}
+  saveHistory();
+  const m=widgets.splice(dragSrc,1)[0];
+  let at=range.end;
+  if(dragSrc<at) at--;            // Entfernen hat die Indizes verschoben
+  widgets.splice(at,0,m);
+  dragSrc=null;
+  render();
+}
+
 function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   const isActive=pageIdx===activePage;
   const pageDiv=document.createElement("div");
@@ -743,6 +768,16 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     if(seg.length){layoutInto(wc,seg,range.start+i);i=k;} else {i++;}
   }
   pageDiv.appendChild(wc);
+  // Auf Seiten mit Gruppe: Drop-Zone am Seitenende zum Herauslösen aus der Gruppe.
+  if(pageWidgets.some(w=>w.type==='group')){
+    const pdz=document.createElement("div");
+    pdz.className="page-dz";
+    pdz.textContent="Hierher ziehen, um aus einer Gruppe herauszulösen";
+    pdz.ondragover=e=>{ if(dragSrc===null)return; e.preventDefault(); pdz.classList.add("active"); };
+    pdz.ondragleave=()=>pdz.classList.remove("active");
+    pdz.ondrop=e=>{ e.preventDefault(); pdz.classList.remove("active"); dropOutToPage(range); };
+    pageDiv.appendChild(pdz);
+  }
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
   if(pageWidgets.length===0){
     const hint=document.createElement("div");hint.className="page-hint";
@@ -1306,6 +1341,7 @@ let _updqTimer=null;
 function updq(id,k,v){
   const w=widgets.find(x=>x.id===id);if(!w)return;
   w[k]=v;
+  _dirty=true;scheduleDraftSave(); // Tippen zählt als Änderung (History via edBlur)
   clearTimeout(_updqTimer);
   _updqTimer=setTimeout(render,80);
 }
@@ -1378,7 +1414,11 @@ function mv(idx,d){
   saveHistory();[widgets[idx],widgets[ni]]=[widgets[ni],widgets[idx]];render();
 }
 function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]));c.id=++idC;widgets.splice(idx+1,0,c);render();sel(c.id);}
-function clearCanvas(){saveHistory();widgets=[];selId=null;activePage=0;render();desel();}
+function clearCanvas(){
+  // Nur fragen, wenn es etwas zu verlieren gibt (rückgängig machbar via Strg+Z).
+  if(widgets.length && !confirm('Das ganze Arbeitsblatt leeren? Alle Seiten und Widgets werden entfernt.\n\n(Rückgängig machbar mit Strg+Z.)'))return;
+  saveHistory();widgets=[];selId=null;activePage=0;render();desel();
+}
 
 // Lädt ein zufälliges Beispiel aus dem Ordner beispiele/ (Liste in beispiele/index.json).
 // Fällt auf das eingebaute Beispiel zurück, wenn der Ordner fehlt oder fetch blockiert
@@ -1441,13 +1481,13 @@ async function loadSampleByName(name){
   if(widgets.length)saveHistory();
   try{
     const resp=await fetch('beispiele/'+encodeURIComponent(name),{cache:'no-store'});
-    if(resp.ok && await loadBeispielBlob(await resp.blob())) return;
+    if(resp.ok && await loadBeispielBlob(await resp.blob(), name)) return;
   }catch(e){ /* Fallback */ }
   addSampleBuiltin();
 }
 
 // Lädt ein .blatt aus einem Blob (für Beispiele). Gibt true bei Erfolg zurück.
-async function loadBeispielBlob(blob){
+async function loadBeispielBlob(blob, fallbackName){
   try{ await loadJSZip(); }catch{ return false; }
   let doc, zip;
   try{
@@ -1455,6 +1495,9 @@ async function loadBeispielBlob(blob){
     const e=zip.file('document.json'); if(!e) return false;
     doc=JSON.parse(await e.async('string'));
   }catch{ return false; }
+  const nameEl=document.getElementById('blatt-name');
+  const docName=(doc.name||'').trim()||(fallbackName||'').replace(/\.blatt$/i,'');
+  if(nameEl&&docName) nameEl.value=docName;
   const loaded=doc.widgets||[];
   const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml'};
   for(const w of loaded){
@@ -1467,6 +1510,7 @@ async function loadBeispielBlob(blob){
   idC=doc.idC||Math.max(0,...loaded.map(w=>w.id),0);
   selId=null; activePage=0;
   render(); desel();
+  _dirty=false; // frisch geladen
   return true;
 }
 
@@ -1505,6 +1549,7 @@ function addSampleBuiltin(){
   mc.shuffle=true;
 
   render();
+  _dirty=false; // Beispiel frisch geladen
 }
 
 // ── SAVE / LOAD (.blatt) ─────────────────────────────────────────
@@ -1551,13 +1596,15 @@ async function blattSave() {
     }
   }
 
-  zip.file('document.json', JSON.stringify({ version:1, idC, widgets:wcopy }, null, 2));
+  zip.file('document.json', JSON.stringify({ version:1, name:base, idC, widgets:wcopy }, null, 2));
   const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = _blattFilename;
   a.click();
   URL.revokeObjectURL(a.href);
+  _dirty=false; // gerade gespeichert
+  draftClear(); // als .blatt gesichert → Auto-Entwurf nicht mehr nötig
 }
 
 async function blattOpen(file) {
@@ -1576,7 +1623,8 @@ async function blattOpen(file) {
   }
   _blattFilename = file.name;
   const nameEl = document.getElementById('blatt-name');
-  if (nameEl) nameEl.value = file.name.replace(/\.blatt$/i, '');
+  const docName = (doc.name || '').trim() || file.name.replace(/\.blatt$/i, '');
+  if (nameEl) nameEl.value = docName;
   const loaded = doc.widgets || [];
 
   const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg',
@@ -1597,6 +1645,75 @@ async function blattOpen(file) {
   idC = doc.idC || Math.max(0, ...loaded.map(w => w.id), 0);
   selId = null; activePage = 0;
   render(); desel();
+  _dirty=false; // frisch geladen = nichts Ungespeichertes
+  draftClear();  // geladene Datei ist der neue Stand → alten Auto-Entwurf verwerfen
+}
+
+// ── AUTOSAVE (IndexedDB) ─────────────────────────────────────────
+// Lokales Sicherheitsnetz pro Browser/Gerät gegen Reload/Absturz. Das echte,
+// portable Backup bleibt die .blatt-Datei. Speichert den kompletten Entwurf
+// (inkl. Bilder) ~1s nach der letzten Änderung. IndexedDB statt localStorage,
+// weil Bilder (Base64) das 5-MB-Limit von localStorage schnell sprengen würden.
+const DRAFT_DB='blattwerk', DRAFT_STORE='drafts', DRAFT_KEY='current';
+let _draftDbPromise=null;
+function _draftDb(){
+  if(_draftDbPromise) return _draftDbPromise;
+  _draftDbPromise=new Promise((resolve,reject)=>{
+    if(!window.indexedDB){reject(new Error('IndexedDB nicht verfügbar'));return;}
+    const req=indexedDB.open(DRAFT_DB,1);
+    req.onupgradeneeded=()=>{ const db=req.result; if(!db.objectStoreNames.contains(DRAFT_STORE)) db.createObjectStore(DRAFT_STORE); };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error);
+  });
+  return _draftDbPromise;
+}
+async function draftSave(){
+  try{
+    const db=await _draftDb();
+    // widgets wird per Structured-Clone gespeichert (Base64-Bilder inklusive).
+    const rec={ widgets, idC, name:(document.getElementById('blatt-name')?.value||''), savedAt:Date.now() };
+    await new Promise((res,rej)=>{ const tx=db.transaction(DRAFT_STORE,'readwrite'); tx.objectStore(DRAFT_STORE).put(rec,DRAFT_KEY); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
+  }catch(e){ console.warn('Autosave fehlgeschlagen:',e); }
+}
+async function draftLoad(){
+  try{
+    const db=await _draftDb();
+    return await new Promise((res,rej)=>{ const tx=db.transaction(DRAFT_STORE,'readonly'); const r=tx.objectStore(DRAFT_STORE).get(DRAFT_KEY); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
+  }catch(e){ return null; }
+}
+async function draftClear(){
+  try{ const db=await _draftDb(); await new Promise(res=>{ const tx=db.transaction(DRAFT_STORE,'readwrite'); tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY); tx.oncomplete=res; tx.onerror=res; }); }catch(e){}
+}
+let _draftTimer=null;
+function scheduleDraftSave(){ clearTimeout(_draftTimer); _draftTimer=setTimeout(draftSave,1000); }
+
+// Wiederherstellen-Hinweis beim Start (dezenter Banner statt blockierendem Dialog).
+function showRestoreBanner(draft){
+  render(); // leeres Blatt im Hintergrund zeichnen
+  const n=(draft.widgets||[]).filter(w=>w.type!=='pagebreak'&&w.type!=='groupEnd').length;
+  let when='';
+  try{ when=new Date(draft.savedAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){}
+  const bar=document.createElement('div');
+  bar.id='restore-banner';
+  bar.style.cssText='position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;'
+    +'background:#1e1e2e;color:#cdd6f4;border:1.5px solid #45475a;border-radius:10px;padding:12px 16px;'
+    +'box-shadow:0 8px 28px rgba(0,0,0,.45);display:flex;align-items:center;gap:14px;'
+    +"font-family:'Fira Sans',sans-serif;font-size:13px;max-width:90vw;";
+  const btn=(label,bg,color)=>`padding:6px 12px;border:none;border-radius:6px;background:${bg};color:${color};font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;`;
+  bar.innerHTML=`<span>💾 Nicht gespeicherter Entwurf gefunden${n?` (${n} Widget${n!==1?'s':''}`:''}${when?`, ${when}`:''}${n?')':''}.</span>`
+    +`<button id="rb-yes" style="${btn('Wiederherstellen','#89b4fa','#1e1e2e')}">Wiederherstellen</button>`
+    +`<button id="rb-no" style="${btn('Verwerfen','#313244','#cdd6f4')}">Verwerfen</button>`;
+  document.body.appendChild(bar);
+  document.getElementById('rb-yes').onclick=()=>{
+    widgets=draft.widgets||[];
+    idC=draft.idC||Math.max(0,...widgets.map(w=>w.id||0),0);
+    selId=null; activePage=0;
+    const nameEl=document.getElementById('blatt-name'); if(nameEl&&draft.name)nameEl.value=draft.name;
+    render(); desel();
+    _dirty=true; // wiederhergestellt, aber noch nicht als .blatt gespeichert
+    bar.remove();
+  };
+  document.getElementById('rb-no').onclick=()=>{ draftClear(); bar.remove(); addSample(); };
 }
 
 // ── PRINT OPTIONS ────────────────────────────────────────────────
@@ -1731,9 +1848,26 @@ document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){e.preventDefault();undo();}
   if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){e.preventDefault();redo();}
 });
+
+// Warnung beim Neuladen/Schließen, wenn ungespeicherte Änderungen vorliegen.
+// Der Browser zeigt seinen eigenen Standard-Dialog; der Text ist nicht anpassbar.
+window.addEventListener('beforeunload', e => {
+  if(_dirty && widgets.length){ e.preventDefault(); e.returnValue=''; }
+});
 buildTabs();
 buildList();
-addSample();
+// Start: persistenten Speicher anfragen, dann auf Auto-Entwurf prüfen.
+// Gibt es einen Entwurf mit Inhalt → Wiederherstellen-Hinweis, sonst Beispiel laden.
+(async()=>{
+  if(navigator.storage&&navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
+  let draft=null;
+  try{ draft=await draftLoad(); }catch(e){}
+  if(draft && Array.isArray(draft.widgets) && draft.widgets.some(w=>w.type!=='pagebreak'&&w.type!=='groupEnd')){
+    showRestoreBanner(draft);
+  }else{
+    addSample();
+  }
+})();
 
 // Scroll-basiertes activePage-Tracking
 (()=>{
