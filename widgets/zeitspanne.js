@@ -106,7 +106,7 @@ WIDGETS.push({
 
     const _fracMap = {'1/4':0.25,'1/2':0.5,'3/4':0.75};
     const _frac  = _fracMap[d.widthFraction] || (d.halfWidth ? 0.5 : 1);
-    const _avail = Math.round(640 * _frac);
+    const _avail = Math.round(geom().contentW * _frac);
     // Immer 2 Spalten → 1 Item nimmt nie die volle Breite; bei halber Widget-Breite nur 1 Spalte
     const cols = _avail < 400 ? 1 : 2;
     return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 40px;justify-content:start;">${rendered}</div>`;

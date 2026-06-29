@@ -150,18 +150,24 @@ WIDGETS.push({
       `</div>`;
     };
 
+    // Layout: Flexbox mit Umbruch statt starrem Grid. „Items pro Reihe" gibt die
+    // Zielbreite vor (so viele passen bei voller Widget-Breite). Wird das Widget
+    // schmaler gemacht, brechen die Items um (untereinander) statt zu schrumpfen —
+    // eine Mindestbreite verhindert unbenutzbar kleine Felder.
+    const minW = Math.max(120, imgSize + 80);
+    const itemBasis = `calc((100% - ${(itemsPerRow - 1) * gap}px) / ${itemsPerRow})`;
+
     const itemCards = items.map((item, i) => {
       const src    = item.src || anlautDefaultSrc(item.anlaut);
       const word   = anlautWortFromSrc(src) || item.anlaut;
       const answer = (beispiel && i === 0) ? beispielText : undefined;
-      return `<div style="display:flex;flex-direction:column;gap:4px;">` +
+      return `<div style="display:flex;flex-direction:column;gap:4px;flex:1 1 ${itemBasis};min-width:${minW}px;">` +
         scatterBox(word, src, i) +
         writeLine(answer) +
       `</div>`;
     }).join('');
 
-    const gridStyle =
-      `display:grid;grid-template-columns:repeat(${itemsPerRow},1fr);gap:${gap}px;`;
+    const gridStyle = `display:flex;flex-wrap:wrap;gap:${gap}px;`;
 
     return atHtml(d) + `<div style="${gridStyle}">${itemCards}</div>`;
   },

@@ -99,10 +99,12 @@ WIDGETS.push({
   render: d => {
     const dreiecke = d.dreiecke || rdGen(d.anzahl||4, d.zahlenraum||100, d.leerfeld||"seiten");
     const active = d.id === selId || _solutionsMode;
-    const basis = d.gross ? 250 : 188; // klein: 150 → 188 (+25 % pro Item)
-    const spacers = Array(6).fill(`<div style="flex:1 1 ${basis}px;max-width:${basis}px;height:0;min-width:0;"></div>`).join('');
-    const items = dreiecke.map(t => `<div style="flex:1 1 ${basis}px;max-width:${basis}px;">${rdSvg(t, active)}</div>`).join('');
-    return atHtml(d) + `<div style="display:flex;flex-wrap:wrap;gap:12px 16px;justify-content:space-between;">${items}${spacers}</div>`;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Breite basis.
+    const basis = d.gross ? 250 : 188;
+    return atHtml(d) + flexDistribute(
+      dreiecke.map(t => rdSvg(t, active)),
+      { gap: 16, marginBottom: 12, itemSize: `width:${basis}px;`, itemW: basis, d }
+    );
   },
 
   renderProps: d => {

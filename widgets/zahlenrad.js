@@ -165,14 +165,13 @@ WIDGETS.push({
   render: d => {
     const wheels = d.wheels || [];
     const big = (d.groesse || 'gross') !== 'klein';
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Räder haben feste
+    // Breite dia → alle gleich breit.
     const dia = big ? 162 : 140;
-    const cells = wheels.map(wh =>
-      `<div style="width:${dia}px;margin-bottom:12px;flex-shrink:0;">${zrWheelSvg(wh, d)}</div>`
-    ).join('');
-    // Spacer für „erst füllen, dann verteilen, Rest linksbündig" (wie arithmetic.js)
-    const spacers = Array(6).fill(`<div style="height:0;width:${dia}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return atHtml(d) +
-      `<div style="display:flex;column-gap:14px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${cells}${spacers}</div>`;
+    return atHtml(d) + flexDistribute(
+      wheels.map(wh => zrWheelSvg(wh, d)),
+      { gap: 14, marginBottom: 12, itemSize: `width:${dia}px;`, itemW: dia, d }
+    );
   },
 
   renderProps: d => {

@@ -25,9 +25,17 @@ WIDGETS.push({
   render: d => {
     const isActive = d.id === selId || _solutionsMode;
     const numCols = d.cols || 2;
+    // Feste Slot-Breite für jede Zahl: max. Stellenzahl des Zahlenraums × Ziffernbreite.
+    // Zusammen mit tabular-nums (gleich breite Ziffern) stehen Kästchen und „=" in
+    // JEDER Aufgabe an derselben Stelle — egal ob ein- oder zweistellig, egal welche Ziffer.
+    const maxDigits = String(Math.abs(+d.zahlenraum) || 20).length;
+    const numW = maxDigits + 'ch';
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
     const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-    const blueVal = v => `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+    // Blaue Lösung: in eine Box mit GENAU der Breite des jeweiligen Platzhalter-Kästchens
+    // (w px) gesetzt → ausgewählt (Zahl) und abgewählt (Kästchen) sind gleich breit, der
+    // Umbruch/die Position bleibt identisch.
+    const blueVal = (v, w) => `<span style="display:inline-block;width:${w}px;text-align:center;font-family:'DidactGothic7',sans-serif;font-size:16px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
 
     // Parse a task string into parts.
     // Normal:      "12 + 4 ="        → { left:"12", op:"+", right:"4", result:null }
@@ -70,7 +78,7 @@ WIDGETS.push({
 
     const cell = (val, align = "right", override = null) => {
       const content = override !== null ? override : val === "_" ? box : `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(val)}</span>`;
-      return `<td style="text-align:${align};padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${content}</td>`;
+      return `<td style="text-align:${align};padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;min-width:${numW};font-variant-numeric:tabular-nums;">${content}</td>`;
     };
 
     const parsed = allTasks.map(parse);
@@ -144,13 +152,13 @@ WIDGETS.push({
     const renderGroup = group => {
       const rows = group.map(p => {
         if (p.raw !== undefined) {
-          const ans = p.hasEq ? (isActive ? `&thinsp;=&thinsp;${blueVal(computeAns(p)??'?')}` : `&thinsp;=&thinsp;${box}`) : "";
+          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueVal(computeAns(p)??'?', 36)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
           return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
         }
         const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
         if (p.isVergleich) {
           const cmpBox = `<span style="display:inline-block;width:24px;height:24px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-          const mid = isActive ? blueVal(p.sym) : cmpBox;
+          const mid = isActive ? blueVal(p.sym, 24) : cmpBox;
           return `<tr>
             <td style="text-align:right;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(p.left)}</td>
             <td style="text-align:center;padding:3px 8px;">${mid}</td>
@@ -158,16 +166,16 @@ WIDGETS.push({
           </tr>`;
         }
         const opCell = p.isZeichen
-          ? `<td style="text-align:center;padding:3px 6px;">${isActive ? blueVal(p.op) : sqBox}</td>`
+          ? `<td style="text-align:center;padding:3px 6px;">${isActive ? blueVal(p.op, 20) : sqBox}</td>`
           : `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
-        const leftContent = (p.left === "_" && isActive) ? blueVal(computeAns(p)??'?') : (p.left === "_" ? box : null);
-        const rightContent = (p.right === "_" && isActive) ? blueVal(computeAns(p)??'?') : (p.right === "_" ? box : null);
+        const leftContent = (p.left === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.left === "_" ? box : null);
+        const rightContent = (p.right === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.right === "_" ? box : null);
         if (p.result !== null) {
-          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;<span style="font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
+          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;"><span style="margin-right:6px;">=</span><span style="display:inline-block;min-width:${numW};text-align:left;font-variant-numeric:tabular-nums;font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
         } else {
           const ans = computeAns(p);
           const ansCell = p.hasEq
-            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">=&thinsp;${isActive && ans ? blueVal(ans) : box}</td>`
+            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;"><span style="margin-right:6px;">=</span>${isActive && ans ? blueVal(ans, 36) : box}</td>`
             : `<td></td>`;
           return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}${ansCell}</tr>`;
         }
@@ -175,9 +183,16 @@ WIDGETS.push({
       return `<table style="border-collapse:collapse;">${rows}</table>`;
     };
 
-    const itemW = Math.ceil(Math.log10((d.zahlenraum || 20) + 2)) * 25 + 40;
-    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    const tasksHtml = atHtml(d) + `<div style="display:flex;column-gap:36px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${groups.map(g=>`<div style="margin-bottom:16px;">${renderGroup(g)}</div>`).join('')}${spacers}</div>`;
+    // Einheitliches Verteilungs-Layout (siehe flexDistribute in helpers.js). Items sind
+    // durch die festen Zahl-Slots (min-width:Xch + tabular-nums) gleich breit. Füller-Muster
+    // = ein einzelnes Päckchen (leicht) mit identischer Breite.
+    // itemW hier nur GROB geschätzt (font-abhängige Breite) — dient allein der Voll/Nicht-
+    // voll-Entscheidung in flexDistribute; die echte Spaltenzahl misst der Browser.
+    const tasksHtml = atHtml(d) + flexDistribute(
+      groups.map(g => renderGroup(g)),
+      { gap: 24, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
+        itemW: 3 * maxDigits * 9 + 70, d, estimate: true }
+    );
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 

@@ -177,13 +177,13 @@ WIDGETS.push({
     const cw = big ? 42 : 30;
     const cwW = Math.round(cw * 1.25); // Felder 1/4 breiter als hoch
     const ncol = Math.max(1, Math.min(5, d.spalten || 2));
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Tabellen haben feste
+    // Breite itemW (Zellbreite × Spalten) → alle gleich breit.
     const itemW = (ncol + 1) * cwW + 4;
-    const cells = tables.map(t =>
-      `<div style="width:${itemW}px;margin-bottom:14px;flex-shrink:0;">${rtTableHtml(t, d)}</div>`
-    ).join('');
-    const spacers = Array(6).fill(`<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return atHtml(d) +
-      `<div style="display:flex;column-gap:28px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${cells}${spacers}</div>`;
+    return atHtml(d) + flexDistribute(
+      tables.map(t => rtTableHtml(t, d)),
+      { gap: 28, marginBottom: 14, itemSize: `width:${itemW}px;`, itemW, d }
+    );
   },
 
   renderProps: d => {

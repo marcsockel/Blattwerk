@@ -254,11 +254,10 @@ WIDGETS.push({
       } else {
         svgBlock = hfSvg(c.base, c.op, d);
       }
-      return `<div style="width:${D.W}px;margin-bottom:26px;flex-shrink:0;">${svgBlock}${hfLabel(item, d)}</div>`;
-    }).join('');
-    const spacers = Array(6).fill(`<div style="height:0;width:${D.W}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return atHtml(d) +
-      `<div style="display:flex;column-gap:22px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${cells}${spacers}</div>`;
+      return `${svgBlock}${hfLabel(item, d)}`;
+    });
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Feldbreite D.W.
+    return atHtml(d) + flexDistribute(cells, { gap: 22, marginBottom: 26, itemSize: `width:${D.W}px;`, itemW: D.W, d });
   },
 
   renderProps: d => {

@@ -1,12 +1,12 @@
 // Widget: Zwanzigerrahmen
 
-function zrRand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+function zrahRand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 
-function zrGen(anzahl, zr) {
-  return Array.from({ length: anzahl }, () => zrRand(1, zr));
+function zrahGen(anzahl, zr) {
+  return Array.from({ length: anzahl }, () => zrahRand(1, zr));
 }
 
-function zrSvg(n, bw=false, small=false) {
+function zrahSvg(n, bw=false, small=false) {
   const R = small ? 5 : 9;
   const sp = 2*R+1;
   const capW = small ? 10 : 20;
@@ -67,11 +67,11 @@ WIDGETS.push({
 
   createData: id => ({
     id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, gross:true,
-    zahlen: zrGen(6, 20), aufgabenNr:0, aufgabenText:''
+    zahlen: zrahGen(6, 20), aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
-    const zahlen = d.zahlen || zrGen(d.anzahl||6, d.zahlenraum||20);
+    const zahlen = d.zahlen || zrahGen(d.anzahl||6, d.zahlenraum||20);
     const isActive = d.id === selId || _solutionsMode;
     const showRes  = d.loesung || isActive;
     const blue     = isActive && !d.loesung;
@@ -85,30 +85,20 @@ WIDGETS.push({
         ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;font-weight:700;color:${blue?'#2563eb':'#1a7f3c'};">${n}</span>`
         : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?48:64}px;height:${small?17:22}px;"></span>`;
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:${small?10:14}px;">
-        ${zrSvg(n, bw, small)}
+        ${zrahSvg(n, bw, small)}
         <div style="display:flex;align-items:center;justify-content:center;min-height:${small?22:28}px;">${resEl}</div>
       </div>`;
     });
 
-    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
-    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(640 * frac);
     const svgW    = small ? Math.round(174 * 0.9) : 258;
     const colGap  = 10;
     const rowGap  = small ? 36 : 48;
-    const perRow  = Math.max(1, Math.floor((avail + colGap) / (svgW + colGap)));
-    const gap     = perRow > 1 ? (avail - perRow * svgW) / (perRow - 1) : 0;
-
-    const rows = [];
-    for (let i = 0; i < items.length; i += perRow) rows.push(items.slice(i, i + perRow));
-    const filler = `<div style="width:${svgW}px;visibility:hidden;"></div>`;
-    const rowHtml = rows.map((row, ri) => {
-      const mb = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
-      const filled = [...row.map(i => `<div style="display:flex;justify-content:center;width:${svgW}px;">${i}</div>`)];
-      while (filled.length < perRow) filled.push(filler);
-      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join('')}</div>`;
-    }).join('');
-    return atHtml(d) + rowHtml;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Breite svgW,
+    // Inhalt zentriert.
+    return atHtml(d) + flexDistribute(items, {
+      gap: colGap, marginBottom: rowGap,
+      itemSize: `width:${svgW}px;display:flex;justify-content:center;`, itemW: svgW, d
+    });
   },
 
   renderProps: d => {
@@ -125,12 +115,12 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     return pr("Zahlenraum",
-        `<select onchange="zrSet(${d.id},'zahlenraum',+this.value)">
+        `<select onchange="zrahSet(${d.id},'zahlenraum',+this.value)">
           <option value="10"  ${zr===10 ?"selected":""}>1–10</option>
           <option value="20"  ${zr===20 ?"selected":""}>1–20</option>
         </select>`) +
-      pr("Anzahl", `<input type="number" min="1" max="24" value="${anz}" onchange="zrSet(${d.id},'anzahl',+this.value)">`) +
-      `<button onclick="zrRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
+      pr("Anzahl", `<input type="number" min="1" max="24" value="${anz}" onchange="zrahSet(${d.id},'anzahl',+this.value)">`) +
+      `<button onclick="zrahRoll(${d.id})" style="margin-top:6px;margin-bottom:8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Würfeln</button>` +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Klein", !gross, `upd(${d.id},'gross',false)`)}
@@ -149,17 +139,22 @@ WIDGETS.push({
   },
 });
 
-function zrRoll(id) {
+function zrahRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
-  w.zahlen = zrGen(w.anzahl||6, w.zahlenraum||20);
+  w.zahlen = zrahGen(w.anzahl||6, w.zahlenraum||20);
   render(); renderProps(id);
 }
 
-function zrSet(id, key, val) {
+function zrahSet(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   w[key] = val;
-  w.zahlen = zrGen(w.anzahl||6, w.zahlenraum||20);
+  // Nur die Menge anpassen — vorhandene Zahlen BLEIBEN. Neu gewürfelt wird ausschließlich
+  // über den Würfel-Button (zrahRoll). Beim Erhöhen kommen neue Zufallszahlen nur für die
+  // zusätzlichen Felder dazu, beim Verringern wird hinten abgeschnitten.
+  const anz = w.anzahl || 6, zr = w.zahlenraum || 20;
+  const cur = (w.zahlen || []).slice();
+  w.zahlen = cur.length < anz ? cur.concat(zrahGen(anz - cur.length, zr)) : cur.slice(0, anz);
   render(); renderProps(id);
 }

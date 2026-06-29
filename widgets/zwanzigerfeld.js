@@ -98,25 +98,15 @@ WIDGETS.push({
       </div>`;
     });
 
-    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
-    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(640 * frac);
     const svgW    = small ? (10*(14+2)+2) : (10*(22+3)+3);
-    const colGap  = small ? 10 : 24;
+    const colGap  = small ? 20 : 48; // verdoppelt (Abstand im engen Modus war zu klein)
     const rowGap  = small ? 36 : 48;
-    const perRow  = Math.max(1, Math.floor((avail + colGap) / (svgW + colGap)));
-    const gap     = perRow > 1 ? (avail - perRow * svgW) / (perRow - 1) : 0;
-
-    const rows = [];
-    for (let i = 0; i < items.length; i += perRow) rows.push(items.slice(i, i + perRow));
-    const filler = `<div style="width:${svgW}px;visibility:hidden;"></div>`;
-    const rowHtml = rows.map((row, ri) => {
-      const mb = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
-      const filled = [...row.map(i => `<div style="display:flex;justify-content:center;width:${svgW}px;">${i}</div>`)];
-      while (filled.length < perRow) filled.push(filler);
-      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join('')}</div>`;
-    }).join('');
-    return atHtml(d) + rowHtml;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Feldbreite svgW,
+    // Inhalt zentriert.
+    return atHtml(d) + flexDistribute(items, {
+      gap: colGap, marginBottom: rowGap,
+      itemSize: `width:${svgW}px;display:flex;justify-content:center;`, itemW: svgW, d
+    });
   },
 
   renderProps: d => {

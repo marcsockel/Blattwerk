@@ -228,13 +228,13 @@ WIDGETS.push({
     const groups = Array.from({ length: cols },
       (_, i) => items.slice(i * app, (i + 1) * app)).filter(g => g.length);
     const fmt = d.format || 'einfach';
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Box-Breite
+    // itemW → alle Päckchen gleich breit.
     const itemW = big ? (fmt === 'gemischt' ? 250 : 200) : (fmt === 'gemischt' ? 200 : 160);
-    const spacers = Array(6).fill(
-      `<div style="height:0;width:${itemW}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-    return atHtml(d) +
-      `<div style="display:flex;column-gap:36px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">`
-      + groups.map(g => `<div style="margin-bottom:16px;">${guGroupTable(g, d, active)}</div>`).join('')
-      + spacers + `</div>`;
+    return atHtml(d) + flexDistribute(
+      groups.map(g => guGroupTable(g, d, active)),
+      { gap: 36, marginBottom: 16, itemSize: `width:${itemW}px;`, itemW, d }
+    );
   },
 
   renderProps: d => {

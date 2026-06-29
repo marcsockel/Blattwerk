@@ -23,14 +23,9 @@ WIDGETS.push({
       choices: (d.choices && d.choices[i]) || anlautShuffleOpts(letter, null, d.schreibweise||'gross'),
     }));
     const size        = d.size  || 80;
-    const gap         = d.gap   ?? 16;
-    const align       = d.align || "left";
     const buchstabenAus = d.buchstabenAus || false;
     const schreibweise  = d.schreibweise  || "gross";
     const fs = Math.max(11, Math.round(size * 0.2));
-
-    const justifyMap = { left:"flex-start", center:"center", right:"flex-end" };
-    const justify = justifyMap[align] || "flex-start";
 
     const rendered = items.map(item => {
       const src  = item.src || anlautDefaultSrc(item.anlaut);
@@ -46,17 +41,15 @@ WIDGETS.push({
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
     });
 
-    return atHtml(d) +
-      `<div style="display:flex;flex-wrap:wrap;gap:${gap}px;justify-content:${justify};">` +
-        rendered.map(i => `<div>${i}</div>`).join("") +
-      `</div>`;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js) — wie alle anderen
+    // Item-Reihen-Widgets. Items sind gleich breit (Bild + Kästchen = size).
+    return atHtml(d) + flexDistribute(rendered, { gap: 16, marginBottom: 16, itemSize: `width:${size}px;`, itemW: size, d });
   },
 
   renderProps: d => {
     const items      = d.items || [];
     const schreibweise = d.schreibweise || "gross";
     const size       = d.size || 80;
-    const gap        = d.gap  ?? 16;
 
     const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
 
@@ -126,29 +119,12 @@ WIDGETS.push({
         style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#313244;
                color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
         🔀 Ablenker neu mischen</button>` +
-      `<div class="prow" style="margin-top:6px;"><label>Ausrichtung</label>
-        <div style="display:flex;gap:4px;">
-          ${[["Links","left"],["Mitte","center"],["Rechts","right"]].map(([lbl,val]) => {
-            const active = (d.align||"left") === val;
-            return `<button onclick="event.stopPropagation();upd(${d.id},'align','${val}')"
-              style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
-                     background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
-                     font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${lbl}</button>`;
-          }).join("")}
-        </div></div>` +
       pr("Bildgröße (px)",
         `<div style="display:flex;gap:6px;align-items:center;">
           <input type="range" min="40" max="200" value="${size}"
             oninput="this.nextElementSibling.textContent=this.value+'px'"
             onchange="upd(${d.id},'size',+this.value)" style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:36px;">${size}px</span>
-        </div>`) +
-      pr("Abstand",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="4" max="60" value="${gap}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'gap',+this.value)" style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
         </div>`) ;
   },
 });

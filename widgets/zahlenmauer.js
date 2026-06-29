@@ -141,15 +141,10 @@ WIDGETS.push({
     // backward compat: if no mauern array, build from old base/shown
     const mauern = d.mauern || [{ base: d.base || [], shown: d.shown }];
     const active = d.id === selId || _solutionsMode;
-    const svgs = mauern.slice(0, anzahl).map(m =>
-      `<div style="display:inline-block;">${zmSvg(m, n, fillMode, active)}</div>`
-    );
-    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
-    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(640 * frac);
+    const svgs = mauern.slice(0, anzahl).map(m => zmSvg(m, n, fillMode, active));
     const itemW   = Math.round(n * 54 + 2);
-    const _perRow = Math.max(1, Math.floor((avail + 20) / (itemW + 20)));
-    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${itemW}px);gap:12px 20px;justify-content:space-between;">${svgs.join("")}</div>`;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
+    return atHtml(d) + flexDistribute(svgs, { gap: 20, marginBottom: 12, itemSize: `width:${itemW}px;`, itemW, d });
   },
 
   renderProps: d => {

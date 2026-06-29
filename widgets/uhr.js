@@ -133,11 +133,8 @@ WIDGETS.push({
       return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${svg}${label}</div>`;
     });
 
-    const _fracMap = {'1/4':0.25,'1/2':0.5,'3/4':0.75};
-    const _frac   = _fracMap[d.widthFraction] || (d.halfWidth ? 0.5 : 1);
-    const _avail  = Math.round(640 * _frac);
-    const _perRow = Math.max(1, Math.floor((_avail + 20) / (size + 20)));
-    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${_perRow},${size}px);gap:16px 20px;justify-content:space-between;">${items.join("")}</div>`;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
+    return atHtml(d) + flexDistribute(items, { gap: 20, marginBottom: 16, itemSize: `width:${size}px;`, itemW: size, d });
   },
 
   renderProps: d => {

@@ -25,6 +25,28 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--bg:#f0eee8;--sb:#1e1e2e;--sbt:#cdd6f4;--acc:#f38ba8;--acc2:#a6e3a1;--acc3:#89b4fa;--acc4:#fab387;--tb:#181825;}
+/* ── Seitengeometrie (A4). Default = Hochformat. body.landscape überschreibt → Querformat.
+   ALLE festen Blattmaße hängen an diesen Variablen; JS-Pendants in PAGE_GEOM (Überlauf/Übersicht). */
+:root{
+  --scr-page-w:190mm;   /* Bildschirm-Seite: Breite (= Blattbreite − 20mm, wie bisher) */
+  --scr-page-h:297mm;   /* Bildschirm-Seite: Höhe (= volle Blatthöhe) */
+  --page-pad:13mm 10mm 5mm 10mm;   /* Bildschirm-Padding */
+  --page-end-top:280mm; /* Hilfslinie / Inhalts-Unterkante */
+  --prn-page-w:210mm;   /* Druck: volle Blattbreite */
+  --prn-page-minh:294mm;
+  --prn-page-maxh:296mm;
+  --prn-pad:13mm 15mm 5mm 25mm;    /* Druck-Padding (25mm links = Lochrand) */
+  --sol-header-w:190mm;
+}
+body.landscape{
+  --scr-page-w:277mm;   /* 297 − 20 */
+  --scr-page-h:210mm;
+  --page-end-top:193mm; /* 210 − ~17mm unten */
+  --prn-page-w:297mm;
+  --prn-page-minh:207mm;
+  --prn-page-maxh:209mm;
+  --sol-header-w:277mm;
+}
 body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1e1e2e;}
 /* Toolbar */
 #toolbar{background:var(--tb);color:var(--sbt);display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;border-bottom:2px solid #313244;}
@@ -58,9 +80,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 #canvas-area::-webkit-scrollbar{width:6px;}#canvas-area::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px;}
 /* Bildschirmseite spiegelt das Druck-Blatt (A4 297mm, 13mm oben / 5mm unten),
    damit der Abstand am Bildschirm dem Druck entspricht (WYSIWYG). */
-.page{width:190mm;min-height:297mm;background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:13mm 10mm 5mm 10mm;border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
+.page{width:var(--scr-page-w);min-height:var(--scr-page-h);background:#fff;border-radius:4px;box-shadow:0 4px 22px rgba(0,0,0,.12);padding:var(--page-pad);border-top:5px solid #ccc;box-sizing:border-box;position:relative;cursor:default;}
 .page.page-active{border-top-color:var(--acc3);}
-.page-end{position:absolute;left:0;right:0;top:280mm;border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
+.page-end{position:absolute;left:0;right:0;top:var(--page-end-top);border-top:2px dashed rgba(255,0,170,.3);pointer-events:none;}
 .page-end::after{content:"Ende Seite";position:absolute;right:8px;top:3px;font-size:9px;color:rgba(255,0,170,.5);font-family:sans-serif;letter-spacing:.5px;}
 .page-hint{border:2.5px dashed #d0cec8;border-radius:9px;padding:28px;text-align:center;color:#bbb;font-size:14px;font-weight:600;margin-top:10px;}
 .page-spacer{height:16px;flex-shrink:0;}
@@ -93,7 +115,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .ov-cont-badge.right{right:-9px;border-radius:3px 0 0 3px;}
 .ov-cont-badge.left {left:-9px; border-radius:0 3px 3px 0;}
 /* Widgets on canvas */
-.wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;}
+.wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;display:flex;flex-direction:column;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
 .wacts{display:none;position:absolute;top:-13px;right:3px;gap:3px;z-index:10;}
 .wwrap:hover > .wacts,.wwrap.sel > .wacts{display:flex;}
@@ -107,7 +129,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* Schwebender Rahmen ohne gewählten Rahmen: Bildschirm-Hilfslinie nur bei Auswahl (Druck: weg) */
 .float-noborder.sel > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
-.winner{padding:7px 9px;}
+.winner{padding:7px 9px;flex:1 1 auto;}
 /* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
 .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22);}
 /* widget internals */
@@ -132,7 +154,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .pg-num{display:none;position:absolute;bottom:8mm;right:10mm;font-size:10px;color:#333;}
 #solution-pages{display:none;}
 @media print{#solution-pages{display:block;}
-.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:190mm;}
+.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:var(--sol-header-w);}
 .solution-pages-inner .page{page-break-before:always;}}
 @media print{
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -169,8 +191,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      Nötig, damit die absolut positionierte Seitenzahl (.pg-num, bottom) fix am Blattende
      sitzt statt mit dem Inhalt nach oben zu wandern. 294mm < max-height:296mm < 297mm Blatt
      → kein WebKit-Bleed (overflow:hidden bleibt als Netz). Inhalt ≤285mm < 294mm, wird nicht berührt. */
-  .page{box-sizing:border-box;width:210mm;height:auto;min-height:294mm;max-height:296mm;overflow:hidden;
-        padding:13mm 15mm 5mm 25mm;page-break-inside:avoid;break-inside:avoid;}
+  .page{box-sizing:border-box;width:var(--prn-page-w);height:auto;min-height:var(--prn-page-minh);max-height:var(--prn-page-maxh);overflow:hidden;
+        padding:var(--prn-pad);page-break-inside:avoid;break-inside:avoid;}
   /* Standard (einseitig + beidseitig-Vorderseiten): breiter Rand LINKS (25mm) zum Lochen. */
   body.print-ds .page.page-back{padding-left:15mm;padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
@@ -217,6 +239,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     <button class="tbtn p" onclick="togglePrintPanel(event)" style="height:100%;">⚙ Optionen</button>
     <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:12px;">Druckoptionen</div>
+      <div style="font-size:11px;color:#cdd6f4;margin-bottom:6px;font-weight:700;">Ausrichtung</div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button id="or-portrait" onclick="setOrientation('portrait')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #89b4fa;background:#89b4fa;color:#1e1e2e;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▯ Hochformat</button>
+        <button id="or-landscape" onclick="setOrientation('landscape')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #45475a;background:#313244;color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▭ Querformat</button>
+      </div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
         <input type="checkbox" id="opt-pagenums" onchange="printOpts.pageNumbers=this.checked;updatePrintStyle()">
         Seitenzahlen anzeigen
@@ -411,6 +438,15 @@ let _solutionsMode=false;
 // Ungespeicherte Änderungen? Steuert die beforeunload-Warnung. Wird bei jeder
 // Mutation (saveHistory) auf true gesetzt und nach Speichern/Laden zurückgesetzt.
 let _dirty=false;
+// Seitenausrichtung. JS-Pendant zu den CSS-Variablen (:root / body.landscape):
+//  scrW = Bildschirm-Seitenbreite in mm (Nenner für pxPerMm in checkOverflow)
+//  endTop = Inhalts-Unterkante in mm (maxBottom)
+//  ovH = Seitenhöhe in mm für die Übersicht-Thumbnails
+// contentW = nutzbare Inhaltsbreite in px (Blatt − Seitenränder), Basis für die
+// JS-Spaltenberechnung (perRow) der flex-wrap-Widgets. Portrait 640 = wie bisher.
+const PAGE_GEOM={ portrait:{scrW:190,endTop:280,ovH:267,contentW:640}, landscape:{scrW:277,endTop:193,ovH:189,contentW:971} };
+let _orientation='portrait';
+function geom(){ return PAGE_GEOM[_orientation]||PAGE_GEOM.portrait; }
 // History-Snapshots: Base64-Bilddaten (w.src="data:…") werden NICHT in jeden
 // Snapshot kopiert, sondern einmalig im _imgPool abgelegt und nur referenziert.
 // Sonst hielten 50 Snapshots × Bilddaten schnell hunderte MB im Speicher.
@@ -837,6 +873,7 @@ function render(){
   requestAnimationFrame(()=>{
     document.querySelectorAll('textarea[data-autoresize]').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
     document.querySelectorAll('svg.kaestchen-svg').forEach(svg=>fitKaestchenSvg(svg));
+    document.querySelectorAll('#canvas-area svg.numberline-svg').forEach(svg=>{ if(typeof fitNumberlineSvg==='function') fitNumberlineSvg(svg); });
     if(gen !== _renderGen) return; // veralteter Render — kein Overflow-Check mehr
     checkOverflow(ranges);
   });
@@ -849,7 +886,7 @@ function openOverview(oldPositions = null, draggedStableId = null, scrollTop = 0
   const pages = [...document.querySelectorAll('#canvas-area .page')];
   if (!pages.length) return;
   const scale = 0.33;
-  const A4h = Math.round(267 * (96/25.4)); // ~1009px
+  const A4h = Math.round(geom().ovH * (96/25.4)); // Seitenhöhe in px (orientierungsabhängig)
 
   // Build groups: consecutive pages connected by auto-pagebreaks move together
   const ranges = getPageRanges();
@@ -1101,8 +1138,8 @@ function checkOverflow(ranges){
     if(!range)continue;
     const breakIdx=range.end; // Index des Pagebreaks in widgets[]
     if(breakIdx>=widgets.length||widgets[breakIdx].type!=='pagebreak'||!widgets[breakIdx].auto)continue;
-    const pxPerMm=pageEl.offsetWidth/190;
-    const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
+    const pxPerMm=pageEl.offsetWidth/geom().scrW;
+    const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
     const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
@@ -1126,8 +1163,8 @@ function checkOverflow(ranges){
     const pageEl=pages[pi];
     const range=ranges[pi];
     if(!range)continue;
-    const pxPerMm=pageEl.offsetWidth/190;
-    const maxBottom=280*pxPerMm; // Inhalt füllt bis ~280mm → unterer Rand ~17mm (etwas größer als oben, vom Nutzer gewünscht); Druckseite ≤~285mm, sicher unter max-height:296mm
+    const pxPerMm=pageEl.offsetWidth/geom().scrW;
+    const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
     const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
     for(let i=0;i<wraps.length;i++){
@@ -1171,7 +1208,7 @@ function sel(id){
     // gerade bearbeiteten Eingabefeld den Fokus/Cursor stehlen.
     if(def.meta&&def.meta.selSafe)return;
     const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
-    if(winner)winner.innerHTML=def.render(w);
+    if(winner){winner.innerHTML=def.render(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);}
   });
   renderProps(id);
 }
@@ -1182,7 +1219,7 @@ function desel(){
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
     const w=widgets.find(x=>x.id===prevId);
-    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe))winner.innerHTML=def.render(w);}
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe)){winner.innerHTML=def.render(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);}}
   }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
@@ -1417,7 +1454,7 @@ function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]))
 function clearCanvas(){
   // Nur fragen, wenn es etwas zu verlieren gibt (rückgängig machbar via Strg+Z).
   if(widgets.length && !confirm('Das ganze Arbeitsblatt leeren? Alle Seiten und Widgets werden entfernt.\n\n(Rückgängig machbar mit Strg+Z.)'))return;
-  saveHistory();widgets=[];selId=null;activePage=0;render();desel();
+  saveHistory();widgets=[];selId=null;activePage=0;_fileHandle=null;render();desel();
 }
 
 // Lädt ein zufälliges Beispiel aus dem Ordner beispiele/ (Liste in beispiele/index.json).
@@ -1554,6 +1591,7 @@ function addSampleBuiltin(){
 
 // ── SAVE / LOAD (.blatt) ─────────────────────────────────────────
 let _blattFilename = 'dokument.blatt';
+let _fileHandle = null; // FileSystemFileHandle (Chrome/Edge) für stilles „Speichern"
 
 // JSZip wird erst bei Bedarf nachgeladen (nicht beim Start) – spart ~96 KB
 // Initial-Last. Wird nur für das .blatt-Speicherformat gebraucht.
@@ -1596,8 +1634,37 @@ async function blattSave() {
     }
   }
 
-  zip.file('document.json', JSON.stringify({ version:1, name:base, idC, widgets:wcopy }, null, 2));
+  zip.file('document.json', JSON.stringify({ version:1, name:base, idC, orientation:_orientation, widgets:wcopy }, null, 2));
   const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' });
+
+  // Echter „Speichern unter"-Dialog via File System Access API (Chrome/Edge): Name aus dem
+  // Feld als Vorschlag. Handle merken → erneutes „Speichern" bei gleichem Namen schreibt
+  // still zurück (kein Dialog); geänderter Name → neuer Dialog. Fallback: Download-Link.
+  if (window.showSaveFilePicker) {
+    try {
+      let handle = _fileHandle;
+      if (!handle || handle.name.replace(/\.blatt$/i, '') !== base) {
+        handle = await window.showSaveFilePicker({
+          suggestedName: _blattFilename,
+          types: [{ description: 'Blattwerk-Arbeitsblatt', accept: { 'application/octet-stream': ['.blatt'] } }],
+        });
+      }
+      const ws = await handle.createWritable();
+      await ws.write(blob);
+      await ws.close();
+      _fileHandle = handle;
+      _blattFilename = handle.name;
+      if (nameEl) nameEl.value = handle.name.replace(/\.blatt$/i, '');
+      _dirty = false;
+      draftClear();
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // Nutzer hat den Dialog abgebrochen → nichts tun
+      console.warn('showSaveFilePicker nicht möglich, nutze Download:', err);
+      // sonst: Fallback unten (z.B. file://, Berechtigung verweigert)
+    }
+  }
+  // Fallback (Firefox/Safari/file://): klassischer Download-Link.
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = _blattFilename;
@@ -1644,6 +1711,8 @@ async function blattOpen(file) {
   widgets = loaded;
   idC = doc.idC || Math.max(0, ...loaded.map(w => w.id), 0);
   selId = null; activePage = 0;
+  applyOrientation(doc.orientation||'portrait'); // Ausrichtung aus Datei übernehmen
+  _fileHandle = null; // über Datei-Input geöffnet → kein beschreibbares Handle; nächstes Speichern fragt
   render(); desel();
   _dirty=false; // frisch geladen = nichts Ungespeichertes
   draftClear();  // geladene Datei ist der neue Stand → alten Auto-Entwurf verwerfen
@@ -1671,7 +1740,7 @@ async function draftSave(){
   try{
     const db=await _draftDb();
     // widgets wird per Structured-Clone gespeichert (Base64-Bilder inklusive).
-    const rec={ widgets, idC, name:(document.getElementById('blatt-name')?.value||''), savedAt:Date.now() };
+    const rec={ widgets, idC, orientation:_orientation, name:(document.getElementById('blatt-name')?.value||''), savedAt:Date.now() };
     await new Promise((res,rej)=>{ const tx=db.transaction(DRAFT_STORE,'readwrite'); tx.objectStore(DRAFT_STORE).put(rec,DRAFT_KEY); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); });
   }catch(e){ console.warn('Autosave fehlgeschlagen:',e); }
 }
@@ -1709,6 +1778,7 @@ function showRestoreBanner(draft){
     idC=draft.idC||Math.max(0,...widgets.map(w=>w.id||0),0);
     selId=null; activePage=0;
     const nameEl=document.getElementById('blatt-name'); if(nameEl&&draft.name)nameEl.value=draft.name;
+    applyOrientation(draft.orientation||'portrait');
     render(); desel();
     _dirty=true; // wiederhergestellt, aber noch nicht als .blatt gespeichert
     bar.remove();
@@ -1725,7 +1795,8 @@ function updatePrintStyle() {
   // Der Bundsteg für beidseitigen Druck wird über die Klasse body.print-ds gesteuert
   // (CSS: body.print-ds .page.page-back{...}), nicht mehr über @page :left/:right.
   document.body.classList.toggle('print-ds', ds);
-  let css = `@page{margin:0;}`;
+  // @page size dynamisch (Hoch-/Querformat) — überschreibt die statische Regel im <style>.
+  let css = `@page{size:A4 ${_orientation};margin:0;}`;
   if (printOpts.pageNumbers) {
     css += `.pg-num{display:block!important;}`;
     if (ds) css += `.pg-num.pg-left{right:auto;left:10mm;}`;
@@ -1735,11 +1806,41 @@ function updatePrintStyle() {
   document.getElementById('dyn-print-style').textContent = css;
 }
 
+// ── Seitenausrichtung (Hoch-/Querformat) ─────────────────────────
+// Wendet die Ausrichtung an: CSS via body.landscape (steuert alle --*-Variablen),
+// JS via _orientation (geom() für Überlauf/Übersicht). Kein render() hier — Aufrufer
+// entscheidet (z.B. beim Laden wird ohnehin gerendert).
+function applyOrientation(o){
+  _orientation = (o==='landscape') ? 'landscape' : 'portrait';
+  document.body.classList.toggle('landscape', _orientation==='landscape');
+  updatePrintStyle();
+  updateOrientationUI();
+}
+// Benutzeraktion über das Optionen-Panel.
+function setOrientation(o){
+  if(o===_orientation) return;
+  applyOrientation(o);
+  _dirty=true; scheduleDraftSave();
+  render(); // Überlauf mit neuer Geometrie neu berechnen
+}
+function updateOrientationUI(){
+  [['or-portrait','portrait'],['or-landscape','landscape']].forEach(([id,val])=>{
+    const b=document.getElementById(id); if(!b)return;
+    const on=_orientation===val;
+    b.style.borderColor=on?'#89b4fa':'#45475a';
+    b.style.background=on?'#89b4fa':'#313244';
+    b.style.color=on?'#1e1e2e':'#cdd6f4';
+  });
+}
+
 function doPrint() {
   document.getElementById('print-panel').style.display = 'none';
   const prevSel = selId; selId = null; render();
   // FAB explizit per inline-style verstecken — position:sticky kann @media print überlisten
   document.querySelectorAll('.ov-fab').forEach(el => el.style.display = 'none');
+  // Zahlenstrahl synchron auf die echte Breite fitten — render()'s rAF-Fit läuft
+  // sonst erst NACH window.print() (Inhaltsbreite Bildschirm ≈ Druck, je 170/257mm).
+  document.querySelectorAll('#canvas-area svg.numberline-svg').forEach(svg=>{ if(typeof fitNumberlineSvg==='function') fitNumberlineSvg(svg); });
   updatePrintStyle();
   window.print();
   selId = prevSel; render(); // render() erstellt FAB neu, kein Restore nötig

@@ -100,32 +100,9 @@ WIDGETS.push({
     const farbig = d.farbe === 'farbig';
     const svgs   = houses.map(h => zhSvg(h, s, active, farbig));
 
-    // Verfügbare Breite je nach widthFraction
-    const fracMap = { 'full':1, '3/4':0.75, '1/2':0.5, '1/4':0.25 };
-    const frac    = fracMap[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-    const avail   = Math.round(640 * frac);
-
-    // Automatisch berechnen: wie viele passen pro Zeile?
-    const itemW  = (s === 3 ? 38 : 48) * s + 4;
-    const minGap = 10;
-    const perRow = Math.max(1, Math.floor((avail + minGap) / (itemW + minGap)));
-    const gap    = perRow > 1 ? (avail - perRow * itemW) / (perRow - 1) : 0;
-    const rowGap = 14;
-
-    // In Zeilen aufteilen — letzte Zeile mit unsichtbaren Füllern auffüllen
-    // damit space-between immer den identischen Gap berechnet
-    const rows = [];
-    for (let i = 0; i < svgs.length; i += perRow) rows.push(svgs.slice(i, i + perRow));
-
-    const filler = `<div style="width:${itemW}px;visibility:hidden;"></div>`;
-    const rowHtml = rows.map((row, ri) => {
-      const mb     = ri < rows.length - 1 ? `margin-bottom:${rowGap}px;` : '';
-      const filled = [...row];
-      while (filled.length < perRow) filled.push(filler);
-      return `<div style="display:flex;justify-content:space-between;${mb}">${filled.join("")}</div>`;
-    }).join("");
-
-    return atHtml(d) + rowHtml;
+    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Hausbreite itemW.
+    const itemW = (s === 3 ? 38 : 48) * s + 4;
+    return atHtml(d) + flexDistribute(svgs, { gap: 10, marginBottom: 14, itemSize: `width:${itemW}px;`, itemW, d });
   },
 
   renderProps: d => {

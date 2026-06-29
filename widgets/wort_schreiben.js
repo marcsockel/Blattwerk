@@ -77,13 +77,9 @@ WIDGETS.push({
         `</div></div>`;
     };
 
-    const imgCell = (item, id) => {
+    const imgCell = (item) => {
       const src = item.src || anlautDefaultSrc(item.anlaut);
-      return `<div style="padding:2px 6px;">` +
-        (id ? `<span id="${id}" style="display:inline-block;">` : "") +
-        anlautImg(src, imgSize) +
-        (id ? `</span>` : "") +
-        `</div>`;
+      return `<div style="padding:2px 6px;">` + anlautImg(src, imgSize) + `</div>`;
     };
 
     const gridStyle =
@@ -91,9 +87,8 @@ WIDGETS.push({
       `row-gap:6px;align-items:center;width:100%;`;
 
     const rows = items.map((item, i) => {
-      const isFirst = beispiel && i === 0;
-      const answer  = isFirst ? beispielText : undefined;
-      return imgCell(item, isFirst ? `wsleft-${d.id}` : null) +
+      const answer = (beispiel && i === 0) ? beispielText : undefined;
+      return imgCell(item) +
         `<div></div>` +
         writeLine(answer);
     }).join("");

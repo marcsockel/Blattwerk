@@ -86,13 +86,12 @@ function ztPieceSvg(p, d, cs) {
 function ztPiecesHtml(d) {
   const big = (d.groesse || 'gross') !== 'klein';
   const cs = big ? 36 : 26;          // etwas kleiner → Gruppen-/Rahmen-Padding kippt nicht mehr ein Stück raus
+  // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Slot-Größe.
   const slot = 4 * cs;
-  const items = (d.pieces || []).map(p =>
-    `<div style="width:${slot}px;height:${slot}px;margin-bottom:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ztPieceSvg(p, d, cs)}</div>`
-  ).join('');
-  // Spacer für „erst füllen, dann verteilen, Rest linksbündig" (wie die anderen Mathe-Widgets)
-  const spacers = Array(6).fill(`<div style="height:0;width:${slot}px;flex-shrink:0;flex-grow:0;"></div>`).join('');
-  return `<div style="display:flex;column-gap:16px;row-gap:0;flex-wrap:wrap;justify-content:space-between;">${items}${spacers}</div>`;
+  return flexDistribute(
+    (d.pieces || []).map(p => ztPieceSvg(p, d, cs)),
+    { gap: 16, marginBottom: 14, itemSize: `width:${slot}px;height:${slot}px;display:flex;align-items:center;justify-content:center;`, itemW: slot, d }
+  );
 }
 
 function ztGenerate(w) {
