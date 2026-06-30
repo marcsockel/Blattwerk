@@ -44,7 +44,7 @@ WIDGETS.push({
     const card = (val, id) =>
       `<div style="padding:3px 6px;font-size:${fontSize}px;font-family:${font};white-space:nowrap;">` +
       `<span ${id?`id="${id}"`:''}` +
-      ` style="display:block;border:1.5px solid #bbb;border-radius:5px;` +
+      ` style="display:block;border:1.5px solid #bbb;border-radius:5px;background:#fff;` +
       `padding:3px 10px;text-align:center;">${esc(val)}</span></div>`;
 
     const writeLine = (answer) =>

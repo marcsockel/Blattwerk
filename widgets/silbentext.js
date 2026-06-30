@@ -20,9 +20,12 @@
       });
   }
 
-  loadCJS('https://cdn.jsdelivr.net/npm/hypher@0.2.5/lib/hypher.js')
+  // Zuerst lokal aus vendor/ laden (offline-fähig, wie jszip & Fonts); CDN nur als Fallback.
+  const tryLoad = (local, cdn) => loadCJS(local).catch(() => loadCJS(cdn));
+
+  tryLoad('vendor/hypher.js', 'https://cdn.jsdelivr.net/npm/hypher@0.2.5/lib/hypher.js')
     .then(Hypher => {
-      return loadCJS('https://cdn.jsdelivr.net/npm/hyphenation.de@0.2.1/lib/de.js')
+      return tryLoad('vendor/hyphenation-de.js', 'https://cdn.jsdelivr.net/npm/hyphenation.de@0.2.1/lib/de.js')
         .then(de => {
           window._hypherDE = new Hypher(de);
           window._hypherReady = true;
