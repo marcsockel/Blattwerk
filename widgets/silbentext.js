@@ -6,7 +6,9 @@
 (function() {
   if (window._hypherReady !== undefined) return;
   window._hypherReady = false;
+  window._hypherFailed = false;
   window._hypherCallbacks = [];
+  window._hypherRenderQueued = false;
 
   // Führt CommonJS-Code im Browser aus, gibt module.exports zurück
   function loadCJS(src) {
@@ -33,12 +35,29 @@
           window._hypherCallbacks = [];
         });
     })
-    .catch(e => console.error('Hypher Ladefehler:', e));
+    .catch(e => {
+      console.error('Hypher Ladefehler:', e);
+      window._hypherFailed = true;
+      window._hypherReady = true;
+      window._hypherCallbacks = [];
+      window._hypherRenderQueued = false;
+    });
 })();
 
 function hypherReady(cb) {
   if (window._hypherReady) cb();
   else window._hypherCallbacks.push(cb);
+}
+
+/** Einmalig render() nach Hypher-Ladung anfordern — verhindert Callback-Sturm. */
+function hypherScheduleRender() {
+  if (window._hypherFailed || typeof render !== 'function') return;
+  if (window._hypherRenderQueued) return;
+  window._hypherRenderQueued = true;
+  hypherReady(() => {
+    window._hypherRenderQueued = false;
+    render();
+  });
 }
 
 // ── Eingebaute Ausnahmen (Wörter die Hypher falsch trennt) ────────
@@ -164,6 +183,21 @@ function silbenHTML(html, color1, color2) {
   return div.innerHTML;
 }
 
+const _silbenHtmlCache = new Map();
+const SILBEN_CACHE_MAX = 120;
+
+function silbenHTMLCached(id, html, color1, color2, ausnahmen) {
+  const key = `${id}\x1f${color1}\x1f${color2}\x1f${ausnahmen || ''}\x1f${html}`;
+  if (_silbenHtmlCache.has(key)) return _silbenHtmlCache.get(key);
+  window._silbenCustom = silbenParseAusnahmen(ausnahmen || '');
+  const out = silbenHTML(html, color1, color2);
+  _silbenHtmlCache.set(key, out);
+  if (_silbenHtmlCache.size > SILBEN_CACHE_MAX) {
+    _silbenHtmlCache.delete(_silbenHtmlCache.keys().next().value);
+  }
+  return out;
+}
+
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
   meta: {
@@ -190,20 +224,17 @@ WIDGETS.push({
     const color1   = d.color1   || "#e05252";
     const color2   = d.color2   || "#2255cc";
 
-    window._silbenCustomText = d.ausnahmen || '';
-
     // Silben live einfärben wenn Hypher bereit
     let content = d.html;
-    if (window._hypherReady) {
-      content = silbenHTML(d.html, color1, color2);
-    } else {
-      // Hypher noch nicht geladen: nach Load neu rendern
-      hypherReady(() => render());
-      content = d.html;
+    if (window._hypherDE) {
+      content = silbenHTMLCached(d.id, d.html, color1, color2, d.ausnahmen || '');
+    } else if (!window._hypherFailed) {
+      hypherScheduleRender();
     }
 
+    const pad      = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;"
+                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;${pad}"
             >${content}</div>`;
   },
 
@@ -224,7 +255,8 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions) +
+      innerPadPropsControl(d) +
       `<div class="prow" style="margin-top:8px;">
          <label>Farbe 1</label>
          <input type="color" value="${color1}"

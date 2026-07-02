@@ -28,7 +28,7 @@ WIDGETS.push({
           onclick="event.stopPropagation()"
           onchange="upd(${d.id},'items',this.value.split('\\n').filter(s=>s.trim()))"
           style="width:100%;box-sizing:border-box;border:none;outline:none;resize:vertical;
-                 padding:8px 10px;min-height:70px;font-family:${font};font-size:${fontSize}px;
+                 padding:8px 10px;min-height:70px;font-family:${font};font-size:${RICH_EDITOR_FONT_SIZE}px;
                  line-height:1.7;color:#333;">${d.items.join("\n")}</textarea>
         <div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
           <select onchange="upd(${d.id},'font',this.value)"

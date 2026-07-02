@@ -44,7 +44,6 @@ WIDGETS.push({
     const font     = d.font    || "inherit";
     const icon     = d.icon    || "";
     const iconPos  = d.iconPos || "left";
-    const bgColor  = d.bgColor || "";
     const txtCol   = d.textColor || "#333";
     const fontSize = d.fontSize || 13;
     const html    = d.html    || esc(d.text||'');
@@ -68,7 +67,7 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', html, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'html', html, font, sizeInput, fontOptions) +
       alignToggle(d.id, d.align) +
       pr("Symbol", `<select onchange="upd(${d.id},'icon',this.value)">${iconOptions}</select>`) +
       (icon ? `<div class="prow"><label>Position</label>
@@ -76,13 +75,6 @@ WIDGETS.push({
           ${toggleBtn("Links",  iconPos==="left",  `upd(${d.id},'iconPos','left')`)}
           ${toggleBtn("Rechts", iconPos==="right", `upd(${d.id},'iconPos','right')`)}
         </div></div>` : "") +
-      `<div class="prow"><label>Hintergrund</label>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          ${toggleBtn("Keiner",     bgColor==="",         `upd(${d.id},'bgColor','')`)}
-          ${toggleBtn("Schwarz",    bgColor==="#000000",  `upd(${d.id},'bgColor','#000000')`)}
-          ${toggleBtn("Dunkelgrau", bgColor==="#444444",  `upd(${d.id},'bgColor','#444444')`)}
-          ${toggleBtn("Grau",       bgColor==="#777777",  `upd(${d.id},'bgColor','#777777')`)}
-        </div></div>` +
       `<div class="prow"><label>Schriftfarbe</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Schwarz", txtCol!=="#ffffff", `upd(${d.id},'textColor','#333')`)}

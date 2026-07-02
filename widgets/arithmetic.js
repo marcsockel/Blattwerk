@@ -32,6 +32,8 @@ WIDGETS.push({
     const numW = maxDigits + 'ch';
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
     const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+    const tdBase = `padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:20px;`;
+    const numSpan = v => `<span style="display:inline-block;min-width:${numW};min-height:20px;line-height:20px;text-align:right;font-variant-numeric:tabular-nums;font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(v)}</span>`;
     // Blaue Lösung: in eine Box mit GENAU der Breite des jeweiligen Platzhalter-Kästchens
     // (w px) gesetzt → ausgewählt (Zahl) und abgewählt (Kästchen) sind gleich breit, der
     // Umbruch/die Position bleibt identisch.
@@ -77,8 +79,8 @@ WIDGETS.push({
     };
 
     const cell = (val, align = "right", override = null) => {
-      const content = override !== null ? override : val === "_" ? box : `<span style="font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(val)}</span>`;
-      return `<td style="text-align:${align};padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;min-width:${numW};font-variant-numeric:tabular-nums;">${content}</td>`;
+      const content = override !== null ? override : val === "_" ? box : numSpan(val);
+      return `<td style="text-align:${align};${tdBase}min-width:${numW};font-variant-numeric:tabular-nums;">${content}</td>`;
     };
 
     const parsed = allTasks.map(parse);
@@ -153,29 +155,31 @@ WIDGETS.push({
       const rows = group.map(p => {
         if (p.raw !== undefined) {
           const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueVal(computeAns(p)??'?', 36)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
-          return `<tr><td colspan="5" style="padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.raw)}${ans}</td></tr>`;
+          return `<tr><td colspan="5" style="${tdBase}">${esc(p.raw)}${ans}</td></tr>`;
         }
-        const sqBox = `<span style="display:inline-block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+        const sqBoxInner = `<span style="display:block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
+        const sqBoxSlot = (inner, w = 28) => `<span style="display:inline-flex;width:${w}px;height:20px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
+        const sqBox = sqBoxSlot(sqBoxInner);
         if (p.isVergleich) {
           const cmpBox = `<span style="display:inline-block;width:24px;height:24px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
           const mid = isActive ? blueVal(p.sym, 24) : cmpBox;
           return `<tr>
-            <td style="text-align:right;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(p.left)}</td>
-            <td style="text-align:center;padding:3px 8px;">${mid}</td>
-            <td style="text-align:left;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(p.right)}</td>
+            <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
+            <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
+            <td style="text-align:left;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.right)}</td>
           </tr>`;
         }
         const opCell = p.isZeichen
-          ? `<td style="text-align:center;padding:3px 6px;">${isActive ? blueVal(p.op, 20) : sqBox}</td>`
-          : `<td style="text-align:center;padding:3px 6px;font-size:16px;font-family:'DidactGothic7',sans-serif;">${esc(p.op)}</td>`;
+          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueVal(p.op, 20)) : sqBox}</td>`
+          : `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:6px;">${esc(p.op)}</td>`;
         const leftContent = (p.left === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.left === "_" ? box : null);
         const rightContent = (p.right === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.right === "_" ? box : null);
         if (p.result !== null) {
-          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;"><span style="margin-right:6px;">=</span><span style="display:inline-block;min-width:${numW};text-align:left;font-variant-numeric:tabular-nums;font-family:'DidactGothic7',sans-serif;">${esc(p.result)}</span></td></tr>`;
+          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result)}</td></tr>`;
         } else {
           const ans = computeAns(p);
           const ansCell = p.hasEq
-            ? `<td style="padding:3px 0 3px 5px;font-size:16px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;"><span style="margin-right:6px;">=</span>${isActive && ans ? blueVal(ans, 36) : box}</td>`
+            ? `<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${isActive && ans ? blueVal(ans, 36) : box}</td>`
             : `<td></td>`;
           return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}${ansCell}</tr>`;
         }
@@ -190,16 +194,15 @@ WIDGETS.push({
     // voll-Entscheidung in flexDistribute; die echte Spaltenzahl misst der Browser.
     const tasksHtml = atHtml(d) + flexDistribute(
       groups.map(g => renderGroup(g)),
-      { gap: 24, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
+      { gap: 29, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
         itemW: 3 * maxDigits * 9 + 70, d, estimate: true }
     );
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 
     const loesungenHtml = `
-      <div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;text-align:center;">
-        <span style="font-size:10px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:1px;margin-right:8px;">Lösungen:</span>
-        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;margin:0 6px;">${esc(a)}</span>`).join("")}
+      <div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px;">
+        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;">${esc(a)}</span>`).join("")}
       </div>`;
 
     return tasksHtml + loesungenHtml;
@@ -231,7 +234,7 @@ WIDGETS.push({
                background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
-    return `
+    const modusBlock = `
       <div class="prow"><label>Modus</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
           ${toggleBtn("Rechenaufgaben", !erg && !d.zeichen && !d.vergleich, `arithSetModus(${d.id},'normal')`)}
@@ -260,7 +263,7 @@ WIDGETS.push({
         </div>
       </div>` : ''}` +
       pr("Zahlenraum",
-        `<select onchange="upd(${d.id},'zahlenraum',+this.value)">
+        `<select onchange="arithSetLayout(${d.id},'zahlenraum',+this.value)">
           ${[10,20,100,1000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
         </select>`) +
       `<div class="prow"><label>Zehnerübergang</label>
@@ -269,23 +272,36 @@ WIDGETS.push({
           ${toggleBtn("Gemischt", ueMode==='gemischt', `arithSetLayout(${d.id},'ueberschreitung','gemischt')`)}
           ${toggleBtn("Nur mit",  ueMode==='nur',      `arithSetLayout(${d.id},'ueberschreitung','nur')`)}
         </div>
-      </div>` +
+      </div>`;
+
+    const anordnungBlock =
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
-        `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
-      (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
+        `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`);
+
+    const loesungBlock = (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
           ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
         </div>
-      </div>` : '') +
+      </div>` : '');
+
+    const wuerfelBtn =
       `<button onclick="event.stopPropagation();arithGenerate(${d.id})"
-        style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
+        style="margin-top:8px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
+               font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>`;
+
+    const manuellBlock =
       pr(`Manuell bearbeiten${erg?" (_ = Lücke, z.B. 3 + _ = 10)":""}`,
-        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`) ;
+        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`);
+
+    return modusBlock +
+      anordnungBlock +
+      loesungBlock +
+      wuerfelBtn +
+      propFold('arith-manuell', 'Manuelle Bearbeitung', manuellBlock, false);
   },
 });
 

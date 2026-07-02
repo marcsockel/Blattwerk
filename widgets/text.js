@@ -1,6 +1,8 @@
 // Widget: Text
 // ── Shared rich-editor helpers (reused by instruction, infobox, gap_text) ──
 
+const RICH_EDITOR_FONT_SIZE = 13; // Props-Editor: fest, unabhängig von Sheet-Schriftgröße
+
 let _formatting = false;
 
 // Eigener DOM-Serializer: liest Text-Nodes direkt via nodeValue,
@@ -39,13 +41,18 @@ function richSave(id, el) {
   const def = WIDGET_MAP[w.type];
   if (def) {
     const winner = document.querySelector(`.wwrap[data-id="${id}"] .winner`);
-    if (winner) winner.innerHTML = def.render(w);
+    if (winner) winnerInnerRefresh(w, winner);
+    if (typeof schedulePatchOverflow === 'function') schedulePatchOverflow();
   }
 }
 // Undo-Fix: Der Vorher-Zustand wird bei onfocus (edFocus) gemerkt und hier
 // per edBlur() in die History gepusht — saveHistory() NACH der Mutation würde
 // nur den neuen Zustand sichern und Strg+Z wäre wirkungslos.
-function richBlur(id, el) { richSave(id, el); edBlur(); render(); }
+function richBlur(id, el) {
+  richSave(id, el);
+  edBlur();
+  if (typeof schedulePatchOverflow === 'function') schedulePatchOverflow();
+}
 function richFmt(id, cmd) {
   const el = document.getElementById(`txted-${id}`);
   if (!el) return;
@@ -108,7 +115,7 @@ function makeRichToolbar(id, field, extraRight='') {
   </div>`;
 }
 
-function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontOptions='', oninputExtra='') {
+function makeRichEditorBox(id, field, html, font, extraRight='', fontOptions='', oninputExtra='') {
   const bottomBar = fontOptions
     ? `<div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
          <select onchange="upd(${id},'font',this.value)"
@@ -128,7 +135,7 @@ function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontO
       onblur="richBlur(${id},this)"
       onkeyup="richUpdateBtns(${id})"
       onmouseup="richUpdateBtns(${id})"
-      style="outline:none;padding:8px 10px;font-family:${font};font-size:${fontSize}px;
+      style="outline:none;padding:8px 10px;font-family:${font};font-size:${RICH_EDITOR_FONT_SIZE}px;
              line-height:1.7;min-height:60px;color:#333;white-space:pre-wrap;word-break:break-word;"
     >${html}</div>
     ${bottomBar}
@@ -136,6 +143,33 @@ function makeRichEditorBox(id, field, html, font, fontSize, extraRight='', fontO
 }
 
 // ── Widget ────────────────────────────────────────────────────────
+
+/** Text/Silbentext/Lückentext: eigener Innenabstand aktiv? (sonst .winner-Padding wie bisher) */
+function textUsesInnerPad(w) {
+  return w && (w.type === 'text' || w.type === 'silbentext' || w.type === 'gap_text') && w.innerPad != null;
+}
+
+function textInnerPadLabel(d) {
+  return d.innerPad != null ? `${d.innerPad} px` : 'Standard';
+}
+
+function innerPadPropsControl(d) {
+  const padVal = d.innerPad != null ? d.innerPad : 8;
+  return `<div class="prow"><label>Innenabstand</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="range" min="0" max="32" step="1" value="${padVal}"
+          onclick="event.stopPropagation()"
+          oninput="document.getElementById('text-pad-lbl-${d.id}').textContent=this.value+' px'"
+          onchange="upd(${d.id},'innerPad',+this.value)"
+          style="flex:1;accent-color:#7287fd;">
+        <span id="text-pad-lbl-${d.id}" style="font-size:11px;color:#666;min-width:52px;text-align:right;">${textInnerPadLabel(d)}</span>
+      </div>
+      ${d.innerPad != null ? `<button onclick="event.stopPropagation();upd(${d.id},'innerPad',null)"
+        style="margin-top:4px;width:100%;padding:4px;border:1.5px solid #ddd;border-radius:4px;background:#fff;
+               font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:#666;">Standard wiederherstellen</button>` : ''}
+    </div>`;
+}
+
 WIDGETS.push({
   meta: { type:"text", label:"Text", desc:"Formatierter Fließtext", icon:"T", category:"allgemein" },
 
@@ -150,8 +184,9 @@ WIDGETS.push({
     const font     = d.font     || "inherit";
     const fontSize = d.fontSize || 16;
     const align    = d.align    || "left";
+    const pad      = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;text-align:${align};"
+                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;text-align:${align};${pad}"
             >${d.html}</div>`;
   },
 
@@ -169,7 +204,8 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions) +
+      innerPadPropsControl(d) +
       alignToggle(d.id, d.align) ;
   },
 });

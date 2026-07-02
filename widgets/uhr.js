@@ -181,10 +181,9 @@ WIDGETS.push({
       </div>`;
     }).join("");
 
-    return pr("Anzahl Uhren",
+    const genBlock =
+      pr("Anzahl Uhren",
         `<input type="number" min="1" max="60" value="${anzahl}" onchange="uhrUpdAnzahl(${d.id},+this.value)">`) +
-      pr("Größe (px)",
-        `<input type="number" min="60" max="200" step="10" value="${size}" onchange="upd(${d.id},'size',+this.value)">`) +
       pr("Zufalls-Stufe", `<select onchange="upd(${d.id},'stufe',this.value)">${stufeOpts}</select>`) +
       `<div class="prow"><label>Stunden</label>
         <div style="display:flex;gap:4px;">
@@ -195,9 +194,13 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();uhrRoll(${d.id})"
         style="margin-top:2px;margin-bottom:10px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Uhrzeiten würfeln</button>` +
-      `<div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Zeiten manuell</div>` +
-      clockEditors +
+               font-weight:700;cursor:pointer;">🎲 Uhrzeiten würfeln</button>`;
+
+    return genBlock +
+      propFold('uhr-manuell', 'Zeiten manuell', clockEditors, false) +
+      propFold('uhr-darstellung', 'Darstellung',
+      pr("Größe (px)",
+        `<input type="number" min="60" max="200" step="10" value="${size}" onchange="upd(${d.id},'size',+this.value)">`) +
       `<div class="prow"><label>Textfeld</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Keins",    tf==="none", `upd(${d.id},'textfeld','none')`)}
@@ -217,7 +220,7 @@ WIDGETS.push({
           ${toggleBtn("Ausblenden", zeigerAus, `upd(${d.id},'zeigerAus',true)`)}
         </div>
       </div>` +
-      `<div class="prow"><label>Zahlen</label>
+      `<div class="prow"><label>Ziffern</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Anzeigen",  !zahlenAus, `upd(${d.id},'zahlenAus',false)`)}
           ${toggleBtn("Ausblenden", zahlenAus, `upd(${d.id},'zahlenAus',true)`)}
@@ -228,8 +231,8 @@ WIDGETS.push({
           ${toggleBtn("S/W",   !zeigerFarbe, `upd(${d.id},'zeigerFarbe',false)`)}
           ${toggleBtn("Farbe",  zeigerFarbe, `upd(${d.id},'zeigerFarbe',true)`)}
         </div>
-      </div>` +
-      "" ;
+      </div>`,
+      false);
   },
 });
 

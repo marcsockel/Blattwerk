@@ -34,7 +34,8 @@ WIDGETS.push({
 
     const gapWords = [...d.text.matchAll(/\[([^\]]+)\]/g)]
       .map(m => m[1].replace(/<[^>]+>/g, '').replace(/[.,!?;:]+$/, ''));
-    const shuffled = seededShuffle(gapWords, d.id * 31 + gapWords.length);
+    const shuffleSeed = d.id * 31 + gapWords.length + (d.loesungShuffle || 0) * 997;
+    const shuffled = seededShuffle(gapWords, shuffleSeed);
 
     const solutionBand = (d.showLoesungen && shuffled.length > 0)
       ? `<div style="margin-top:10px;border-top:1.5px dashed #ccc;padding-top:7px;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;">
@@ -44,33 +45,17 @@ WIDGETS.push({
       : '';
 
     const fontSize = d.fontSize || 16;
-    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}">${content}</div>${solutionBand}`;
+    const pad = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
+    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}${pad}">${content}</div>${solutionBand}`;
   },
 
   renderProps: d => {
     const sl           = d.showLoesungen || false;
     const font         = d.font || "inherit";
     const fontSize     = d.fontSize || 16;
-    const fontFeatures = d.fontFeatures || "";
 
-    // Strip HTML tags for word-toggle display (replace block elements with spaces first)
-    const plainText = d.text
-      .replace(/<br\s*\/?>/gi, ' ')
-      .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
-      .replace(/<[^>]+>/g, '');
-    const tokens = plainText.split(/\s+/).filter(Boolean);
-
-    const wordBtns = tokens.map((tok, i) => {
-      const isGap = tok.startsWith('[') && tok.endsWith(']');
-      const display = isGap ? tok.slice(1, -1) : tok;
-      return `<span onclick="event.stopPropagation();gapToggle(${d.id},${i})"
-        style="display:inline-block;padding:2px 6px;margin:2px 1px;border-radius:4px;cursor:pointer;
-               font-family:${font};font-size:13px;line-height:1.8;
-               background:${isGap ? '#fde8ec' : '#f0eee8'};
-               border:1.5px solid ${isGap ? '#f38ba8' : '#ddd'};
-               color:${isGap ? '#a0003c' : '#333'};
-               font-weight:${isGap ? '700' : '400'};">${esc(display)}</span>`;
-    }).join('');
+    const tokens = gapTokenize(d.text);
+    const wordBtns = gapWordBtnsHtml(d.id, tokens, font);
 
     const toggleBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -89,7 +74,8 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text <span style="font-weight:400;color:#aaa;font-size:10px;">([Wort] = Lücke)</span></label></div>` +
-      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
+      makeRichEditorBox(d.id, 'text', d.text, font, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
+      innerPadPropsControl(d) +
       `<div class="prow">
         <label>Wort anklicken = Lücke</label>
         <div id="gap-words-${d.id}" style="margin-top:5px;line-height:2;">${wordBtns}</div>
@@ -104,53 +90,86 @@ WIDGETS.push({
 });
 
 // ── Gap text helpers ──────────────────────────────────────────────
-function gapRefreshWords(id) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  const container = document.getElementById(`gap-words-${id}`);
-  if (!container) return;
-  const plainText = w.text
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
-    .replace(/<[^>]+>/g, '');
-  const tokens = plainText.split(/\s+/).filter(Boolean);
-  const font = w.font || 'inherit';
-  container.innerHTML = tokens.map((tok, i) => {
-    const isGap = tok.startsWith('[') && tok.endsWith(']');
-    const display = isGap ? tok.slice(1,-1) : tok;
+
+/** Wörter/Lücken als exakte Ausschnitte aus dem HTML-Quelltext (nicht Plaintext). */
+function gapTokenize(html) {
+  const tokens = [];
+  let i = 0;
+  const len = (html || '').length;
+  while (i < len) {
+    while (i < len && /\s/.test(html[i])) i++;
+    if (i >= len) break;
+    const start = i;
+    while (i < len && !/\s/.test(html[i])) i++;
+    const raw = html.slice(start, i);
+    const plain = raw.replace(/<[^>]+>/g, '');
+    if (!plain) continue;
+    tokens.push({
+      raw,
+      start,
+      end: i,
+      plain,
+      isGap: plain.startsWith('[') && plain.endsWith(']')
+    });
+  }
+  return tokens;
+}
+
+function gapTokenLabel(tok) {
+  return tok.isGap ? tok.plain.slice(1, -1) : tok.plain;
+}
+
+function gapWordBtnsHtml(id, tokens, font) {
+  return tokens.map((tok, i) => {
+    const isGap = tok.isGap;
+    const display = gapTokenLabel(tok);
     return `<span onclick="event.stopPropagation();gapToggle(${id},${i})"
       style="display:inline-block;padding:2px 6px;margin:2px 1px;border-radius:4px;cursor:pointer;
              font-family:${font};font-size:13px;line-height:1.8;
-             background:${isGap?'#fde8ec':'#f0eee8'};
-             border:1.5px solid ${isGap?'#f38ba8':'#ddd'};
-             color:${isGap?'#a0003c':'#333'};
-             font-weight:${isGap?'700':'400'};">${esc(display)}</span>`;
+             background:${isGap ? '#fde8ec' : '#f0eee8'};
+             border:1.5px solid ${isGap ? '#f38ba8' : '#ddd'};
+             color:${isGap ? '#a0003c' : '#333'};
+             font-weight:${isGap ? '700' : '400'};">${esc(display)}</span>`;
   }).join('');
+}
+
+const _gapRefreshTimers = {};
+
+function gapRefreshWords(id) {
+  clearTimeout(_gapRefreshTimers[id]);
+  _gapRefreshTimers[id] = setTimeout(() => gapRefreshWordsNow(id), 150);
+}
+
+function gapRefreshWordsNow(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const container = document.getElementById(`gap-words-${id}`);
+  if (!container) return;
+  const tokens = gapTokenize(w.text);
+  const font = w.font || 'inherit';
+  container.innerHTML = gapWordBtnsHtml(id, tokens, font);
 }
 
 function gapToggle(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
-  const plainText = w.text
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<\/?(div|p|li|tr)[^>]*>/gi, ' ')
-    .replace(/<[^>]+>/g, '');
-  const tokens = plainText.split(/\s+/).filter(Boolean);
+  const tokens = gapTokenize(w.text);
   if (idx >= tokens.length) return;
 
-  const tok      = tokens[idx];
-  const isGap    = tok.startsWith('[') && tok.endsWith(']');
-  const searchFor  = tok;                              // exactly as it appears in tokens
-  const replaceWith = isGap ? tok.slice(1,-1) : `[${tok}]`;
+  const tok = tokens[idx];
+  const newPlain = tok.isGap ? tok.plain.slice(1, -1) : `[${tok.plain}]`;
+  let newRaw;
+  if (tok.raw === tok.plain) {
+    newRaw = newPlain;
+  } else {
+    newRaw = tok.raw.replace(tok.plain, newPlain);
+    if (newRaw === tok.raw) newRaw = newPlain;
+  }
+  w.text = w.text.slice(0, tok.start) + newRaw + w.text.slice(tok.end);
 
-  // Count how many times searchFor already appeared in tokens before idx
-  let occurrence = 0;
-  for (let i = 0; i < idx; i++) if (tokens[i] === searchFor) occurrence++;
-
-  // Replace the (occurrence)-th match of searchFor in w.text
-  const escaped = searchFor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  let count = 0;
-  w.text = w.text.replace(new RegExp(escaped, 'g'), match =>
-    count++ === occurrence ? replaceWith : match
-  );
-  renderProps(id); render();
+  renderProps(id);
+  if (typeof patchWidget === 'function' && patchWidget(id)) {
+    if (typeof schedulePatchOverflow === 'function') schedulePatchOverflow();
+  } else {
+    render();
+  }
 }

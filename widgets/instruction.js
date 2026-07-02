@@ -11,6 +11,6 @@ WIDGETS.push({
   renderProps: d => {
     const html = d.html || esc(d.text||'');
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', html, 'inherit', 13);
+      makeRichEditorBox(d.id, 'html', html, 'inherit');
   },
 });

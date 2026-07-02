@@ -7,8 +7,8 @@
 function silbenbogenHTML(word, fontSize) {
   const arcH = Math.round(fontSize * 0.75);
 
-  if (!window._hypherReady || !window._hypherDE) {
-    hypherReady(() => render());
+  if (!window._hypherDE) {
+    if (!window._hypherFailed) hypherScheduleRender();
     return `<span style="display:inline-block;font-size:${fontSize}px;font-family:inherit;">${esc(word)}</span>`;
   }
 
@@ -34,8 +34,8 @@ function silbenbogenGleichlangHTML(word, fontSize, arcWidth, widgetId, wordIdx) 
   const arcH  = Math.round(fontSize * 0.75);
   const svgH  = arcH + 2;
 
-  if (!window._hypherReady || !window._hypherDE) {
-    hypherReady(() => render());
+  if (!window._hypherDE) {
+    if (!window._hypherFailed) hypherScheduleRender();
     return `<span style="display:inline-block;font-size:${fontSize}px;font-family:inherit;">${esc(word)}</span>`;
   }
 
@@ -116,7 +116,6 @@ WIDGETS.push({
     const modus    = d.modus || "wortform";
     const arcWidth = d.arcWidth || 60;
 
-    if (!window._hypherReady) hypherReady(() => render());
     window._silbenCustomText = d.ausnahmen || '';
 
     const boxH = Math.round(fontSize * 1.4); // Kastenhöhe im Zeichnen-Modus

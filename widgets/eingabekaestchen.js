@@ -10,7 +10,7 @@ WIDGETS.push({
     const cs     = sizes[d.groesse || 'mittel'];
     const fullCols = { klein: 42, mittel: 31, gross: 15 }[d.groesse || 'mittel'];
     const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
-    const cols   = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/2':0.5,'3/4':0.75,'full':1}[_frac]||1)));
+    const cols   = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1}[_frac]||1)));
     const rows   = d.zeilen || 4;
     const w      = cols * cs;
     const h      = rows * cs;

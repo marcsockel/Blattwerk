@@ -6,7 +6,7 @@
 // funktioniert Drag rein/raus automatisch über die bestehende Sortier-Logik, und
 // die Kinder behalten ihre volle Funktionalität (eigene Props/Helfer via widgets.find).
 //
-// Basic-Props (Aufgabentext, Hintergrund, Rahmen, Layout) liefert standardFooter()
+// Basic-Props (Aufgabentext, Rahmen inkl. Hintergrund, Layout) liefert standardFooter()
 // automatisch, da das Gruppen-Datenobjekt aufgabenNr/aufgabenText/border/bgColor hat.
 
 WIDGETS.push({
@@ -45,7 +45,7 @@ WIDGETS.push({
                  font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Einfügen</button>
       </div>
       <div style="font-size:11px;color:#aaa;margin-top:6px;">
-        Oder ein Widget vom Blatt in den Rahmen ziehen. Rahmen, Hintergrund &amp; Aufgabentext unten.</div>
+        Oder ein Widget vom Blatt in den Rahmen ziehen. Rahmen (inkl. Hintergrund) &amp; Aufgabentext unten.</div>
     </div>
     <div class="prow"><label>Innenabstand</label>
       <div style="display:flex;gap:4px;">
@@ -105,8 +105,9 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
       <button class="wa del" onclick="event.stopPropagation();groupDelete(${g.id})"
         title="Gruppierung auflösen (Inhalte bleiben)">✕</button>
     </div>
-    <div class="group-frame${g.schatten?' fx-shadow':''}${noBorder?' frame-noborder':''}" style="${frameStyle}">
-      ${taskRendered ? `<div style="padding:10px 10px 0 10px;">${taskRendered}</div>` : ''}
+    <div class="group-frame${g.schatten?' fx-shadow':''}${noBorder?' frame-noborder':''}${frameInkInsert(g)?' frame-ink':''}" style="${frameStyle}">
+      ${frameInkInsert(g)}
+      ${taskRendered ? `<div data-grp-task="1" style="padding:10px 10px 0 10px;">${taskRendered}</div>` : ''}
       <div class="group-kids" style="padding:${kidsTop}px ${ip}px ${ip}px ${ip}px;"></div>
       ${kids.length ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:6px;">
         Leerer Rahmen – Widget rechts hinzufügen oder hereinziehen</div>`}
@@ -140,6 +141,52 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
   });
 
   return div;
+}
+
+/** Gruppen-Rahmen partiell aktualisieren (Props ohne vollen render()). */
+function patchGroupFrame(g) {
+  const wrap = document.querySelector(`.wwrap[data-id="${g.id}"]`);
+  if (!wrap) return false;
+  const frame = wrap.querySelector('.group-frame');
+  const kidsEl = wrap.querySelector('.group-kids');
+  if (!frame || !kidsEl) return false;
+
+  const noBorder = !frameBorder(g);
+  frame.className = `group-frame${g.schatten ? ' fx-shadow' : ''}${noBorder ? ' frame-noborder' : ''}${frameInkInsert(g) ? ' frame-ink' : ''}`;
+  frame.style.cssText = frameDeco(g)
+    + (g.bgColor ? `background:${g.bgColor};` : '')
+    + 'position:relative;min-height:54px;';
+
+  disconnectInkObservers(frame);
+  const ink = frameInkInsert(g);
+  let inkSvg = frame.querySelector(':scope > .frame-ink-svg');
+  if (ink && !inkSvg) {
+    frame.insertAdjacentHTML('afterbegin', ink);
+    inkSvg = frame.querySelector(':scope > .frame-ink-svg');
+  } else if (!ink && inkSvg) {
+    disconnectInkObserverOn(frame);
+    inkSvg.remove();
+  }
+  if (inkSvg && typeof fitFrameInkSvg === 'function') fitFrameInkSvg(inkSvg);
+
+  const taskRendered = atHtml(g);
+  const ip = g.flush ? 0 : 10;
+  const kidsTop = taskRendered ? 0 : ip;
+  kidsEl.style.padding = `${kidsTop}px ${ip}px ${ip}px ${ip}px`;
+
+  let taskWrap = frame.querySelector('[data-grp-task]');
+  if (taskRendered) {
+    if (!taskWrap) {
+      taskWrap = document.createElement('div');
+      taskWrap.dataset.grpTask = '1';
+      taskWrap.style.cssText = 'padding:10px 10px 0 10px;';
+      frame.insertBefore(taskWrap, kidsEl);
+    }
+    taskWrap.innerHTML = taskRendered;
+  } else if (taskWrap) {
+    taskWrap.remove();
+  }
+  return true;
 }
 
 // ── Gruppen-Aktionen ──────────────────────────────────────────────
