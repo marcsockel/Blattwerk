@@ -50,7 +50,12 @@ body.landscape{
 body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1e1e2e;}
 /* Toolbar */
 #toolbar{background:var(--tb);color:var(--sbt);display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;border-bottom:2px solid #313244;}
-.logo{font-size:16px;font-weight:800;color:var(--acc);letter-spacing:-.5px;margin-right:8px;}.logo span{color:var(--acc3);}
+.logo{font-size:16px;font-weight:800;color:var(--acc);letter-spacing:-.5px;margin-right:8px;}.logo span{display:inline-block;color:var(--acc3);}
+@keyframes logoIn{from{opacity:0;transform:translateY(-6px) scale(.9);}to{opacity:1;transform:none;}}
+@keyframes logoWerkIn{from{opacity:0;transform:translateX(10px);}70%{transform:translateX(-2px);}to{opacity:1;transform:none;}}
+.logo.logo-intro{animation:logoIn .65s cubic-bezier(.34,1.35,.64,1) both;}
+.logo.logo-intro span{animation:logoWerkIn .55s .2s cubic-bezier(.34,1.2,.64,1) both;}
+@media (prefers-reduced-motion:reduce){.logo.logo-intro,.logo.logo-intro span{animation:none!important;}}
 .tbtn{background:#313244;border:none;color:var(--sbt);padding:5px 13px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:background .15s;}
 .tbtn:hover{background:#45475a;}.tbtn.p{background:var(--acc);color:#1e1e2e;}.tbtn.p:hover{background:#eb6f92;}
 .spacer{flex:1;}
@@ -129,6 +134,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 /* Schwebender Rahmen ohne gewählten Rahmen: Bildschirm-Hilfslinie nur bei Auswahl (Druck: weg) */
 .float-noborder.sel > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
+/* Multitool: Zellrahmen nur im Editor, nicht im Druck */
+.mt-cell{border:1px solid #e0ddd6;border-radius:6px;padding:8px;box-sizing:border-box;}
+.mt-cell.mt-cell-sel{outline:2px solid #89b4fa;outline-offset:1px;}
 .winner{padding:7px 9px;flex:1 1 auto;}
 /* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
 .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22);}
@@ -144,10 +152,20 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prow input[type=checkbox],.prow input[type=radio]{width:auto;flex-shrink:0;}
 .prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
 /* Standard-Props-Footer: einheitlicher, optisch abgesetzter Block am Ende jedes Widgets */
-.std-footer{margin:14px -14px 0;padding:12px 14px 6px;border-top:2px solid #d8d4c8;background:#eeebe2;}
-.sf-sec{margin-bottom:11px;}
-.sf-sec:last-child{margin-bottom:2px;}
+.std-footer{margin:14px -14px 0;padding:10px 14px 8px;border-top:2px solid #d8d4c8;background:#eeebe2;}
 .sf-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;}
+/* Klappbare Props-Abschnitte */
+.prop-fold{margin-bottom:5px;border:1px solid #d5d0c4;border-radius:6px;background:#f7f5f0;overflow:hidden;}
+.prop-fold:last-child{margin-bottom:0;}
+.prop-fold-h{font-size:11px;font-weight:800;color:#555;padding:7px 9px;cursor:pointer;list-style:none;
+  display:flex;align-items:center;gap:6px;user-select:none;}
+.prop-fold-h::-webkit-details-marker{display:none;}
+.prop-fold-h::marker{content:'';}
+.prop-fold-h::before{content:'▶';font-size:8px;color:#999;transition:transform .15s;flex-shrink:0;line-height:1;}
+.prop-fold[open]>.prop-fold-h::before{transform:rotate(90deg);}
+.prop-fold[open]>.prop-fold-h{border-bottom:1px solid #e5e1d8;margin-bottom:0;}
+.prop-fold-b{padding:8px 9px 9px;}
+.std-footer .prop-fold{background:#faf8f3;border-color:#ccc8bc;}
 /* misc */
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:0;}
@@ -165,6 +183,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
   #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
+  .mt-cell,.mt-cell.mt-cell-sel{border:none!important;outline:none!important;padding:4px!important;}
+  .mt-empty-hint,.mt-img-drop{display:none!important;}
   .frame-noborder{outline:none!important;}
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
@@ -210,7 +230,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 </head>
 <body>
 <div id="toolbar">
-  <div class="logo">Blatt<span>werk</span></div>
+  <div class="logo" id="logo">Blatt<span>werk</span></div>
   <button class="tbtn" onclick="document.getElementById('blatt-open').click()">📂 Öffnen</button>
   <button class="tbtn" onclick="blattSave()">💾 Speichern</button>
   <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
@@ -653,8 +673,11 @@ function frameBorder(w){ const b=w.border||''; return b.endsWith('-rect')?b.slic
 function frameEcken(w){ if(w.ecken==='rund'||w.ecken==='eckig') return w.ecken; return (w.border||'').endsWith('-rect')?'eckig':'rund'; }
 function frameDeco(w){
   const lines={dashed:'1.5px dashed #555',thin:'1px solid #333',medium:'2px solid #333',thick:'3px solid #333'};
-  const bw=lines[frameBorder(w)]||'';
-  return (bw?`border:${bw};`:'')+`border-radius:${frameEcken(w)==='rund'?6:0}px;`;
+  const b=frameBorder(w);
+  const rad=frameEcken(w)==='rund'?6:0;
+  if(b==='ink') return `border:none;position:relative;border-radius:${rad}px;`;
+  const bw=lines[b]||'';
+  return (bw?`border:${bw};`:'')+`border-radius:${rad}px;`;
 }
 
 function makeWrap(w, idx) {
@@ -670,7 +693,7 @@ function makeWrap(w, idx) {
       <button class="wa" onclick="event.stopPropagation();dup(${idx})"   title="Duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
     </div>
-    <div class="winner${w.schatten?' fx-shadow':''}" style="${frameDeco(w)}${frameBorder(w)?'padding:8px;':''}${w.bgColor?`background:${w.bgColor};`:''}${w.flush?'padding:0;':''}">${def.render(w)}</div>`;
+    <div class="winner${w.schatten?' fx-shadow':''}${frameInkInsert(w)?' frame-ink':''}" style="${frameDeco(w)}${frameBorder(w)?`padding:${frameInkPad(w)};`:''}${w.bgColor?`background:${w.bgColor};`:''}${w.flush?'padding:0;':''}${typeof textUsesInnerPad==='function'&&textUsesInnerPad(w)?'padding:0;':''}">${frameInkInsert(w)}${def.render(w)}</div>`;
   div.addEventListener('click',()=>sel(w.id),true); // capture: feuert vor innerem stopPropagation
   div.onclick=e=>e.stopPropagation();               // bubble: verhindert page-desel
   div.ondragstart=e=>{dragSrc=idx;e.dataTransfer.effectAllowed="move";};
@@ -698,6 +721,8 @@ function makeWrap(w, idx) {
 
 function widthFrac(w){
   if(w.widthFraction==='1/4') return 0.25;
+  if(w.widthFraction==='1/3') return 1/3;
+  if(w.widthFraction==='2/3') return 2/3;
   if(w.widthFraction==='3/4') return 0.75;
   if(w.widthFraction==='1/2'||w.halfWidth) return 0.5;
   return 1;
@@ -719,17 +744,17 @@ function layoutInto(wc, list, base){
   while(i<list.length){
     const w=list[i];
     const gIdx=base+i;
-    const fu=Math.round(widthFrac(w)*4); // Viertel-Einheiten: 1=¼, 2=½, 3=¾, 4=voll
-    if(fu>=4){
+    const fu=Math.round(widthFrac(w)*12); // Zwölftel-Einheiten: ¼=3, ⅓=4, ½=6, ⅔=8, ¾=9, voll=12
+    if(fu>=12){
       const div=makeWrap(w,gIdx);if(div)wc.appendChild(div);i++;
     } else {
       const rowStart=gIdx;
       const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;margin-bottom:14px;";
-      let rem=4;
+      let rem=12;
       while(i<list.length&&rem>0){
         const cw=list[i],cgIdx=base+i;
-        const cfu=Math.round(widthFrac(cw)*4);
-        if(cfu>=4||cfu>rem) break;
+        const cfu=Math.round(widthFrac(cw)*12);
+        if(cfu>=12||cfu>rem) break;
         const div=makeWrap(cw,cgIdx);
         if(div){div.style.flex=String(cfu);div.style.marginBottom="0";row.appendChild(div);}
         rem-=cfu;i++;
@@ -745,7 +770,7 @@ function layoutInto(wc, list, base){
           e.preventDefault();dz.style.borderColor="#ddd";dz.style.boxShadow="";
           if(dragSrc===null||dragSrc===hIdx)return;
           const m=widgets.splice(dragSrc,1)[0];
-          const remFrac=rem===1?'1/4':rem===2?'1/2':'3/4';
+          const remFrac=rem>=9?'3/4':rem>=8?'2/3':rem>=6?'1/2':rem>=4?'1/3':'1/4'; // Rest (Zwölftel) → größte passende Breite
           m.widthFraction=remFrac;m.halfWidth=(remFrac==='1/2');
           const adj=dragSrc<hIdx?hIdx-1:hIdx;widgets.splice(adj+1,0,m);render();
         };
@@ -874,6 +899,7 @@ function render(){
     document.querySelectorAll('textarea[data-autoresize]').forEach(ta=>{ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});
     document.querySelectorAll('svg.kaestchen-svg').forEach(svg=>fitKaestchenSvg(svg));
     document.querySelectorAll('#canvas-area svg.numberline-svg').forEach(svg=>{ if(typeof fitNumberlineSvg==='function') fitNumberlineSvg(svg); });
+    if(typeof fitAllFrameInkSvgs==='function') fitAllFrameInkSvgs(document.getElementById('canvas-area'));
     if(gen !== _renderGen) return; // veralteter Render — kein Overflow-Check mehr
     checkOverflow(ranges);
   });
@@ -1208,7 +1234,7 @@ function sel(id){
     // gerade bearbeiteten Eingabefeld den Fokus/Cursor stehlen.
     if(def.meta&&def.meta.selSafe)return;
     const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
-    if(winner){winner.innerHTML=def.render(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);}
+    if(winner){winner.innerHTML=winnerInner(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);if(typeof fitAllFrameInkSvgs==='function')fitAllFrameInkSvgs(winner);}
   });
   renderProps(id);
 }
@@ -1219,13 +1245,13 @@ function desel(){
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
     const w=widgets.find(x=>x.id===prevId);
-    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe)){winner.innerHTML=def.render(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);}}
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe)){winner.innerHTML=winnerInner(w);if(typeof fitNumberlineSvg==='function')winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);if(typeof fitAllFrameInkSvgs==='function')fitAllFrameInkSvgs(winner);}}
   }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
 
 // ── Standard-Props-Footer ────────────────────────────────────────────
-// Einheitlicher, optisch abgesetzter Block am Ende JEDES Widgets.
+// Einheitlicher, optisch abgesetzter Block am Ende jedes Widgets (klappbar).
 // Reihenfolge: Aufgabentext, Hintergrund, Rahmen, Layout.
 // Fähigkeiten werden ausgelassen, wenn das Widget sie nicht hat:
 //  - Aufgabentext/Hintergrund nur bei Widgets mit aufgabenNr/aufgabenText
@@ -1245,9 +1271,7 @@ function sfTaskBlock(id,w){
              font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;color:${fill?'#fff':'#222'};line-height:1;">1</span>
     </button>`;
   };
-  return `<div class="sf-sec">
-    <div class="sf-h">Aufgabentext</div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <span style="display:inline-flex;align-items:center;justify-content:center;
           width:16px;height:16px;border-radius:${stil.startsWith('quadrat')?'3px':'50%'};
           border:1.5px solid ${nr>0?'#222':'#ddd'};background:${nr>0&&stil.endsWith('-fill')?'#222':'transparent'};
@@ -1267,8 +1291,7 @@ function sfTaskBlock(id,w){
       onclick="event.stopPropagation()"
       onchange="upd(${id},'aufgabenText',this.value)"
       style="width:100%;padding:4px 7px;border:1.5px solid #ddd;border-radius:4px;
-             font-family:inherit;font-size:12px;box-sizing:border-box;">
-  </div>`;
+             font-family:inherit;font-size:12px;box-sizing:border-box;">`;
 }
 function sfBgBlock(id,w){
   const bg=w.bgColor||'';
@@ -1282,17 +1305,13 @@ function sfBgBlock(id,w){
              display:inline-flex;align-items:center;justify-content:center;
              font-size:11px;color:#bbb;">${label}</button>`;
   }).join('');
-  return `<div class="sf-sec">
-    <div class="sf-h">Hintergrund</div>
-    <div style="display:flex;gap:4px;">${sw}</div>
-  </div>`;
+  return `<div style="display:flex;gap:4px;">${sw}</div>`;
 }
 function sfBorderBlock(id,w){
   const b=frameBorder(w);
   const ecken=frameEcken(w);
   const ebtn=(label,val)=>{const on=ecken===val;return `<button onclick="event.stopPropagation();upd(${id},'ecken','${val}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;};
-  return `<div class="sf-sec">
-    <div class="sf-h">Ecken</div>
+  return `<div class="sf-h">Ecken</div>
     <div style="display:flex;gap:4px;margin-bottom:9px;">${ebtn('Eckig','eckig')}${ebtn('Rund','rund')}</div>
     <div class="sf-h">Rahmen</div>
     <select onchange="upd(${id},'border',this.value)"
@@ -1302,35 +1321,35 @@ function sfBorderBlock(id,w){
       <option value="thin"    ${b==='thin'?'selected':''}>──── Leicht (1px)</option>
       <option value="medium"  ${b==='medium'?'selected':''}>──── Mittel (2px)</option>
       <option value="thick"   ${b==='thick'?'selected':''}>──── Dick (3px)</option>
+      <option value="ink"     ${b==='ink'?'selected':''}>✒ Tusche (handgezeichnet)</option>
     </select>
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
       <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Schatten</span>
       <div style="display:flex;gap:4px;flex:1;">
         ${[['Aus',false],['An',true]].map(([lbl,val])=>{const on=!!w.schatten===val;return `<button onclick="event.stopPropagation();upd(${id},'schatten',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
       </div>
-    </div>
-  </div>`;
+    </div>`;
 }
 function sfLayoutBlock(id,w){
   const wf=w.widthFraction||(w.halfWidth?'1/2':'full');
-  const btns=[['1/4','▎ ¼'],['1/2','▬▬ ½'],['3/4','▬▬▬ ¾'],['full','⬛ Voll']].map(([val,lbl])=>`
+  const btns=[['1/4','¼'],['1/3','⅓'],['1/2','½'],['2/3','⅔'],['3/4','¾'],['full','Voll']].map(([val,lbl])=>`
     <button onclick="setWidth(${id},'${val}')"
       style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
-             background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:10px;font-weight:700;
-             cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('');
-  return `<div class="sf-sec">
-    <div class="sf-h">Layout</div>
-    <div style="display:flex;gap:4px;">${btns}</div>
-    ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
-  </div>`;
+             background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:${val==='full'?'11px':'15px'};font-weight:700;
+             line-height:1.1;cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('');
+  return `<div style="display:flex;gap:4px;">${btns}</div>
+    ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}`;
 }
 function standardFooter(id,w){
   const hasTask=w.aufgabenNr!==undefined||w.aufgabenText!==undefined;
   const noBorder=['heading','subheading','divider'].includes(w.type);
   let inner='';
-  if(hasTask) inner+=sfTaskBlock(id,w)+sfBgBlock(id,w);
-  if(!noBorder) inner+=sfBorderBlock(id,w);
-  inner+=sfLayoutBlock(id,w);
+  if(hasTask){
+    inner+=propFold('sf-aufgabe','Aufgabentext',sfTaskBlock(id,w),true);
+    inner+=propFold('sf-hintergrund','Hintergrund',sfBgBlock(id,w),false);
+  }
+  if(!noBorder) inner+=propFold('sf-rahmen','Rahmen & Schatten',sfBorderBlock(id,w),false);
+  inner+=propFold('sf-layout','Layout',sfLayoutBlock(id,w),false);
   return `<div class="std-footer">${inner}</div>`;
 }
 
@@ -1841,6 +1860,7 @@ function doPrint() {
   // Zahlenstrahl synchron auf die echte Breite fitten — render()'s rAF-Fit läuft
   // sonst erst NACH window.print() (Inhaltsbreite Bildschirm ≈ Druck, je 170/257mm).
   document.querySelectorAll('#canvas-area svg.numberline-svg').forEach(svg=>{ if(typeof fitNumberlineSvg==='function') fitNumberlineSvg(svg); });
+  if(typeof fitAllFrameInkSvgs==='function') fitAllFrameInkSvgs(document.getElementById('canvas-area'));
   updatePrintStyle();
   window.print();
   selId = prevSel; render(); // render() erstellt FAB neu, kein Restore nötig
@@ -1957,6 +1977,14 @@ window.addEventListener('beforeunload', e => {
 });
 buildTabs();
 buildList();
+(function(){
+  const logo=document.getElementById('logo');
+  if(logo&&!localStorage.getItem('blattwerk-logo-seen')){
+    logo.classList.add('logo-intro');
+    localStorage.setItem('blattwerk-logo-seen','1');
+    setTimeout(()=>logo.classList.remove('logo-intro'),780);
+  }
+})();
 // Start: persistenten Speicher anfragen, dann auf Auto-Entwurf prüfen.
 // Gibt es einen Entwurf mit Inhalt → Wiederherstellen-Hinweis, sonst Beispiel laden.
 (async()=>{

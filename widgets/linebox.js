@@ -80,7 +80,7 @@ WIDGETS.push({
 
     const textEditor = `
       <div class="prow"><label>Vorschrift (erscheint auf 1. Linie)</label></div>
-      ${makeRichEditorBox(d.id, 'html', html, font, fontSize, '', fontOptions)}
+      ${makeRichEditorBox(d.id, 'html', html, font, '', fontOptions)}
     `;
 
     return textEditor +

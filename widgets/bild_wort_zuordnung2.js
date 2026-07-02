@@ -66,8 +66,8 @@ WIDGETS.push({
     // Spalten: klein → 3 / groß → 2 Items pro Zeile (voll Breite), schmalere Layouts entsprechend weniger
     const frac = d.widthFraction || (d.halfWidth ? '1/2' : 'full');
     const colMap = gross
-      ? { 'full':2, '3/4':2, '1/2':1, '1/4':1 }
-      : { 'full':3, '3/4':3, '1/2':2, '1/4':1 };
+      ? { 'full':2, '3/4':2, '2/3':1, '1/2':1, '1/3':1, '1/4':1 }
+      : { 'full':3, '3/4':3, '2/3':2, '1/2':2, '1/3':1, '1/4':1 };
     const cols = colMap[frac] || (gross ? 2 : 3);
     return atHtml(d) +
       `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${itemAbstand}px 24px;">${items.join("")}</div>`;

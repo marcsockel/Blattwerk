@@ -231,7 +231,7 @@ WIDGETS.push({
                background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
-    return `
+    const modusBlock = `
       <div class="prow"><label>Modus</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
           ${toggleBtn("Rechenaufgaben", !erg && !d.zeichen && !d.vergleich, `arithSetModus(${d.id},'normal')`)}
@@ -269,23 +269,33 @@ WIDGETS.push({
           ${toggleBtn("Gemischt", ueMode==='gemischt', `arithSetLayout(${d.id},'ueberschreitung','gemischt')`)}
           ${toggleBtn("Nur mit",  ueMode==='nur',      `arithSetLayout(${d.id},'ueberschreitung','nur')`)}
         </div>
-      </div>` +
+      </div>`;
+
+    const anordnungBlock =
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
-        `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`) +
-      (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
+        `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`);
+
+    const loesungBlock = (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ausblenden", !sl, `upd(${d.id},'showLoesungen',false)`)}
           ${toggleBtn("Einblenden", sl,  `upd(${d.id},'showLoesungen',true)`)}
         </div>
-      </div>` : '') +
+      </div>` : '');
+
+    const manuellBlock =
       `<button onclick="event.stopPropagation();arithGenerate(${d.id})"
-        style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
+        style="margin-top:2px;margin-bottom:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
                font-weight:700;cursor:pointer;">🎲 Aufgaben würfeln</button>` +
       pr(`Manuell bearbeiten${erg?" (_ = Lücke, z.B. 3 + _ = 10)":""}`,
-        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`) ;
+        `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;" onchange="upd(${d.id},'tasks',this.value)">${esc(d.tasks)}</textarea>`);
+
+    return modusBlock +
+      propFold('arith-anordnung', 'Anordnung', anordnungBlock, true) +
+      (loesungBlock ? propFold('arith-loesung', 'Lösung', loesungBlock, false) : '') +
+      propFold('arith-manuell', 'Generierung & Manuell', manuellBlock, false);
   },
 });
 

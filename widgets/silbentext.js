@@ -190,7 +190,8 @@ WIDGETS.push({
     const color1   = d.color1   || "#e05252";
     const color2   = d.color2   || "#2255cc";
 
-    window._silbenCustomText = d.ausnahmen || '';
+    // Eigene Ausnahmen JETZT parsen (Format „Wort=Sil-ben") → silbenTrenne liest _silbenCustom.
+    window._silbenCustom = silbenParseAusnahmen(d.ausnahmen || '');
 
     // Silben live einfärben wenn Hypher bereit
     let content = d.html;
@@ -202,8 +203,9 @@ WIDGETS.push({
       content = d.html;
     }
 
+    const pad      = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;"
+                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;${pad}"
             >${content}</div>`;
   },
 
@@ -224,7 +226,8 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions) +
+      innerPadPropsControl(d) +
       `<div class="prow" style="margin-top:8px;">
          <label>Farbe 1</label>
          <input type="color" value="${color1}"

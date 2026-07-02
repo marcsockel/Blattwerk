@@ -62,8 +62,8 @@ function makeFloatEl(f) {
     + `min-height:${f.h}%;z-index:40;box-sizing:border-box;margin:0;`;
 
   const frameStyle = frameDeco(f)
-    + (f.bgColor ? `background:${f.bgColor};` : '')   // ohne Auswahl transparent
-    + 'box-sizing:border-box;padding:8px;min-height:100%;';
+    + (f.bgColor ? `background:${f.bgColor};` : '')
+    + `box-sizing:border-box;padding:${frameBorder(f) ? frameInkPad(f) : '8px'};min-height:100%;`;
 
   const child = widgets.find(w => w.parent === f.id);
 
@@ -76,7 +76,8 @@ function makeFloatEl(f) {
       <button class="wa" onclick="event.stopPropagation();fbDup(${f.id})" title="Rahmen duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();fbDelete(${f.id})" title="Rahmen löschen">✕</button>
     </div>
-    <div class="winner${f.schatten?' fx-shadow':''}" style="${frameStyle}">
+    <div class="winner${f.schatten?' fx-shadow':''}${frameInkInsert(f)?' frame-ink':''}" style="${frameStyle}">
+      ${frameInkInsert(f)}
       ${atHtml(f)}
       <div class="float-child">${child ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:10px;">Leerer Rahmen – rechts ein Widget einsetzen</div>`}</div>
     </div>

@@ -104,7 +104,7 @@ WIDGETS.push({
         </div>
       </div>`).join("");
 
-    const _fracMap = {'1/4':0.25,'1/2':0.5,'3/4':0.75};
+    const _fracMap = {'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75};
     const _frac  = _fracMap[d.widthFraction] || (d.halfWidth ? 0.5 : 1);
     const _avail = Math.round(geom().contentW * _frac);
     // Immer 2 Spalten → 1 Item nimmt nie die volle Breite; bei halber Widget-Breite nur 1 Spalte
@@ -158,7 +158,8 @@ WIDGETS.push({
         </div>
       </div>`).join("");
 
-    return pr("Anzahl Items",
+    const genBlock =
+      pr("Anzahl Items",
         `<input type="number" min="1" max="18" value="${anzahl}" onchange="zeitspanneUpdAnzahl(${d.id},+this.value)">`) +
       pr("Zufalls-Stufe", `<select onchange="upd(${d.id},'stufe',this.value)">${stufeOpts}</select>`) +
       `<div class="prow"><label>Stunden</label>
@@ -170,9 +171,11 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();zeitspanneRoll(${d.id})"
         style="margin-top:2px;margin-bottom:10px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Zeiten würfeln</button>` +
-      `<div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Zeiten manuell</div>` +
-      itemEditors +
+               font-weight:700;cursor:pointer;">🎲 Zeiten würfeln</button>`;
+
+    return genBlock +
+      propFold('zeitspanne-manuell', 'Zeiten manuell', itemEditors, false) +
+      propFold('zeitspanne-darstellung', 'Darstellung',
       `<div class="prow"><label>Textfeld</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Keins",    tf==="none", `upd(${d.id},'textfeld','none')`)}
@@ -185,7 +188,8 @@ WIDGETS.push({
           ${toggleBtn("S/W",   !zeigerFarbe, `upd(${d.id},'zeigerFarbe',false)`)}
           ${toggleBtn("Farbe",  zeigerFarbe, `upd(${d.id},'zeigerFarbe',true)`)}
         </div>
-      </div>` ;
+      </div>`,
+      false);
   },
 });
 

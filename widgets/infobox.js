@@ -68,7 +68,7 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', html, font, fontSize, sizeInput, fontOptions) +
+      makeRichEditorBox(d.id, 'html', html, font, sizeInput, fontOptions) +
       alignToggle(d.id, d.align) +
       pr("Symbol", `<select onchange="upd(${d.id},'icon',this.value)">${iconOptions}</select>`) +
       (icon ? `<div class="prow"><label>Position</label>

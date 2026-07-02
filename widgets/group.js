@@ -105,7 +105,8 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
       <button class="wa del" onclick="event.stopPropagation();groupDelete(${g.id})"
         title="Gruppierung auflösen (Inhalte bleiben)">✕</button>
     </div>
-    <div class="group-frame${g.schatten?' fx-shadow':''}${noBorder?' frame-noborder':''}" style="${frameStyle}">
+    <div class="group-frame${g.schatten?' fx-shadow':''}${noBorder?' frame-noborder':''}${frameInkInsert(g)?' frame-ink':''}" style="${frameStyle}">
+      ${frameInkInsert(g)}
       ${taskRendered ? `<div style="padding:10px 10px 0 10px;">${taskRendered}</div>` : ''}
       <div class="group-kids" style="padding:${kidsTop}px ${ip}px ${ip}px ${ip}px;"></div>
       ${kids.length ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:6px;">

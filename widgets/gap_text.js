@@ -89,7 +89,7 @@ WIDGETS.push({
              font-family:inherit;font-size:12px;text-align:center;">`;
 
     return `<div class="prow"><label>Text <span style="font-weight:400;color:#aaa;font-size:10px;">([Wort] = Lücke)</span></label></div>` +
-      makeRichEditorBox(d.id, 'text', d.text, font, fontSize, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
+      makeRichEditorBox(d.id, 'text', d.text, font, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
       `<div class="prow">
         <label>Wort anklicken = Lücke</label>
         <div id="gap-words-${d.id}" style="margin-top:5px;line-height:2;">${wordBtns}</div>
