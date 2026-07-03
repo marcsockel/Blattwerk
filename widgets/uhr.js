@@ -16,7 +16,7 @@ function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
   const nums = !showNums ? "" : [12,1,2,3,4,5,6,7,8,9,10,11].map((n, i) => {
     const angle = (i * 30 - 90) * Math.PI / 180;
     const fs = size < 100 ? 9 : 11;
-    const nr = r * 0.82;
+    const nr = r * 0.82 - 2;
     return `<text x="${(cx + nr*Math.cos(angle)).toFixed(1)}" y="${(cy + nr*Math.sin(angle) + fs*0.35).toFixed(1)}"
       text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="${fs}" fill="#222">${n}</text>`;
   }).join("");
@@ -26,7 +26,7 @@ function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
     // Hour hand
     const hAngle = ((h % 12) + m/60) * 30 - 90;
     const hRad   = hAngle * Math.PI / 180;
-    const hLen   = r * 0.48;
+    const hLen   = r * 0.40;
     const hx = (cx + hLen * Math.cos(hRad)).toFixed(2);
     const hy = (cy + hLen * Math.sin(hRad)).toFixed(2);
     const hbx = cx.toFixed(2);
@@ -34,7 +34,7 @@ function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
     // Minute hand
     const mAngle = m * 6 - 90;
     const mRad   = mAngle * Math.PI / 180;
-    const mLen   = r * 0.75;
+    const mLen   = r * 0.625;
     const mx2 = (cx + mLen * Math.cos(mRad)).toFixed(2);
     const my2 = (cy + mLen * Math.sin(mRad)).toFixed(2);
     const mbx = cx.toFixed(2);
@@ -183,7 +183,7 @@ WIDGETS.push({
 
     const genBlock =
       pr("Anzahl Uhren",
-        `<input type="number" min="1" max="60" value="${anzahl}" onchange="uhrUpdAnzahl(${d.id},+this.value)">`) +
+        `<input type="number" min="1" max="64" value="${anzahl}" onchange="uhrUpdAnzahl(${d.id},+this.value)">`) +
       pr("Zufalls-Stufe", `<select onchange="upd(${d.id},'stufe',this.value)">${stufeOpts}</select>`) +
       `<div class="prow"><label>Stunden</label>
         <div style="display:flex;gap:4px;">

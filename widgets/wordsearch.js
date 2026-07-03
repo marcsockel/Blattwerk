@@ -55,11 +55,13 @@ WIDGETS.push({
     const fs = d.gross ? 22 : 12;
     const isActive = d.id === selId || _solutionsMode;
 
-    // Zellen der gesuchten Wörter finden und markieren
+    // Zellen der gesuchten Wörter finden und markieren; fehlende Wörter erkennen
     const highlighted = new Set();
-    if (isActive) {
+    const missing = [];
+    {
       const dirs = [[0,1],[1,0],[1,1],[0,-1],[-1,0],[-1,-1],[1,-1],[-1,1]];
       words.forEach(word => {
+        let found = false;
         for (let r = 0; r < R; r++) {
           for (let c = 0; c < C; c++) {
             for (const [dr, dc] of dirs) {
@@ -69,13 +71,20 @@ WIDGETS.push({
                 if (ri < 0 || ri >= R || ci < 0 || ci >= C || grid[ri][ci] !== word[i]) { match = false; break; }
               }
               if (match) {
-                for (let i = 0; i < word.length; i++) highlighted.add(`${r+dr*i},${c+dc*i}`);
+                found = true;
+                if (isActive) for (let i = 0; i < word.length; i++) highlighted.add(`${r+dr*i},${c+dc*i}`);
               }
             }
           }
         }
+        if (!found) missing.push(word);
       });
     }
+    const warn = missing.length
+      ? `<div class="ws-warn" style="margin-bottom:7px;padding:6px 10px;border:1.5px solid #e6a23c;border-radius:6px;
+           background:#fdf3e3;color:#9a6700;font-size:12px;font-weight:700;">
+           ⚠️ Nicht untergebracht: ${missing.join(", ")} — Gitter vergrößern oder neu generieren.</div>`
+      : "";
 
     const cells = grid.map((row, ri) => row.map((ch, ci) => {
       const hl = highlighted.has(`${ri},${ci}`);
@@ -88,6 +97,7 @@ WIDGETS.push({
     const wl = words.map(w => `<span style="font-family:monospace;font-size:12px;background:#f0eee8;padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;">${w}</span>`).join("");
     const align = d.align || 'left';
     return atHtml(d) + `<div style="text-align:${align};">
+      ${warn}
       <div style="margin-bottom:7px;">${wl}</div>
       <div style="display:inline-grid;grid-template-columns:repeat(${C},${cs}px);gap:0;text-align:left;">${cells}</div>
     </div>`;

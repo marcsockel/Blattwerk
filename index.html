@@ -7,6 +7,10 @@
 <title>Blattwerk – Worksheet Builder</title>
 <!-- Lokale Schriften statt Google-Fonts-CDN (offline-fähig) -->
 <link rel="stylesheet" href="fonts/vendor/fonts.css">
+<!-- Schriften vorladen: verhindert, dass Safari beim ersten Layout die ch-Einheit
+     gegen die Ersatzschrift auflöst (Zahlen-Slots zu breit → Päckchen-Umbruch kippt) -->
+<link rel="preload" href="fonts/Didact Gothic Regular 7mod.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="fonts/Grundschrift-Regular.otf" as="font" type="font/otf" crossorigin>
 <style>
 @font-face {
   font-family: 'Grundschrift';
@@ -186,7 +190,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      Druck abschalten — gilt für .page UND alle Wrapper/Widgets. */
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
-  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning{display:none!important;}
+  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,.ws-warn{display:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .mt-cell,.mt-cell.mt-cell-sel{border:none!important;outline:none!important;padding:4px!important;}
   .mt-empty-hint,.mt-img-drop{display:none!important;}
@@ -194,6 +198,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
   #canvas-zoom{transform:none!important;margin-bottom:0!important;}
+  /* WebKit/Safari fragmentiert FLEX-Container beim Paginieren fehlerhaft (body und
+     #canvas-zoom waren im Druck noch flex) → Dokumentkörper wird ~50px höher gerechnet
+     als die Seiten → leere Geisterseite am Dokumentende (Chrome/Blink nicht betroffen).
+     Im Druck ALLE Wrapper auf block zwingen — sichtbar sind dort eh nur die Seiten. */
+  body,#layout,#canvas-area,#canvas-zoom{display:block!important;height:auto!important;min-height:0!important;}
   /* WebKit/Safari druckt den Scrollbalken-Thumb von #canvas-area (background:#ccc,
      border-radius:4px) als grauen Rundbalken unten aufs Blatt — Chrome NICHT.
      Im Druck Scrollen abschalten (overflow:visible oben) + Scrollbalken ausblenden. */
@@ -2190,6 +2199,15 @@ buildList();
     addSample();
   }
 })();
+
+// Safari-Bugfix: Ist die Webfont beim ersten Layout noch nicht geladen, löst WebKit
+// die ch-Einheit gegen die Ersatzschrift auf (~10.3px statt 8.97px) und korrigiert
+// das nach dem Schriftladen NICHT — Zahlen-Slots (min-width:Nch) werden zu breit,
+// der Päckchen-Umbruch kippt (4→3 bzw. 2→1). Einmal neu rendern, sobald alle
+// Schriften da sind: frisch erzeugte Elemente bekommen das korrekte ch.
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => { try { render(); } catch(e){} });
+}
 
 // Scroll-basiertes activePage-Tracking + Ansichts-Zoom (Strg/Cmd+Mausrad)
 (()=>{

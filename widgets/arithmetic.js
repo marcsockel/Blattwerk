@@ -9,6 +9,7 @@ WIDGETS.push({
       cols: 2,
       zahlenraum: 20,
       ueberschreitung: 'ohne',
+      hueberschreitung: 'ohne',
       aufgabenProPaeckchen: 4,
       ops: ["+", "-"],
       ergaenzung: false,
@@ -16,7 +17,7 @@ WIDGETS.push({
       vergleich: false,
       vergleichSeiten: "gemischt",
       luecke: "erste",
-      showLoesungen: false, aufgabenNr:0, aufgabenText:'',
+      showLoesungen: false, groesse:'klein', aufgabenNr:0, aufgabenText:'',
     };
     arithDoGenerate(w);
     return w;
@@ -31,13 +32,40 @@ WIDGETS.push({
     const maxDigits = String(Math.abs(+d.zahlenraum) || 20).length;
     const numW = maxDigits + 'ch';
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
-    const box = `<span style="display:inline-block;width:36px;height:20px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-    const tdBase = `padding:3px 0;font-size:16px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:20px;`;
-    const numSpan = v => `<span style="display:inline-block;min-width:${numW};min-height:20px;line-height:20px;text-align:right;font-variant-numeric:tabular-nums;font-family:'DidactGothic7',sans-serif;font-size:16px;">${esc(v)}</span>`;
+    // Größe: klein = bisherige Maße (Faktor 1), mittel = 1.5x, groß = 2x.
+    // ch-basierte Slots skalieren automatisch über die Schriftgröße mit.
+    const S = d.groesse === 'gross' ? 2 : d.groesse === 'mittel' ? 1.5 : 1;
+    const px = v => Math.round(v * S);
+    const FS = px(16);   // Schriftgröße
+    const LH = px(20);   // Zeilen-/Kästchenhöhe
+    const BW = px(36);   // Antwortkästchen-Breite (ungeteilt)
+    const CW = px(18);   // Stellen-Zellenbreite
+    const box = `<span style="display:inline-block;width:${BW}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+    // „Stellen anzeigen": Antwortkästchen in n berührende Ziffern-Zellen unterteilen,
+    // dazwischen nur ein dünner Strich (CW px je Stelle). n = Stellen der erwarteten Antwort.
+    // Fallback (aus / Antwort unbekannt) = einfaches Kästchen.
+    const stellen = !!d.stellen;
+    const boxW = n => n*CW + (n-1) + 3; // Außenbreite inkl. Trennstriche+Rahmen (Footprint für blaue Lösung)
+    const boxN = n => (!stellen || !n || n < 1) ? box :
+      `<span style="display:inline-flex;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;">` +
+        Array.from({length:n}, (_,i) => `<span style="width:${CW}px;height:100%;${i ? 'border-left:1px solid #999;' : ''}"></span>`).join("") +
+      `</span>`;
+    const ansDigits = v => v == null ? 0 : String(v).replace(/\D/g, "").length;
+    const ansW = v => (stellen && ansDigits(v)) ? boxW(ansDigits(v)) : BW;
+    const tdBase = `padding:${px(3)}px 0;font-size:${FS}px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:${LH}px;`;
+    // Die Schrift hat KEINE Tabellenziffern (kein tnum-Feature — „1" ist 6.6px, „8" 8.9px),
+    // font-variant-numeric:tabular-nums wirkt also nicht. Darum bekommt jede Ziffer eine
+    // eigene 1ch-Zelle (zentriert) → Einer stehen unter Einern, egal welche Ziffer.
+    const digitCells = v => String(v).split("").map(c =>
+      /[0-9]/.test(c)
+        ? `<span style="display:inline-block;width:1ch;text-align:center;">${c}</span>`
+        : esc(c)
+    ).join("");
+    const numSpan = (v, w = numW) => `<span style="display:inline-block;min-width:${w};min-height:${LH}px;line-height:${LH}px;text-align:right;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${digitCells(v)}</span>`;
     // Blaue Lösung: in eine Box mit GENAU der Breite des jeweiligen Platzhalter-Kästchens
     // (w px) gesetzt → ausgewählt (Zahl) und abgewählt (Kästchen) sind gleich breit, der
     // Umbruch/die Position bleibt identisch.
-    const blueVal = (v, w) => `<span style="display:inline-block;width:${w}px;text-align:center;font-family:'DidactGothic7',sans-serif;font-size:16px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+    const blueVal = (v, w) => `<span style="display:inline-block;width:${w}px;text-align:center;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
 
     // Parse a task string into parts.
     // Normal:      "12 + 4 ="        → { left:"12", op:"+", right:"4", result:null }
@@ -78,12 +106,25 @@ WIDGETS.push({
       return { raw: norm.replace(/\s*=\s*$/, ""), hasEq };
     };
 
-    const cell = (val, align = "right", override = null) => {
-      const content = override !== null ? override : val === "_" ? box : numSpan(val);
-      return `<td style="text-align:${align};${tdBase}min-width:${numW};font-variant-numeric:tabular-nums;">${content}</td>`;
+    const cell = (val, align = "right", override = null, w = numW) => {
+      const content = override !== null ? override : val === "_" ? box : numSpan(val, w);
+      return `<td style="text-align:${align};${tdBase}min-width:${w};font-variant-numeric:tabular-nums;">${content}</td>`;
     };
 
     const parsed = allTasks.map(parse);
+    // Slot-Breiten aus den ECHT vorkommenden Zahlen statt pauschal aus dem Zahlenraum:
+    // rechtsbündig (stellengerecht) bleibt, aber ohne Dauerlücke nach dem Rechenzeichen,
+    // wenn z.B. im 100er-Raum gar keine dreistellige Zahl dabei ist. Widget-weit berechnet
+    // → alle Päckchen bleiben exakt gleich breit (flexDistribute-Voraussetzung).
+    const digitsOf = v => (v && v !== "_") ? String(v).replace(/\D/g, "").length : 0;
+    let dL = 0, dR = 0, dRes = 0;
+    parsed.forEach(p => {
+      if (p.raw !== undefined || p.isVergleich) return;
+      dL   = Math.max(dL,   digitsOf(p.left));
+      dR   = Math.max(dR,   digitsOf(p.right));
+      dRes = Math.max(dRes, digitsOf(p.result));
+    });
+    const lW = (dL || maxDigits) + 'ch', rW = (dR || maxDigits) + 'ch', resW = (dRes || maxDigits) + 'ch';
     const perCol = Math.ceil(parsed.length / numCols);
     const groups = Array.from({length: numCols}, (_, i) =>
       parsed.slice(i * perCol, (i + 1) * perCol)
@@ -94,9 +135,8 @@ WIDGETS.push({
     parsed.forEach(p => {
       if (p.raw !== undefined || p.isVergleich) return;
       if (p.result !== null) {
-        // Ergänzung: the missing value is the one that was "_"
-        answers.push(p.left === "_" ? p.left_val : p.right_val);
-        // Recalculate: we need the numeric answer
+        // Ergänzung: die fehlende Zahl berechnen (nur die berechnete Antwort pushen —
+        // früher wurde hier zusätzlich ein nicht existentes Feld gepusht → undefined-Lücken im Lösungsband)
         const l = p.left === "_" ? null : +p.left;
         const r = p.right === "_" ? null : +p.right;
         const res = +p.result;
@@ -151,18 +191,26 @@ WIDGETS.push({
       return null;
     };
 
+    // Stellengerechte Ergebnis-Kästchen: breiteste Antwort im Widget bestimmt die
+    // Slot-Breite hinter dem „=", darin rechtsbündig → Einer-Zelle unter Einer-Zelle.
+    let dAns = 0;
+    if (stellen) parsed.forEach(p => {
+      if (p.raw === undefined && !p.isVergleich && p.result === null && p.hasEq)
+        dAns = Math.max(dAns, ansDigits(computeAns(p)));
+    });
+
     const renderGroup = group => {
       const rows = group.map(p => {
         if (p.raw !== undefined) {
-          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueVal(computeAns(p)??'?', 36)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
+          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueVal(computeAns(p)??'?', BW)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
           return `<tr><td colspan="5" style="${tdBase}">${esc(p.raw)}${ans}</td></tr>`;
         }
-        const sqBoxInner = `<span style="display:block;width:20px;height:20px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
-        const sqBoxSlot = (inner, w = 28) => `<span style="display:inline-flex;width:${w}px;height:20px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
+        const sqBoxInner = `<span style="display:block;width:${LH}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
+        const sqBoxSlot = (inner, w = px(28)) => `<span style="display:inline-flex;width:${w}px;height:${LH}px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
         const sqBox = sqBoxSlot(sqBoxInner);
         if (p.isVergleich) {
-          const cmpBox = `<span style="display:inline-block;width:24px;height:24px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-          const mid = isActive ? blueVal(p.sym, 24) : cmpBox;
+          const cmpBox = `<span style="display:inline-block;width:${px(24)}px;height:${px(24)}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+          const mid = isActive ? blueVal(p.sym, px(24)) : cmpBox;
           return `<tr>
             <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
             <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
@@ -170,18 +218,23 @@ WIDGETS.push({
           </tr>`;
         }
         const opCell = p.isZeichen
-          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueVal(p.op, 20)) : sqBox}</td>`
-          : `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:6px;">${esc(p.op)}</td>`;
-        const leftContent = (p.left === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.left === "_" ? box : null);
-        const rightContent = (p.right === "_" && isActive) ? blueVal(computeAns(p)??'?', 36) : (p.right === "_" ? box : null);
+          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueVal(p.op, LH)) : sqBox}</td>`
+          : `<td style="text-align:center;${tdBase}padding-left:4px;padding-right:4px;"><span style="display:inline-block;width:${px(9)}px;text-align:center;">${esc(p.op)}</span></td>`;
+        const gapAns = (p.left === "_" || p.right === "_") ? computeAns(p) : null;
+        const leftContent  = (p.left === "_" && isActive) ? blueVal(gapAns??'?', ansW(gapAns)) : (p.left === "_" ? boxN(ansDigits(gapAns)) : null);
+        const rightContent = (p.right === "_" && isActive) ? blueVal(gapAns??'?', ansW(gapAns)) : (p.right === "_" ? boxN(ansDigits(gapAns)) : null);
         if (p.result !== null) {
-          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result)}</td></tr>`;
+          return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result, resW)}</td></tr>`;
         } else {
           const ans = computeAns(p);
+          const ansInner = isActive && ans ? blueVal(ans, ansW(ans)) : boxN(ansDigits(ans));
+          const ansSlot = (stellen && dAns)
+            ? `<span style="display:inline-block;min-width:${boxW(dAns)}px;text-align:right;vertical-align:middle;">${ansInner}</span>`
+            : ansInner;
           const ansCell = p.hasEq
-            ? `<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${isActive && ans ? blueVal(ans, 36) : box}</td>`
+            ? `<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${ansSlot}</td>`
             : `<td></td>`;
-          return `<tr>${cell(p.left, "right", leftContent)}${opCell}${cell(p.right, "right", rightContent)}${ansCell}</tr>`;
+          return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}${ansCell}</tr>`;
         }
       }).join("");
       return `<table style="border-collapse:collapse;">${rows}</table>`;
@@ -194,15 +247,15 @@ WIDGETS.push({
     // voll-Entscheidung in flexDistribute; die echte Spaltenzahl misst der Browser.
     const tasksHtml = atHtml(d) + flexDistribute(
       groups.map(g => renderGroup(g)),
-      { gap: 29, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
-        itemW: 3 * maxDigits * 9 + 70, d, estimate: true }
+      { gap: 24, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
+        itemW: Math.round((3 * maxDigits * 9 + 70) * S), d, estimate: true }
     );
 
     if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
 
     const loesungenHtml = `
       <div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px;">
-        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:14px;color:#555;">${esc(a)}</span>`).join("")}
+        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:${px(14)}px;color:#555;">${esc(a)}</span>`).join("")}
       </div>`;
 
     return tasksHtml + loesungenHtml;
@@ -214,6 +267,7 @@ WIDGETS.push({
     const ueMode = d.ueberschreitung === true ? 'gemischt'
                  : (d.ueberschreitung === false || d.ueberschreitung == null) ? 'ohne'
                  : d.ueberschreitung;
+    const hueMode = d.hueberschreitung || 'ohne';
     const app  = d.aufgabenProPaeckchen || 4;
     const cols = d.cols || 2;
     const erg    = d.ergaenzung || false;
@@ -272,13 +326,35 @@ WIDGETS.push({
           ${toggleBtn("Gemischt", ueMode==='gemischt', `arithSetLayout(${d.id},'ueberschreitung','gemischt')`)}
           ${toggleBtn("Nur mit",  ueMode==='nur',      `arithSetLayout(${d.id},'ueberschreitung','nur')`)}
         </div>
-      </div>`;
+      </div>` +
+      (zr > 100 ? `<div class="prow"><label>Hunderterübergang</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Ohne",     hueMode==='ohne',     `arithSetLayout(${d.id},'hueberschreitung','ohne')`)}
+          ${toggleBtn("Gemischt", hueMode==='gemischt', `arithSetLayout(${d.id},'hueberschreitung','gemischt')`)}
+          ${toggleBtn("Nur mit",  hueMode==='nur',      `arithSetLayout(${d.id},'hueberschreitung','nur')`)}
+        </div>
+      </div>` : '');
 
     const anordnungBlock =
       pr("Aufgaben pro Päckchen",
         `<input type="number" min="1" max="20" value="${app}" onchange="arithSetLayout(${d.id},'aufgabenProPaeckchen',+this.value)">`) +
       pr("Anzahl Päckchen",
         `<input type="number" min="1" max="36" value="${cols}" onchange="arithSetLayout(${d.id},'cols',+this.value)">`);
+
+    const groesseBlock = `<div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Klein",  (d.groesse||'klein')==='klein', `upd(${d.id},'groesse','klein')`)}
+          ${toggleBtn("Mittel", d.groesse==='mittel',           `upd(${d.id},'groesse','mittel')`)}
+          ${toggleBtn("Groß",   d.groesse==='gross',            `upd(${d.id},'groesse','gross')`)}
+        </div>
+      </div>`;
+
+    const stellenBlock = (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Stellen anzeigen</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Aus", !d.stellen,  `upd(${d.id},'stellen',false)`)}
+          ${toggleBtn("An",  !!d.stellen, `upd(${d.id},'stellen',true)`)}
+        </div>
+      </div>` : '');
 
     const loesungBlock = (!(d.vergleich || d.zeichen) ? `<div class="prow"><label>Lösungen anzeigen</label>
         <div style="display:flex;gap:4px;">
@@ -299,6 +375,8 @@ WIDGETS.push({
 
     return modusBlock +
       anordnungBlock +
+      groesseBlock +
+      stellenBlock +
       loesungBlock +
       wuerfelBtn +
       propFold('arith-manuell', 'Manuelle Bearbeitung', manuellBlock, false);
@@ -314,6 +392,7 @@ function arithToggleOp(id, sym) {
   if (idx >= 0) { if (ops.length > 1) ops.splice(idx, 1); }
   else ops.push(sym);
   w.ops = ops;
+  arithDoGenerate(w);   // Aufgaben passen sonst nicht mehr zu den gewählten Zeichen
   render(); renderProps(id);
 }
 
@@ -364,6 +443,12 @@ function arithDoGenerate(w) {
   // Zehnerübergang: 'ohne' | 'gemischt' | 'nur' (Legacy bool: false→ohne, true→gemischt)
   const _u = w.ueberschreitung;
   const ueMode = _u === true ? 'gemischt' : (_u === false || _u == null) ? 'ohne' : _u;
+  // Hunderterübergang separat (Übertrag/Borgen oberhalb der Einerstelle).
+  // Bis Zahlenraum 100 ist die Prop ausgeblendet → an den Zehnerübergang koppeln:
+  // 'ohne' filtert wie früher ALLE Überträge (auch 50+50=100), sonst neutral
+  // ('nur' darf nicht auf Hunderter bestehen — im ZR 100 kaum erfüllbar).
+  const hueMode = zr > 100 ? (w.hueberschreitung || 'ohne')
+                           : (ueMode === 'ohne' ? 'ohne' : 'gemischt');
   const app    = w.aufgabenProPaeckchen || 4;
   const cols   = w.cols || 2;
   const ops    = w.ops || ["+", "-"];
@@ -376,41 +461,61 @@ function arithDoGenerate(w) {
 
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-  const noCarry = (a, b, op) => {
+  // Übertrags-Positionen MIT Weiterreichung (55+45: Einer 10 → Übertrag, Zehner 5+5+1=11
+  // → auch Hunderterübergang). z = Übertrag an der Einerstelle (Zehnerübergang),
+  // h = Übertrag an einer höheren Stelle (Hunderter- und darüber).
+  const carryPos = (a, b, op) => {
+    let z = false, h = false, aa = a, bb = b, pos = 0;
     if (op === "+") {
-      let aa = a, bb = b;
-      while (aa > 0 || bb > 0) {
-        if ((aa % 10) + (bb % 10) >= 10) return false;
+      let carry = 0;
+      while (aa > 0 || bb > 0 || carry) {
+        carry = (aa % 10 + bb % 10 + carry) >= 10 ? 1 : 0;
+        if (carry) { if (pos === 0) z = true; else h = true; }
         aa = Math.floor(aa/10); bb = Math.floor(bb/10);
+        if (++pos > 8) break;
       }
-      return true;
-    }
-    if (op === "-") {
-      let aa = a, bb = b;
-      while (aa > 0 || bb > 0) {
-        if ((aa % 10) < (bb % 10)) return false;
+    } else if (op === "-") {
+      let borrow = 0;
+      while (aa > 0 || bb > 0 || borrow) {
+        borrow = (aa % 10 - bb % 10 - borrow) < 0 ? 1 : 0;
+        if (borrow) { if (pos === 0) z = true; else h = true; }
         aa = Math.floor(aa/10); bb = Math.floor(bb/10);
+        if (++pos > 8) break;
       }
-      return true;
     }
-    return true;
+    return { z, h };
   };
 
-  // Prüft eine Aufgabe gegen den Zehnerübergang-Modus (nur bei +/− relevant).
+  // Prüft eine Aufgabe gegen Zehner- UND Hunderterübergang-Modus (nur bei +/− relevant).
   const ueOk = (a, b, op) => {
     if (op !== "+" && op !== "-") return true;
-    const carry = !noCarry(a, b, op);
-    return ueMode === 'ohne' ? !carry : ueMode === 'nur' ? carry : true;
+    const { z, h } = carryPos(a, b, op);
+    const zOk = ueMode  === 'ohne' ? !z : ueMode  === 'nur' ? z : true;
+    const hOk = hueMode === 'ohne' ? !h : hueMode === 'nur' ? h : true;
+    return zOk && hOk;
+  };
+
+  // Plus/Minus-Operanden ziehen. Sonderfall „Nur mit Hunderterübergang" im ZR 100:
+  // per Zufall fast nie zu treffen (Summe muss exakt 100 sein bzw. Minuend = 100)
+  // → gezielt konstruieren, sonst gibt die 200-Versuche-Schleife erfolglos auf.
+  const drawPM = op => {
+    if (hueMode === 'nur' && zr === 100) {
+      let x;
+      if (ueMode === 'ohne') x = 10 * rand(1, 9);                       // Einer glatt → kein Zehnerübergang
+      else if (ueMode === 'nur') { do { x = rand(1, 99); } while (x % 10 === 0); } // Einerübertrag erzwingen
+      else x = rand(1, 99);
+      return op === "+" ? [x, 100 - x] : [100, x];
+    }
+    if (op === "+") { const a = rand(1, zr - 1); return [a, rand(1, zr - a)]; }
+    const a = rand(1, zr); return [a, rand(0, a)];
   };
 
   const makeNormal = op => {
     let a, b, tries = 0;
     do {
       tries++;
-      if (op === "+") {
-        a = rand(1, zr - 1); b = rand(1, zr - a);
-      } else if (op === "-") {
-        a = rand(1, zr); b = rand(0, a);
+      if (op === "+" || op === "-") {
+        [a, b] = drawPM(op);
       } else if (op === "·") {
         const maxF = Math.floor(Math.sqrt(zr));
         a = rand(2, Math.min(maxF, 10));
@@ -430,10 +535,8 @@ function arithDoGenerate(w) {
     let a, b, tries = 0;
     do {
       tries++;
-      if (op === "+") {
-        a = rand(1, zr - 1); b = rand(1, zr - a);
-      } else if (op === "-") {
-        a = rand(1, zr); b = rand(0, a);
+      if (op === "+" || op === "-") {
+        [a, b] = drawPM(op);
       } else if (op === "·") {
         const maxF = Math.floor(Math.sqrt(zr));
         a = rand(2, Math.min(maxF, 10));
@@ -467,8 +570,7 @@ function arithDoGenerate(w) {
     let a, b, tries = 0;
     do {
       tries++;
-      if (op === "+") { a = rand(1, zr - 1); b = rand(1, zr - a); }
-      else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
+      if (op === "+" || op === "-") { [a, b] = drawPM(op); }
       else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
       else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
       if (!ueOk(a, b, op)) continue;
@@ -486,8 +588,7 @@ function arithDoGenerate(w) {
     let a, b, tries = 0;
     do {
       tries++;
-      if (op === "+") { a = rand(1, zr - 1); b = rand(1, zr - a); }
-      else if (op === "-") { a = rand(1, zr); b = rand(0, a); }
+      if (op === "+" || op === "-") { [a, b] = drawPM(op); }
       else if (op === "·") { const maxF = Math.floor(Math.sqrt(zr)); a = rand(2, Math.min(maxF, 10)); b = rand(2, Math.min(Math.floor(zr / a), 10)); }
       else { b = rand(2, Math.min(10, Math.floor(Math.sqrt(zr)))); a = rand(1, Math.max(1, Math.floor(zr / b))) * b; }
       if (!ueOk(a, b, op)) continue;

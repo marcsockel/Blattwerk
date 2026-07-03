@@ -185,14 +185,17 @@ function flexDistribute(innerHtmls, opts) {
     const avail = geom().contentW * widthFrac(opts.d) - WINNER_PAD;
     perRow = Math.max(1, Math.floor((avail + gap) / (opts.itemW + gap)));
   }
+  // margin-bottom der LETZTEN Zeile am Container kompensieren — sonst hängt der
+  // Zeilenabstand als Leerraum unter dem Widget (Abstand unten > oben, z.B. Uhren).
+  const comp = mb ? `margin-bottom:-${mb}px;` : '';
   if (n < perRow) {
     // keine volle Zeile → eng linksbündig, ohne Füller
-    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:flex-start;">${items}</div>`;
+    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:flex-start;${comp}">${items}</div>`;
   }
   // Füller (echtes Item auf Höhe 0) richten die letzte Zeile an denselben Spalten aus.
   const filler  = `<div aria-hidden="true" style="flex:0 0 auto;margin:0;${sz}height:0;overflow:hidden;">${samp}</div>`;
   const fillers = n ? Array(16).fill(filler).join('') : '';
-  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:space-between;">${items}${fillers}</div>`;
+  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:space-between;${comp}">${items}${fillers}</div>`;
 }
 
 // ── Tusche-Rahmen (handgezeichnet wirkende SVG-Kontur) ──────────────
