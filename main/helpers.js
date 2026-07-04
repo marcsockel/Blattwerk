@@ -74,7 +74,7 @@ function atHtml(d) {
 
 // Ausrichtungs-Toggle (Links / Mitte / Rechts) für Text-Widgets.
 // Setzt d.align ('left' | 'center' | 'right'); im Render text-align nutzen.
-function alignToggle(id, align) {
+function alignToggle(id, align, withJustify) {
   const cur = align || 'left';
   const btn = (val, label) =>
     `<button onclick="event.stopPropagation();upd(${id},'align','${val}')"
@@ -83,7 +83,7 @@ function alignToggle(id, align) {
              font-weight:700;cursor:pointer;color:${cur===val?'#1e1e2e':'#999'};">${label}</button>`;
   return `<div class="prow"><label>Ausrichtung</label>
     <div style="display:flex;gap:4px;">
-      ${btn('left','Links')}${btn('center','Mitte')}${btn('right','Rechts')}
+      ${btn('left','Links')}${btn('center','Mitte')}${btn('right','Rechts')}${withJustify ? btn('justify','Block') : ''}
     </div></div>`;
 }
 
@@ -325,8 +325,10 @@ function fitFrameInkSvg(svg) {
   if (W < 2 || H < 2) return;
   const wwrap = svg.closest('.wwrap');
   if (!wwrap || typeof widgets === 'undefined') return;
-  const w = widgets.find(x => x.id === +wwrap.dataset.id);
-  if (!w) return;
+  const w0 = widgets.find(x => x.id === +wwrap.dataset.id);
+  if (!w0) return;
+  // Textfluss-Fortsetzung: Tusche-Rahmen des Masters übernehmen
+  const w = typeof frameStyleSrc === 'function' ? frameStyleSrc(w0) : w0;
   const b = typeof frameBorder === 'function' ? frameBorder(w) : (w.border || '');
   if (b !== 'ink') {
     disconnectInkObserverOn(svg);
@@ -358,9 +360,18 @@ function frameInkPad() {
   return '8px';
 }
 
+/** Rahmen/Hintergrund-Quelle: Textfluss-Fortsetzungen erben ALLE Optik vom Master. */
+function frameStyleSrc(w) {
+  if (w && w.type === 'textfluss' && typeof widgets !== 'undefined') {
+    const m = widgets.find(x => x.id === w.master);
+    if (m) return m;
+  }
+  return w;
+}
+
 /** Inhalt von .winner inkl. Tusche-SVG (für Teil-Updates in sel/desel). */
 function winnerInner(w) {
   const def = typeof WIDGET_MAP !== 'undefined' ? WIDGET_MAP[w.type] : null;
   if (!def) return '';
-  return frameInkInsert(w) + def.render(w);
+  return frameInkInsert(frameStyleSrc(w)) + def.render(w);
 }

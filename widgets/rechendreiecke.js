@@ -89,7 +89,7 @@ function rdSvg(tri, active=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"rechendreiecke", label:"Rechendreiecke", desc:"Ecken & Seiten addieren", icon:"🔺", category:"mathematik" },
+  meta: { type:"rechendreiecke", group:"rechenformate", label:"Rechendreiecke", desc:"Ecken & Seiten addieren", icon:"🔺", category:"mathematik" },
 
   createData: id => {
     const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten", gross:false , aufgabenNr:0, aufgabenText:''};

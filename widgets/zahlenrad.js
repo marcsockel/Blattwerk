@@ -148,7 +148,7 @@ function zrWheelSvg(wh, d) {
 }
 
 WIDGETS.push({
-  meta: { type:'zahlenrad', label:'Zahlenrad', desc:'Rechenrad mit Innen-/Außenring', icon:'☸', category:'mathematik' },
+  meta: { type:'zahlenrad', group:'rechenformate', label:'Zahlenrad', desc:'Rechenrad mit Innen-/Außenring', icon:'☸', category:'mathematik' },
 
   createData: id => {
     const w = {

@@ -85,7 +85,7 @@ function zhSvg(house, summands, isActive=false, farbig=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"zahlenhaus", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik" },
+  meta: { type:"zahlenhaus", group:"rechenformate", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik" },
 
   createData: id => {
     const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};

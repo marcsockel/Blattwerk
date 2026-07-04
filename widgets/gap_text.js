@@ -46,7 +46,7 @@ WIDGETS.push({
 
     const fontSize = d.fontSize || 16;
     const pad = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
-    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;${fontFeatures}${pad}">${content}</div>${solutionBand}`;
+    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:2.4;text-align:${d.align||'left'};${fontFeatures}${pad}">${content}</div>${solutionBand}`;
   },
 
   renderProps: d => {
@@ -76,6 +76,7 @@ WIDGETS.push({
     return `<div class="prow"><label>Text <span style="font-weight:400;color:#aaa;font-size:10px;">([Wort] = Lücke)</span></label></div>` +
       makeRichEditorBox(d.id, 'text', d.text, font, sizeInput, fontOptions, `gapRefreshWords(${d.id})`) +
       innerPadPropsControl(d) +
+      alignToggle(d.id, d.align, true) +
       `<div class="prow">
         <label>Wort anklicken = Lücke</label>
         <div id="gap-words-${d.id}" style="margin-top:5px;line-height:2;">${wordBtns}</div>

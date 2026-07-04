@@ -32,9 +32,9 @@ WIDGETS.push({
     const maxDigits = String(Math.abs(+d.zahlenraum) || 20).length;
     const numW = maxDigits + 'ch';
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
-    // Größe: klein = bisherige Maße (Faktor 1), mittel = 1.5x, groß = 2x.
+    // Größe: klein = bisherige Maße (Faktor 1), mittel = 1.3x, groß = 1.6x.
     // ch-basierte Slots skalieren automatisch über die Schriftgröße mit.
-    const S = d.groesse === 'gross' ? 2 : d.groesse === 'mittel' ? 1.5 : 1;
+    const S = d.groesse === 'gross' ? 1.6 : d.groesse === 'mittel' ? 1.3 : 1;
     const px = v => Math.round(v * S);
     const FS = px(16);   // Schriftgröße
     const LH = px(20);   // Zeilen-/Kästchenhöhe
@@ -46,10 +46,19 @@ WIDGETS.push({
     // Fallback (aus / Antwort unbekannt) = einfaches Kästchen.
     const stellen = !!d.stellen;
     const boxW = n => n*CW + (n-1) + 3; // Außenbreite inkl. Trennstriche+Rahmen (Footprint für blaue Lösung)
-    const boxN = n => (!stellen || !n || n < 1) ? box :
-      `<span style="display:inline-flex;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;">` +
-        Array.from({length:n}, (_,i) => `<span style="width:${CW}px;height:100%;${i ? 'border-left:1px solid #999;' : ''}"></span>`).join("") +
+    // Kästchen in Original-Optik, blau gefüllt (Lösungsvorschau = Original + Inhalt)
+    const blueBox = (v, w, h = LH) =>
+      `<span style="display:inline-flex;width:${w}px;height:${h}px;align-items:center;justify-content:center;border:1.5px solid #999;border-radius:2px;background:#fff;vertical-align:middle;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+    const boxN = (n, v) => {
+      if (!stellen || !n || n < 1) return v === undefined ? box : blueBox(v, BW);
+      const s = v === undefined ? null : String(v);
+      return `<span style="display:inline-flex;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;">` +
+        Array.from({length:n}, (_,i) => {
+          const ch = s && s.length >= n - i ? esc(s[s.length - n + i]) : '';
+          return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${CW}px;height:100%;${i ? 'border-left:1px solid #999;' : ''}font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${ch}</span>`;
+        }).join("") +
       `</span>`;
+    };
     const ansDigits = v => v == null ? 0 : String(v).replace(/\D/g, "").length;
     const ansW = v => (stellen && ansDigits(v)) ? boxW(ansDigits(v)) : BW;
     const tdBase = `padding:${px(3)}px 0;font-size:${FS}px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:${LH}px;`;
@@ -202,7 +211,7 @@ WIDGETS.push({
     const renderGroup = group => {
       const rows = group.map(p => {
         if (p.raw !== undefined) {
-          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueVal(computeAns(p)??'?', BW)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
+          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueBox(computeAns(p)??'?', BW)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
           return `<tr><td colspan="5" style="${tdBase}">${esc(p.raw)}${ans}</td></tr>`;
         }
         const sqBoxInner = `<span style="display:block;width:${LH}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
@@ -210,7 +219,7 @@ WIDGETS.push({
         const sqBox = sqBoxSlot(sqBoxInner);
         if (p.isVergleich) {
           const cmpBox = `<span style="display:inline-block;width:${px(24)}px;height:${px(24)}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-          const mid = isActive ? blueVal(p.sym, px(24)) : cmpBox;
+          const mid = isActive ? blueBox(p.sym, px(24), px(24)) : cmpBox;
           return `<tr>
             <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
             <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
@@ -218,16 +227,16 @@ WIDGETS.push({
           </tr>`;
         }
         const opCell = p.isZeichen
-          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueVal(p.op, LH)) : sqBox}</td>`
+          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueBox(p.op, LH)) : sqBox}</td>`
           : `<td style="text-align:center;${tdBase}padding-left:4px;padding-right:4px;"><span style="display:inline-block;width:${px(9)}px;text-align:center;">${esc(p.op)}</span></td>`;
         const gapAns = (p.left === "_" || p.right === "_") ? computeAns(p) : null;
-        const leftContent  = (p.left === "_" && isActive) ? blueVal(gapAns??'?', ansW(gapAns)) : (p.left === "_" ? boxN(ansDigits(gapAns)) : null);
-        const rightContent = (p.right === "_" && isActive) ? blueVal(gapAns??'?', ansW(gapAns)) : (p.right === "_" ? boxN(ansDigits(gapAns)) : null);
+        const leftContent  = (p.left === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.left === "_" ? boxN(ansDigits(gapAns)) : null);
+        const rightContent = (p.right === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.right === "_" ? boxN(ansDigits(gapAns)) : null);
         if (p.result !== null) {
           return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result, resW)}</td></tr>`;
         } else {
           const ans = computeAns(p);
-          const ansInner = isActive && ans ? blueVal(ans, ansW(ans)) : boxN(ansDigits(ans));
+          const ansInner = isActive && ans ? boxN(ansDigits(ans), ans) : boxN(ansDigits(ans));
           const ansSlot = (stellen && dAns)
             ? `<span style="display:inline-block;min-width:${boxW(dAns)}px;text-align:right;vertical-align:middle;">${ansInner}</span>`
             : ansInner;

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blattwerk – Hilfe</title>
+<style>
+  :root{
+    --bg:#f0eee8; --paper:#ffffff; --ink:#2b2b33; --muted:#6c7086;
+    --dark:#1e1e2e; --line:#e0ddd6;
+    --blue:#4a6fc4; --blue-soft:#e8f0ff;
+    --c-allg:#4a6fc4; --c-deu:#c94f6d; --c-mat:#4e9e57;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:'Nunito','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);display:flex;min-height:100vh;}
+
+  /* ── Navigation ── */
+  #nav{width:280px;flex-shrink:0;background:var(--dark);color:#cdd6f4;height:100vh;position:sticky;top:0;
+       display:flex;flex-direction:column;}
+  #nav .logo{font-weight:900;font-size:22px;padding:18px 20px 10px;color:#fff;letter-spacing:.5px;}
+  #nav .logo span{color:#89b4fa;}
+  #nav .logo small{display:block;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  #nav .search{padding:6px 14px 10px;}
+  #nav .search input{width:100%;padding:7px 10px;border-radius:6px;border:1.5px solid #313244;background:#181825;
+       color:#cdd6f4;font-family:inherit;font-size:13px;outline:none;}
+  #nav .search input:focus{border-color:#89b4fa;}
+  #navlist{overflow-y:auto;flex:1;padding:0 8px 24px;}
+  #navlist h4{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);
+       margin:16px 8px 5px;font-weight:800;}
+  #navlist a{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;color:#cdd6f4;
+       text-decoration:none;font-size:13px;line-height:1.35;}
+  #navlist a:hover{background:#313244;}
+  #navlist a.active{background:#89b4fa;color:#1e1e2e;font-weight:800;}
+  #navlist a .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  #navlist a.hidden{display:none;}
+  #navlist h4.hidden{display:none;}
+
+  /* ── Inhalt ── */
+  #main{flex:1;padding:36px 48px 80px;min-width:0;}
+  article{display:none;max-width:760px;margin:0 auto;background:var(--paper);border-radius:12px;
+       padding:34px 42px 40px;box-shadow:0 2px 14px rgba(0,0,0,.07);}
+  article.active{display:block;animation:fadein .18s ease;}
+  @keyframes fadein{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+
+  article h1{font-size:26px;font-weight:900;margin:0 0 4px;display:flex;align-items:center;gap:12px;}
+  article h1 .wicon{font-size:24px;}
+  article h2{font-size:17px;font-weight:800;margin:26px 0 8px;color:var(--ink);}
+  article p{font-size:14.5px;line-height:1.7;margin:10px 0;}
+  article li{font-size:14.5px;line-height:1.65;margin:4px 0;}
+  article ul{padding-left:22px;margin:8px 0;}
+  .cattag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+       color:#fff;border-radius:20px;padding:3px 11px;margin-bottom:16px;}
+  .cattag.allgemein{background:var(--c-allg);} .cattag.deutsch{background:var(--c-deu);} .cattag.mathematik{background:var(--c-mat);}
+  .tip{background:var(--blue-soft);border-left:4px solid var(--blue);border-radius:0 8px 8px 0;
+       padding:10px 16px;font-size:13.5px;line-height:1.6;margin:16px 0;}
+  .tip b{color:var(--blue);}
+  kbd{background:#f0eee8;border:1px solid #d5d2ca;border-bottom-width:2px;border-radius:4px;
+       padding:1px 6px;font-family:'DM Mono',monospace;font-size:12px;}
+  code{background:#f0eee8;border-radius:4px;padding:1px 5px;font-family:'DM Mono',monospace;font-size:13px;}
+  .pnav{display:flex;justify-content:space-between;max-width:760px;margin:18px auto 0;gap:12px;}
+  .pnav a{flex:1;background:var(--paper);border-radius:10px;padding:12px 18px;text-decoration:none;color:var(--ink);
+       font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.06);}
+  .pnav a:hover{box-shadow:0 2px 10px rgba(0,0,0,.12);}
+  .pnav a small{display:block;color:var(--muted);font-size:11px;margin-bottom:2px;}
+  .pnav a.next{text-align:right;}
+
+  @media (max-width:820px){
+    body{flex-direction:column;}
+    #nav{width:100%;height:auto;position:static;max-height:45vh;}
+    #main{padding:20px 14px 60px;}
+    article{padding:24px 20px 30px;}
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="logo">Blatt<span>werk</span><small>Hilfe &amp; Anleitung</small></div>
+  <div class="search"><input id="q" type="text" placeholder="🔍 Thema suchen…" oninput="filterNav(this.value)"></div>
+  <div id="navlist"></div>
+</nav>
+
+<main id="main">
+
+<!-- ══════════ EINFÜHRUNG ══════════ -->
+
+<article id="willkommen" data-group="Einführung" data-title="Was ist Blattwerk?">
+  <h1>Was ist Blattwerk?</h1>
+  <p>Blattwerk ist eine Web-App zum Erstellen von Arbeitsblättern für die Grundschule. Sie läuft komplett im
+     Browser – ohne Installation, ohne Anmeldung, ohne Internetzwang nach dem ersten Laden. Alles, was du baust,
+     bleibt auf deinem Gerät.</p>
+  <p>Ein Arbeitsblatt entsteht aus <b>Widgets</b>: fertigen Bausteinen wie Überschrift, Rechenaufgaben,
+     Lückentext, Uhr oder Zahlenmauer. Du wählst Bausteine aus der linken Leiste, ordnest sie auf A4-Seiten an
+     und stellst rechts ihre Eigenschaften ein. Viele Mathe-Widgets erzeugen ihre Aufgaben selbst – ein Klick auf
+     <b>Würfeln 🎲</b> genügt für einen frischen Aufgabensatz.</p>
+  <p>Am Ende druckst du das Blatt direkt aus oder speicherst es als PDF – seitengenau im A4-Format, wahlweise
+     hoch oder quer.</p>
+  <div class="tip"><b>Kurz gesagt:</b> Bausteine auswählen → anordnen → Eigenschaften einstellen → drucken. Mehr
+     musst du nicht wissen, um loszulegen. Der Rest dieser Hilfe erklärt die Details.</div>
+</article>
+
+<article id="prinzipien" data-group="Einführung" data-title="Grundprinzipien">
+  <h1>Grundprinzipien</h1>
+  <h2>Alles ist ein Widget</h2>
+  <p>Jedes Element auf dem Blatt – vom Titel bis zur Rechentabelle – ist ein Widget. Widgets stapeln sich von
+     oben nach unten auf der Seite. Wird eine Seite zu voll, wandert der Rest automatisch auf die nächste Seite;
+     beim Text-Widget kann sogar mitten im Absatz umbrochen werden, wenn dort die Option
+     <b>„Über Seiten fließen"</b> eingeschaltet ist.</p>
+  <h2>Zwei Arten von Seiten</h2>
+  <p>Es lohnt sich, den Unterschied zu kennen: Eine <b>Überlauf-Seite</b> entsteht automatisch, sobald der
+     Inhalt nicht mehr auf die Seite passt – und verschwindet genauso automatisch wieder, wenn du Inhalt kürzt
+     oder löschst. Eine mit <b>＋ Neue Seite</b> eingefügte Seite ist dagegen ein fester Umbruch: Sie bleibt an
+     ihrer Stelle, egal wie viel Platz davor frei ist. Für gezielte Blattaufteilung (z. B. „Seite 2 beginnt mit
+     dem Lesetext") nimmst du also „Neue Seite", den Rest erledigt Blattwerk selbst.</p>
+  <h2>Seitenübersicht</h2>
+  <p>Der <b>⊞</b>-Knopf im grauen Bereich neben den Seiten öffnet die <b>Seitenübersicht</b>: alle Seiten als
+     Miniaturen. Ein Klick auf eine Miniatur springt direkt zu dieser Seite, und per Drag &amp; Drop änderst du
+     die Reihenfolge ganzer Seiten.</p>
+  <p>Beim Verschieben zeigt sich der Unterschied der Seitenarten: Seiten, die durch automatischen Überlauf
+     zusammenhängen (erkennbar am ▶-Zeichen für „Fortsetzung"), bilden eine Einheit und werden immer gemeinsam
+     verschoben. Fest getrennte Einzelseiten verschiebst du dagegen einzeln.</p>
+  <h2>Auswählen und Einstellen</h2>
+  <p>Ein Klick auf ein Widget wählt es aus. Rechts im Panel <b>Eigenschaften</b> erscheinen dann alle Optionen –
+     jede Änderung ist sofort auf dem Blatt sichtbar. Ein Klick neben die Seite hebt die Auswahl wieder auf.</p>
+  <h2>Würfeln statt Tippen</h2>
+  <p>Widgets mit Zufallsaufgaben (Rechenaufgaben, Zahlenmauern, Uhren u. v. m.) haben einen
+     <b>Würfeln&nbsp;🎲</b>-Knopf: Er erzeugt neue Aufgaben nach deinen Einstellungen (Zahlenraum,
+     Schwierigkeit, Anzahl …). Bei vielen Widgets kannst du Aufgaben zusätzlich von Hand eintragen oder
+     nachbearbeiten.</p>
+  <h2>Lösungen</h2>
+  <p>Aufgaben-Widgets kennen ihre Lösungen. Solange ein Widget ausgewählt ist, werden sie <b>blau</b> auf dem
+     Blatt angezeigt – so prüfst du beim Erstellen schnell, ob alles passt. Gedruckt werden Lösungen nur, wenn du
+     es willst: über <b>⚙ Optionen → Lösung drucken</b> entsteht ein eigener Lösungssatz.</p>
+  <h2>Nichts geht verloren</h2>
+  <p>Blattwerk sichert deinen Entwurf automatisch im Browser. Schließt du das Fenster versehentlich, bietet dir
+     Blattwerk beim nächsten Start an, den Entwurf wiederherzustellen. Dauerhaft speicherst du dein Blatt als
+     <code>.blatt</code>-Datei (siehe <a href="#speichern">Speichern &amp; Öffnen</a>).</p>
+  <div class="tip"><b>Tipp:</b> <kbd>Strg</kbd>+<kbd>Z</kbd> macht jeden Schritt rückgängig,
+     <kbd>Strg</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> stellt ihn wieder her.</div>
+</article>
+
+<article id="standardoptionen" data-group="Einführung" data-title="Optionen, die jedes Widget hat">
+  <h1>Optionen, die (fast) jedes Widget hat</h1>
+  <p>Unter den widget-eigenen Einstellungen findest du im Eigenschaften-Panel drei aufklappbare Bereiche, die für
+     fast alle Widgets gleich funktionieren:</p>
+  <h2>Aufgabentext</h2>
+  <p>Eine Aufgabennummer und ein Anweisungstext, die über dem Widget erscheinen – z. B.
+     <i>„3. Rechne im Kopf."</i> So bekommt jede Aufgabe auf dem Blatt eine einheitliche Überschrift, ohne dass du
+     extra Text-Widgets brauchst.</p>
+  <h2>Rahmen &amp; Schatten</h2>
+  <p>Rahmen um das Widget (dünn, mittel, dick oder gestrichelt), Ecken rund oder eckig, ein dezenter
+     Schlagschatten und eine Hintergrundfarbe. Damit hebst du einzelne Aufgaben optisch hervor.</p>
+  <h2>Layout (Breite)</h2>
+  <p>Jedes Widget kann die volle Blattbreite einnehmen oder nur einen Teil: ¼, ⅓, ½, ⅔ oder ¾. Widgets mit
+     Teilbreite rücken automatisch nebeneinander in eine Zeile – zwei halbe Widgets ergeben also eine
+     zweispaltige Zeile. Viele Widgets passen ihre Inhalte (z. B. Spaltenzahl) an die schmalere Breite an.</p>
+</article>
+
+<!-- ══════════ DIE APP ══════════ -->
+
+<article id="oberflaeche" data-group="Aufbau der App" data-title="Die Oberfläche">
+  <h1>Die Oberfläche</h1>
+  <p>Blattwerk besteht aus vier Bereichen:</p>
+  <ul>
+    <li><b>Werkzeugleiste (oben):</b> Datei-Aktionen, Seiten, Rückgängig, Zoom, Drucken und Optionen –
+        im Detail erklärt unter <a href="#toolbar">Werkzeugleiste</a>.</li>
+    <li><b>Widget-Leiste (links):</b> alle Bausteine, sortiert nach den Kategorien
+        <b style="color:var(--c-allg)">Allgemein</b>, <b style="color:var(--c-deu)">Deutsch</b> und
+        <b style="color:var(--c-mat)">Mathematik</b>. Oben ein Suchfeld, darunter Kategorie-Reiter. Verwandte
+        Widgets sind in aufklappbaren Gruppen gebündelt (z. B. „Schriftl. Rechnen", „Anfangsunterricht",
+        „Diagramme", „Zeit"). Ein Klick auf einen Baustein fügt ihn unten auf dem Blatt ein.</li>
+    <li><b>Arbeitsfläche (Mitte):</b> deine A4-Seiten, so wie sie später gedruckt werden. Hier wählst du Widgets
+        aus, verschiebst sie und bearbeitest Texte direkt.</li>
+    <li><b>Eigenschaften (rechts):</b> die Einstellungen des gerade ausgewählten Widgets.</li>
+  </ul>
+  <div class="tip"><b>Tipp:</b> Mit <kbd>Strg</kbd>+<kbd>Mausrad</kbd> (oder den −/+-Knöpfen oben) zoomst du die
+     Ansicht – die Druckgröße ändert sich dadurch nicht.</div>
+</article>
+
+<article id="toolbar" data-group="Aufbau der App" data-title="Werkzeugleiste">
+  <h1>Werkzeugleiste</h1>
+  <p>Die dunkle Leiste am oberen Rand, von links nach rechts:</p>
+  <ul>
+    <li><b>📂 Öffnen / 💾 Speichern:</b> lädt bzw. sichert dein Blatt als <code>.blatt</code>-Datei. Das Feld
+        daneben bestimmt den Dateinamen.</li>
+    <li><b>📄 Beispiel:</b> öffnet fertige Beispiel-Blätter (z. B. „Elmar der Elefant", „Uhr Detektivaufgabe") –
+        ideal zum Ausprobieren und als Vorlage.</li>
+    <li><b>🗑 Leeren:</b> entfernt alle Widgets (mit Sicherheitsabfrage).</li>
+    <li><b>＋ Neue Seite / ⧉ Seite duplizieren:</b> fügt einen manuellen Seitenumbruch an bzw. kopiert die
+        aktuelle Seite samt Inhalt.</li>
+    <li><b>↩ Rückgängig / ↪ Vorwärts:</b> Schrittverlauf, auch per <kbd>Strg</kbd>+<kbd>Z</kbd> /
+        <kbd>Strg</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>.</li>
+    <li><b>− 100% +:</b> Ansichts-Zoom (nur Bildschirm, nicht Druck).</li>
+    <li><b>⬇ PDF / 🖨 Drucken:</b> beides führt in den Druckdialog des Browsers – dort wählst du „Als PDF
+        sichern" oder deinen Drucker. Siehe <a href="#drucken">Drucken &amp; PDF</a>.</li>
+    <li><b>⚙ Optionen:</b> Ausrichtung (Hoch-/Querformat), Seitenzahlen, beidseitiger Druck und
+        <b>Lösung drucken</b>.</li>
+    <li><b>Ω Sonderzeichen:</b> fügt Sonderzeichen (Silbenbögen, Pfeile, Kästchen …) an der Cursorposition des
+        zuletzt fokussierten Textfelds ein – erst ins Textfeld klicken, dann Zeichen wählen.</li>
+  </ul>
+</article>
+
+<article id="anordnen" data-group="Aufbau der App" data-title="Widgets anordnen">
+  <h1>Widgets anordnen</h1>
+  <p>Fährst du mit der Maus über ein Widget, erscheinen oben kleine Knöpfe und links der Anfasser <code>⠿</code>:</p>
+  <ul>
+    <li><b>↑ / ↓ (bzw. ← / →):</b> verschiebt das Widget um eine Position.</li>
+    <li><b>⧉ Duplizieren:</b> erstellt eine Kopie direkt darunter.</li>
+    <li><b>✕ Löschen:</b> entfernt das Widget.</li>
+    <li><b>⠿ Ziehen:</b> per Drag &amp; Drop an eine beliebige Stelle ziehen – auch auf andere Seiten. Bei
+        Widgets mit Teilbreite entscheidet die Ablageseite (linke/rechte Hälfte), ob es davor oder daneben
+        landet.</li>
+  </ul>
+  <h2>Nebeneinander statt untereinander</h2>
+  <p>Stelle im Bereich <b>Layout</b> eine Teilbreite ein (z. B. ½) – Widgets gleicher Zeile erscheinen dann
+     nebeneinander. So kombinierst du etwa ein Bild links mit Schreiblinien rechts.</p>
+  <h2>Seiten und Umbrüche</h2>
+  <p>Seiten füllen sich automatisch: Was nicht mehr passt, rutscht auf eine automatisch erzeugte Überlauf-Seite
+     – und rutscht wieder zurück, wenn Platz frei wird. Mit <b>＋ Neue Seite</b> erzwingst du dagegen einen
+     festen Umbruch an der aktuellen Stelle. Text-Widgets können bei Überlänge sogar mitten im Absatz über die
+     Seitengrenze weiterfließen – wenn dort die Option <b>„Über Seiten fließen"</b> eingeschaltet ist.</p>
+  <h2>Profi-Werkzeuge</h2>
+  <p>Für komplexere Layouts gibt es die <a href="#w-group">Gruppe</a> (gemeinsamer Rahmen um mehrere Widgets),
+     den <a href="#w-floatbox">Schwebenden Rahmen</a> (frei auf der Seite positionierbar) und das
+     <a href="#w-multitool">Multitool</a> (frei belegbares Raster).</p>
+</article>
+
+<article id="speichern" data-group="Aufbau der App" data-title="Speichern &amp; Öffnen">
+  <h1>Speichern &amp; Öffnen</h1>
+  <h2>Automatischer Entwurf</h2>
+  <p>Während du arbeitest, sichert Blattwerk deinen Stand automatisch im Browser (samt Bildern). Nach einem
+     versehentlichen Schließen oder Neuladen erscheint beim Start ein Banner, mit dem du den Entwurf
+     wiederherstellen kannst. Bei ungespeicherten Änderungen warnt der Browser zusätzlich vor dem Schließen.</p>
+  <h2>Die .blatt-Datei</h2>
+  <p><b>💾 Speichern</b> erzeugt eine <code>.blatt</code>-Datei mit allem, was zum Blatt gehört – Widgets,
+     Einstellungen, Bilder und Ausrichtung. Diese Datei kannst du ablegen, weitergeben und jederzeit über
+     <b>📂 Öffnen</b> wieder laden. Der Dateiname kommt aus dem Namensfeld in der Werkzeugleiste.</p>
+  <div class="tip"><b>Gut zu wissen:</b> Der automatische Entwurf ist nur ein Sicherheitsnetz. Für alles, was du
+     behalten willst, speichere eine <code>.blatt</code>-Datei.</div>
+</article>
+
+<article id="drucken" data-group="Aufbau der App" data-title="Drucken &amp; PDF">
+  <h1>Drucken &amp; PDF</h1>
+  <p>Gedruckt wird über den Druckdialog des Browsers – jede Bildschirmseite entspricht dabei exakt einem
+     A4-Blatt. Für ein <b>PDF</b> wählst du im Druckdialog einfach „Als PDF sichern": Das Ergebnis ist ein
+     gestochen scharfes Vektor-PDF.</p>
+  <h2>Druckoptionen (⚙)</h2>
+  <ul>
+    <li><b>Ausrichtung:</b> Hoch- oder Querformat – das ganze Blatt wird umgestellt, die Widgets passen sich
+        an.</li>
+    <li><b>Seitenzahlen anzeigen:</b> nummeriert die Blätter im Druck.</li>
+    <li><b>Beidseitiger Druck:</b> bereitet die Seitenränder für Duplexdruck vor.</li>
+    <li><b>Lösung drucken (Beta):</b> druckt das Blatt mit allen Lösungen in Blau – als Kontrollblatt für
+        dich oder zur Selbstkontrolle der Kinder.</li>
+  </ul>
+  <div class="tip"><b>Tipp:</b> Stelle im Druckdialog die Ränder auf „Keine"/„Standard" und deaktiviere
+     „Kopf- und Fußzeilen", falls der Browser welche anbietet – Blattwerk bringt sein Seitenlayout selbst mit.</div>
+</article>
+
+<!-- ══════════ WIDGETS: ALLGEMEIN ══════════ -->
+
+<article id="w-heading" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Überschrift">
+  <h1><span class="wicon">H1</span>Überschrift</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Der große Titel des Arbeitsblatts. Der Text wird direkt auf dem Blatt getippt; einstellbar sind Schriftart
+     und Ausrichtung (links, mittig, rechts).</p>
+</article>
+
+<article id="w-subheading" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Zwischentitel">
+  <h1><span class="wicon">H2</span>Zwischentitel</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Ein kleinerer Abschnittstitel, um das Blatt in Bereiche zu gliedern – gleiche Bedienung wie die
+     Überschrift, nur eine Stufe kleiner.</p>
+</article>
+
+<article id="w-text" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Text">
+  <h1><span class="wicon">T</span>Text</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Formatierter Fließtext – für Lesetexte, Erklärungen oder Geschichten. Der Text wird direkt auf dem Blatt
+     geschrieben und formatiert; Schriftart (u. a. Grundschul-Schriften), Größe und Ausrichtung stellst du
+     rechts ein.</p>
+  <p>Mit der Option <b>„Über Seiten fließen"</b> teilt Blattwerk zu lange Texte automatisch und lässt sie auf
+     der nächsten Seite weiterfließen – die Fortsetzung gehört weiter zum selben Text und wird mit ihm
+     bearbeitet. Ist die Option aus, bleibt der Text ein Block und wandert als Ganzes auf die nächste Seite.
+     Zusätzlich gibt es eine Zeilenbeschriftung (Zeilennummern alle 5 Zeilen) für Lesetexte.</p>
+</article>
+
+<article id="w-instruction" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Aufgabentext">
+  <h1><span class="wicon">📋</span>Aufgabentext</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Eine hervorgehobene Aufgabenstellung mit farbiger Markierung am linken Rand – z. B. <i>„Lies den Text und
+     beantworte die Fragen."</i> Gut als Anweisung über mehreren zusammengehörigen Widgets.</p>
+  <div class="tip"><b>Hinweis:</b> Für eine nummerierte Anweisung direkt über <i>einem</i> Widget reicht meist
+     dessen eingebauter <a href="#standardoptionen">Aufgabentext</a> im Eigenschaften-Panel.</div>
+</article>
+
+<article id="w-infobox" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Infobox">
+  <h1><span class="wicon">▭</span>Infobox</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Ein gerahmtes Textfeld für Merksätze, Hinweise oder Regeln – optional mit einem Symbol links oder rechts
+     neben dem Text.</p>
+</article>
+
+<article id="w-namedate" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Name / Datum">
+  <h1><span class="wicon">✏️</span>Name / Datum</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Die klassische Kopfzeile mit Linien für Name und Datum, optional auch Klasse. Jedes Feld lässt sich
+     einzeln ein- und ausschalten.</p>
+</article>
+
+<article id="w-checkbox" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Checkliste">
+  <h1><span class="wicon">☑</span>Checkliste</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Eine Ankreuzaufgabe: jede Zeile bekommt ein leeres Kästchen davor. Die Einträge tippst du in die Liste im
+     Eigenschaften-Panel; Schriftart und -größe sind einstellbar.</p>
+</article>
+
+<article id="w-multiplechoice" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Multiple Choice">
+  <h1><span class="wicon">☑</span>Multiple Choice</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Fragen mit Antwortmöglichkeiten zum Ankreuzen. Die Eingabe ist einfach: erste Zeile die Frage, darunter
+     die Antworten, eine Leerzeile trennt die nächste Frage. Optional werden die Antworten gemischt und die
+     Fragen in mehreren Spalten angeordnet.</p>
+</article>
+
+<article id="w-numbering" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Nummerierung">
+  <h1><span class="wicon">1.</span>Nummerierung</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Eine geordnete Liste (1., 2., 3. …) – etwa für Arbeitsschritte oder Aufgabenfolgen. Einträge, Schriftart
+     und Größe stellst du im Eigenschaften-Panel ein.</p>
+</article>
+
+<article id="w-table" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Tabelle">
+  <h1><span class="wicon">⊞</span>Tabelle</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Eine frei beschreibbare Tabelle: Zeilen- und Spaltenzahl wählbar, optional mit Kopfzeile und Kopfspalte,
+     wahlweise über die volle Blattbreite. Die Zellen füllst du direkt auf dem Blatt aus – oder lässt sie leer,
+     damit die Kinder sie ausfüllen.</p>
+</article>
+
+<article id="w-image" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Bild">
+  <h1><span class="wicon">🖼</span>Bild</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Ein Bild auf dem Blatt: eigene Bilder einfach per Drag &amp; Drop auf den Platzhalter ziehen. Höhe,
+     Ausrichtung und eine Bildunterschrift sind einstellbar. Ohne Bild bleibt ein Platzhalter-Rahmen – auch
+     praktisch als „Male hier"-Fläche.</p>
+</article>
+
+<article id="w-divider" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Trennlinie">
+  <h1><span class="wicon">—</span>Trennlinie</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Eine dezente horizontale Linie zum optischen Trennen von Abschnitten. Keine Optionen – einfügen, fertig.</p>
+</article>
+
+<article id="w-platzhalter" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Platzhalter">
+  <h1><span class="wicon">▢</span>Platzhalter</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Unsichtbarer Leerraum mit einstellbarer Höhe – um Abstand zwischen Widgets zu schaffen oder Platz für
+     handschriftliche Antworten zu lassen.</p>
+</article>
+
+<article id="w-stop" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Stopp!">
+  <h1><span class="wicon">🛑</span>Stopp!</h1>
+  <span class="cattag allgemein">Allgemein</span>
+  <p>Ein Stopp-Schild als deutliches Ende-Signal – z. B. „bis hierher arbeiten". Einfügen, fertig.</p>
+</article>
+
+<article id="w-group" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Gruppe (Profi)">
+  <h1><span class="wicon">🗂</span>Gruppe</h1>
+  <span class="cattag allgemein">Allgemein · Profi-Tools</span>
+  <p>Ein Rahmen, der mehrere Widgets zu einer Aufgabe zusammenfasst – mit gemeinsamem Rahmen, Hintergrund und
+     Aufgabentext. Widgets ziehst du einfach in den Rahmen hinein oder wieder heraus; innen verhalten sie sich
+     genau wie außerhalb (auch nebeneinander per Teilbreite).</p>
+  <p>Über die Gruppen-Knöpfe verschiebst du die ganze Gruppe als Block, duplizierst sie samt Inhalt oder löst
+     sie auf (die enthaltenen Widgets bleiben erhalten). Die Option „Bündig" entfernt den Innenabstand. Zu
+     beachten: Eine Gruppe wird nie über zwei Seiten geteilt und Gruppen lassen sich nicht verschachteln.</p>
+</article>
+
+<article id="w-floatbox" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Schwebender Rahmen (Profi)">
+  <h1><span class="wicon">🗗</span>Schwebender Rahmen</h1>
+  <span class="cattag allgemein">Allgemein · Profi-Tools</span>
+  <p>Eine frei positionierbare Box, die <i>nicht</i> im normalen Fluss liegt: Du ziehst sie mit der Maus an eine
+     beliebige Stelle der Seite und änderst ihre Größe am Eck-Anfasser. In den Rahmen setzt du genau ein
+     beliebiges Widget ein – z. B. eine kleine Uhr in der Ecke oder eine Infobox am Rand.</p>
+  <p>Zu beachten: Der Rahmen ist an seine Seite gebunden – verschieben sich Widgets durch automatische
+     Seitenumbrüche, wandert er nicht mit.</p>
+</article>
+
+<article id="w-multitool" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Multitool (Beta, Profi)">
+  <h1><span class="wicon">🧩</span>Multitool <small style="font-size:13px;color:var(--muted)">(Beta)</small></h1>
+  <span class="cattag allgemein">Allgemein · Profi-Tools</span>
+  <p>Ein frei belegbares Raster: Du wählst die Zeilen- und Spaltenzahl, dann weist du jeder Zelle über die
+     Mini-Karte im Eigenschaften-Panel einen Typ zu – leer, Schreiblinien, Text, Checkliste, Bild oder
+     Kästchengitter. Damit baust du kompakte Kombi-Aufgaben, z. B. „Bild links, daneben Linien, darunter
+     Kästchen".</p>
+</article>
+
+<!-- ══════════ WIDGETS: DEUTSCH ══════════ -->
+
+<article id="w-gaptext" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Lückentext">
+  <h1><span class="wicon">__</span>Lückentext</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Aus einem normalen Text wird ein Lückentext – am einfachsten per Klick: Im Eigenschaften-Panel erscheint
+     der Text Wort für Wort, und jedes angeklickte Wort wird zur Lücke (nochmal klicken macht es wieder
+     sichtbar). Alternativ setzt du Wörter direkt im Text in eckige Klammern:
+     <code>Der [Elefant] heißt Elmar.</code> Die Lösungswörter lassen sich als Wortspeicher einblenden;
+     Schriftart (inkl. Grundschul-Schriften) und Größe sind wählbar.</p>
+</article>
+
+<article id="w-linebox" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Schreiblinien">
+  <h1><span class="wicon">≡</span>Schreiblinien</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Leere Antwortzeilen zum Schreiben. Einstellbar sind die Zeilenanzahl, die Lineatur (einfache Linien oder
+     Grundschul-Lineatur mit Häuschenzeilen, auch in groß) und ein optionaler Vorgabetext, der auf den Linien
+     steht.</p>
+</article>
+
+<article id="w-silbenwort" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Silbenwort">
+  <h1><span class="wicon">⌢</span>Silbenwort</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Einzelne Wörter mit Silbenbögen darunter – zum silbenweisen Lesen und Mitschwingen. Du tippst nur die
+     Wörter, die Silbentrennung passiert größtenteils automatisch; die Bögen zeichnet Blattwerk. Da der
+     Algorithmus einzelne Wörter falsch trennt (häufige Fälle sind schon eingebaut), kannst du eigene
+     Trenn-Ausnahmen ergänzen.</p>
+</article>
+
+<article id="w-silbentext" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Silbentext">
+  <h1><span class="wicon">Si</span>Silbentext</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Ein Fließtext, dessen Silben abwechselnd zweifarbig eingefärbt werden (bekannt aus Silben-Lesebüchern).
+     Du schreibst ganz normalen Text – die Silbentrennung und Färbung passieren größtenteils automatisch.
+     Falsch getrennte Wörter korrigierst du über eigene Trenn-Ausnahmen; häufige Fälle sind schon eingebaut.</p>
+</article>
+
+<article id="w-scramble" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Buchstabensalat">
+  <h1><span class="wicon">🔀</span>Buchstabensalat</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Wörter mit durcheinandergewürfelten Buchstaben, die die Kinder entwirren sollen. Du gibst einfach eine
+     kommagetrennte Wortliste ein – gemischt wird automatisch.</p>
+</article>
+
+<article id="w-wordsearch" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Suchsel">
+  <h1><span class="wicon">🔠</span>Suchsel</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Ein Buchstabengitter mit versteckten Wörtern. Du gibst die Wortliste ein und bestimmst Gittergröße und
+     erlaubte Richtungen (waagerecht, senkrecht, diagonal, rückwärts) – das Gitter wird automatisch erzeugt.
+     Im Lösungsmodus sind die versteckten Wörter markiert.</p>
+</article>
+
+<article id="w-crossword" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Kreuzworträtsel">
+  <h1><span class="wicon">✚</span>Kreuzworträtsel</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Ein automatisch generiertes Kreuzworträtsel. Jede Zeile der Eingabe ist ein Paar aus Lösungswort und
+     Hinweis: <code>SONNE=Scheint am Tag</code>. Blattwerk verschränkt die Wörter selbstständig zu einem
+     Gitter und nummeriert die Fragen.</p>
+</article>
+
+<article id="w-matching" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Zuordnung">
+  <h1><span class="wicon">↔</span>Zuordnung</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Paare verbinden: links und rechts stehen zusammengehörige Begriffe (z. B. <i>Hund – bellen</i>), die rechte
+     Spalte wird gemischt. Die Kinder verbinden mit Linien. Layout (untereinander/nebeneinander), Abstand und
+     Schrift sind einstellbar.</p>
+</article>
+
+<article id="w-bildwort" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Bild-Wort-Zuordnung">
+  <h1><span class="wicon">🖼</span>Bild-Wort-Zuordnung</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Zu jedem Bild stehen mehrere Wörter zur Auswahl – das richtige wird angekreuzt oder verbunden. Je Aufgabe
+     legst du Bild, Lösungswort und Ablenker-Wörter fest; die Reihenfolge wird gemischt und die Bildgröße ist
+     einstellbar.</p>
+</article>
+
+<article id="w-aeue" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="äu / ä">
+  <h1><span class="wicon">ä</span>äu / ä</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Übungswörter, in denen <b>äu</b> bzw. <b>ä</b> eingesetzt werden muss. Du wählst die Modi (äu, ä) und die
+     Anzahl – die Wörter kommen aus einem eingebauten Wortschatz und lassen sich neu <b>würfeln 🎲</b> oder von
+     Hand anpassen.</p>
+</article>
+
+<article id="w-auslaut" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Auslautverhärtung">
+  <h1><span class="wicon">✏</span>Auslautverhärtung</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Wörter, bei denen der richtige Auslaut erkannt werden muss: <b>d/t</b>, <b>b/p</b> oder <b>g/k</b>
+     (einzeln oder kombiniert wählbar). Optional wird die Verlängerungsform als Hilfe mit angezeigt. Wortauswahl
+     per <b>Würfeln 🎲</b> aus dem eingebauten Wortschatz, Anzahl und Schrift einstellbar.</p>
+</article>
+
+<article id="w-anlaut" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Anlautbild">
+  <h1><span class="wicon">🔤</span>Anlautbild</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Für den Schriftspracherwerb: Zu jedem Bild stehen mehrere Buchstaben zur Auswahl – der richtige Anlaut
+     wird angekreuzt. Die Bilder kommen aus dem eingebauten Anlautbild-Satz, Buchstabenauswahl und Groß-/
+     Kleinschreibung sind einstellbar.</p>
+</article>
+
+<article id="w-anlautschreiben" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Anlaut-Schreiben">
+  <h1><span class="wicon">🔤✏</span>Anlaut-Schreiben</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Anlautbild plus Schreiblinie: Die Kinder schreiben den Anfangsbuchstaben zum Bild selbst. Bildauswahl,
+     Anzahl und Lineatur sind einstellbar.</p>
+</article>
+
+<article id="w-anlautzuordnung" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Anlaut-Zuordnung">
+  <h1><span class="wicon">🔤↔</span>Anlaut-Zuordnung</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Bilder und Wörter werden einander zugeordnet und anschließend geschrieben – die Kombination aus
+     Verbinden und Abschreiben für den Anfangsunterricht.</p>
+</article>
+
+<article id="w-bildwort2" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Bild-Wort-Zuordnung 2">
+  <h1><span class="wicon">🖼↔</span>Bild-Wort-Zuordnung 2</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Die Anfangsunterricht-Variante der Bild-Wort-Zuordnung: Anlautbilder aus dem eingebauten Satz werden mit
+     den passenden Wörtern verbunden.</p>
+</article>
+
+<article id="w-buchstabensalat2" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Buchstabensalat 2">
+  <h1><span class="wicon">🔀✏</span>Buchstabensalat 2</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Die Buchstaben eines Wortes liegen verstreut in einer Fläche, daneben das passende Bild und eine
+     Schreiblinie: Buchstaben ordnen und das Wort schreiben.</p>
+</article>
+
+<article id="w-geheimschrift" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Geheimschrift">
+  <h1><span class="wicon">🔐</span>Geheimschrift</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Ein Wort wird als Folge von Anlautbildern „verschlüsselt": Die Kinder erkennen zu jedem Bild den
+     Anfangsbuchstaben und schreiben ihn ins Kästchen darunter – Buchstabe für Buchstabe erscheint das
+     Lösungswort.</p>
+</article>
+
+<article id="w-wortschreiben" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Wort-Schreiben">
+  <h1><span class="wicon">🔤✏</span>Wort-Schreiben</h1>
+  <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
+  <p>Bild plus Schreiblinie für das ganze Wort: Die Kinder benennen das Bild und schreiben das Wort selbst.
+     Bildauswahl, Anzahl und Lineatur sind einstellbar.</p>
+</article>
+
+<!-- ══════════ WIDGETS: MATHEMATIK ══════════ -->
+
+<article id="w-arithmetic" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Rechenaufgaben">
+  <h1><span class="wicon">➕</span>Rechenaufgaben</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Das Arbeitspferd für Kopfrechen-Päckchen: Plus, Minus, Mal, Geteilt – einzeln oder gemischt. Du stellst
+     Zahlenraum, Zehnerübergang (ohne / gemischt / nur mit), Aufgabenformat (Ergebnis frei oder Lückenaufgabe)
+     sowie Anzahl und Spalten ein und lässt <b>würfeln 🎲</b>. Aufgaben lassen sich auch von Hand eintippen oder
+     einzeln nachbearbeiten; Lösungen erscheinen blau, solange das Widget ausgewählt ist.</p>
+</article>
+
+<article id="w-schriftlich" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Schriftliches Rechnen (+ − × ÷)">
+  <h1><span class="wicon">⊞</span>Schriftliches Rechnen (+ − × ÷)</h1>
+  <span class="cattag mathematik">Mathematik · Schriftl. Rechnen</span>
+  <p>Vier Widgets für die schriftlichen Verfahren – Addition, Subtraktion, Multiplikation und Division – im
+     klassischen stellengerechten Layout mit Kästchen für Überträge bzw. Nebenrechnungen.</p>
+  <ul>
+    <li><b>Addition:</b> Anzahl der Summanden, Zahlenraum, mit/ohne Übertrag, optional Lückenaufgaben.</li>
+    <li><b>Subtraktion:</b> Zahlenraum, mit/ohne Übertrag, optional Lückenaufgaben.</li>
+    <li><b>Multiplikation:</b> ein- oder mehrstelliger Faktor, Zahlenraum, mit/ohne Übertrag.</li>
+    <li><b>Division:</b> schrittweise schriftliche Division mit passenden Einstellungen.</li>
+  </ul>
+  <p>Alle vier würfeln 🎲 neue Aufgaben und können die Lösung einblenden bzw. blau im Lösungsmodus zeigen.</p>
+</article>
+
+<article id="w-halbschriftlich" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Halbschriftliches Rechnen (+ − · :)">
+  <h1><span class="wicon">🪜</span>Halbschriftliches Rechnen (+ − · :)</h1>
+  <span class="cattag mathematik">Mathematik · Halbschriftl. Rechnen</span>
+  <p>Vier Widgets für halbschriftliche Strategien in allen vier Rechenarten. Einstellbar sind die Methode
+     (z. B. schrittweises Rechnen), Zahlenraum, Zehnerübergang, Aufgabenanzahl und Größe; optional werden
+     Hilfslinien bzw. Zwischenschritt-Felder angezeigt. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-kaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Kästchenfeld">
+  <h1><span class="wicon">⊞</span>Kästchenfeld</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Ein leeres kariertes Rechenfeld – wie Mathe-Heftpapier auf dem Arbeitsblatt. Kästchengröße (klein, mittel,
+     groß) und Zeilenzahl sind einstellbar. Ideal als Platz für Nebenrechnungen.</p>
+</article>
+
+<article id="w-eingabekaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Eingabekästchen">
+  <h1><span class="wicon">⊡</span>Eingabekästchen</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Ein Kästchenraster, das du direkt am Bildschirm beschriften kannst – ein Zeichen pro Kästchen, wie im
+     Matheheft. So bereitest du Rechnungen, Zahlenfolgen oder Kästchen-Vorgaben zeichengenau vor; die Kinder
+     ergänzen auf dem Papier. Kästchengröße und Zeilenzahl sind einstellbar.</p>
+  <p>Ein paar Eingaben werden dabei automatisch schön gesetzt: Tippst du <code>1</code> <code>/</code>
+     <code>2</code>, entsteht ein gestapelter <b>Bruch</b> mit Bruchstrich in einem einzigen Kästchen. Eine
+     schließende Klammer rückt zum vorigen Zeichen ins selbe Kästchen (aus <code>a</code> + <code>)</code> wird
+     <code>a)</code> – praktisch für Aufgabennummern), und <code>*</code> wird zum Malpunkt <code>·</code>.</p>
+</article>
+
+<article id="w-zahlenmauer" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenmauer">
+  <h1><span class="wicon">🧱</span>Zahlenmauer</h1>
+  <span class="cattag mathematik">Mathematik · Rechenformate</span>
+  <p>Die klassische Zahlenmauer: Jeder Stein ist die Summe der beiden Steine darunter. Einstellbar sind die
+     Reihenanzahl, der Zahlenraum, wie viele Mauern nebeneinander stehen und welche Steine vorgegeben sind
+     (z. B. nur die Basis). Neue Mauern per <b>Würfeln 🎲</b>, Lösungen blau im Lösungsmodus.</p>
+</article>
+
+<article id="w-zahlenhaus" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenhaus">
+  <h1><span class="wicon">🏠</span>Zahlenhaus</h1>
+  <span class="cattag mathematik">Mathematik · Rechenformate</span>
+  <p>Zahlzerlegungen im Häuschen: Im Dach steht die Zielzahl, in den Stockwerken die Zerlegungen. Einstellbar
+     sind Zahlenraum, Anzahl der Häuser und Stockwerke sowie die Seite des Leerfelds (links/rechts); wahlweise
+     schwarz-weiß oder farbig. Würfeln 🎲 erzeugt neue Häuser.</p>
+</article>
+
+<article id="w-rechendreiecke" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Rechendreiecke">
+  <h1><span class="wicon">🔺</span>Rechendreiecke</h1>
+  <span class="cattag mathematik">Mathematik · Rechenformate</span>
+  <p>Das Rechendreieck: Jede Seite ist die Summe der beiden angrenzenden Ecken. Du wählst Zahlenraum, Anzahl
+     und ob die Ecken oder die Seiten leer bleiben. Neue Dreiecke per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-rechentabelle" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Rechentabelle">
+  <h1><span class="wicon">▦</span>Rechentabelle</h1>
+  <span class="cattag mathematik">Mathematik · Rechenformate</span>
+  <p>Eine Funktionstabelle: In der Ecke steht die Rechenart, am Rand die Zahlen – innen wird Zeile ⊙ Spalte
+     gerechnet. Einstellbar sind Rechenart, Zahlenraum, Zehnerübergang, Spalten- und Zeilenzahl, Größe und wie
+     viele Tabellen nebeneinander stehen. Würfeln 🎲 erzeugt garantiert lösbare Tabellen.</p>
+</article>
+
+<article id="w-zahlenrad" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenrad">
+  <h1><span class="wicon">☸</span>Zahlenrad</h1>
+  <span class="cattag mathematik">Mathematik · Rechenformate</span>
+  <p>Ein Rad mit Innen- und Außenring: Außen ⊙ Innen ergibt immer die Zahl in der Mitte. Wahlweise bleibt der
+     Innen- oder der Außenring leer. Neben den vier Rechenarten gibt es einen <b>1×1-Modus</b>, bei dem die
+     Mittelzahlen die Einmaleins-Reihen sind (z. B. 2, 5, 10 – ein Rad pro Reihe). Segmente, Zahlenraum, Größe
+     und Anzahl sind einstellbar; die Mittelzahlen kannst du auch fest vorgeben.</p>
+</article>
+
+<article id="w-zahlenkette" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenkette">
+  <h1><span class="wicon">⛓</span>Zahlenkette</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Eine Rechenkette: Von einer Startzahl geht es mit mehreren Rechenschritten (z. B. +7, −3, +10) bis zum
+     Ergebnis. Du wählst die erlaubten Rechenarten und die Anzahl der Schritte; gewürfelt 🎲 wird der Rest.</p>
+</article>
+
+<article id="w-zwanzigerfeld" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zwanzigerfeld">
+  <h1><span class="wicon">⬛</span>Zwanzigerfeld</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Das Zwanzigerfeld als Anschauungsmittel im Zahlenraum 20 – mit Punktdarstellung zu Plus- und
+     Minusaufgaben. Rechenart, Anzahl, Größe, schwarz-weiß/farbig und Lösungsanzeige sind einstellbar; Aufgaben
+     kommen per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-zwanzigerrahmen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zwanzigerrahmen">
+  <h1><span class="wicon">⬭</span>Zwanzigerrahmen</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Zahlen im Zwanzigerrahmen ablesen: Gefüllte Plättchen zeigen eine Menge, die Kinder schreiben die Zahl
+     daneben. Anzahl, Zahlenraum, Größe und Farbdarstellung sind einstellbar; neue Mengen per
+     <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-hunderterfeld" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Hunderterfeld">
+  <h1><span class="wicon">⣿</span>Hunderterfeld</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Das 10×10-Feld bis 100 als Punkte- oder Kästchendarstellung. Mehrere Modi: Menge ablesen, Zahl darstellen
+     oder Plus-/Minusaufgaben mit dargestelltem Aufgabenteil (bei Plus optional als „Stapel"-Ansicht).
+     Einstellbar sind außerdem Aufgabenformat (Ergebnis/Lücke/alles frei), Zehnerübergang, 5er-Struktur,
+     Farbe, Größe und Anzahl. Aufgaben lassen sich würfeln 🎲 oder als Liste von Hand eingeben.</p>
+</article>
+
+<article id="w-zahlentafel" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlentafel (Hundertertafel)">
+  <h1><span class="wicon">🔢</span>Zahlentafel</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Die Hundertertafel von 1 bis 100 in vier Modi:</p>
+  <ul>
+    <li><b>Lücken:</b> zufällige Felder sind leer und werden ergänzt (Anzahl einstellbar).</li>
+    <li><b>Einkreisen:</b> vorgegebene Zahlen sollen in der Tafel gefunden und eingekreist werden.</li>
+    <li><b>Stücke:</b> ausgestanzte Tafel-Ausschnitte (Plus-, L-, T-Formen …) mit einer vorgegebenen Zahl –
+        die Nachbarfelder werden logisch ergänzt. Optional mit gezeichnetem Schatten.</li>
+    <li><b>Voll:</b> die komplette Tafel zum Anschauen.</li>
+  </ul>
+  <p>Größe und Ausrichtung sind einstellbar, neue Aufgaben per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+</article>
+
+<article id="w-stellenwert" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Stellenwerttafel">
+  <h1><span class="wicon">⠿</span>Stellenwerttafel</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Zahlen in der Stellenwerttafel: Punkte in den Spalten (H/Z/E) zeigen eine Zahl, die abgelesen wird – oder
+     umgekehrt. Zahlenraum, Anzahl und Modus sind einstellbar; optional stehen die Punkte ungeordnet. Neue
+     Zahlen per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-numberline" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenstrahl">
+  <h1><span class="wicon">↔</span>Zahlenstrahl</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Ein Zahlenstrahl mit frei wählbarem Start, Ende und Schritt. Einzelne Markierungen bleiben als Lücken
+     leer und werden eingetragen; wahlweise sind nur die Randwerte beschriftet.</p>
+</article>
+
+<article id="w-geld" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Geld">
+  <h1><span class="wicon">€</span>Geld</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Rechnen mit Geld: Abgebildete Scheine und Münzen werden gezählt und der Betrag notiert. Einstellbar sind
+     Anzahl der Aufgaben, Maximalbetrag, mit/ohne Cent, Modus und farbige oder schwarz-weiße Darstellung.
+     Neue Beträge per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+</article>
+
+<article id="w-groessen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Größen umrechnen">
+  <h1><span class="wicon">📏</span>Größen umrechnen</h1>
+  <span class="cattag mathematik">Mathematik · Größen</span>
+  <p>Umrechnungsaufgaben für Längen, Gewichte, Hohlmaße und Zeit. Drei Formate: <b>einfach</b>
+     (3 m = ▢ cm), <b>gemischt</b> (250 cm = ▢ m ▢ cm) und <b>Vergleich</b> (3 m ▢ 250 cm mit &lt;, &gt;, =).
+     Schwierigkeitsstufe, aktive Einheiten je Bereich, Päckchengröße und Spaltenzahl sind einstellbar;
+     gewürfelt 🎲 werden nur „glatte", ganzzahlige Aufgaben.</p>
+</article>
+
+<article id="w-groessentafel" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Größen-Stellenwerttafel">
+  <h1><span class="wicon">▦</span>Größen-Stellenwerttafel</h1>
+  <span class="cattag mathematik">Mathematik · Größen</span>
+  <p>Die klassische Stellenwerttafel für Größen: Eine Angabe wie <i>37 km 91 m</i> wird stellengerecht in die
+     Tafel (H/Z/E der großen und der kleinen Einheit) eingetragen und als Kommazahl geschrieben
+     (<i>37,091 km</i>). Einheitenpaare km/m, kg/g, l/ml und t/kg, Schwierigkeitsstufe, Kommaspalte an/aus,
+     Zeilenzahl und Größe sind einstellbar. Neue Werte per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+</article>
+
+<article id="w-uhr" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Uhr">
+  <h1><span class="wicon">🕐</span>Uhr</h1>
+  <span class="cattag mathematik">Mathematik · Zeit</span>
+  <p>Analoge Uhren lesen: Ziffernblätter zeigen Uhrzeiten, die abgelesen und notiert werden. Einstellbar sind
+     die Schwierigkeitsstufe (volle Stunden bis Minuten), der Stundenbereich, Antwortfelder unter den Uhren,
+     Größe, farbige Zeiger sowie Varianten ohne Zeiger (Zeit einzeichnen) oder ohne Ziffern. Neue Zeiten per
+     <b>Würfeln 🎲</b>, Lösungen blau.</p>
+</article>
+
+<article id="w-zeitspanne" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zeitspanne">
+  <h1><span class="wicon">⏱</span>Zeitspanne</h1>
+  <span class="cattag mathematik">Mathematik · Zeit</span>
+  <p>Zwei Uhren pro Aufgabe – von … bis: Die Kinder bestimmen die vergangene Zeitspanne. Schwierigkeitsstufe,
+     Stundenbereich, Antwortfelder und farbige Zeiger sind einstellbar; neue Aufgaben per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-diagramm" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Säulen-/Balkendiagramm">
+  <h1><span class="wicon">📊</span>Säulen-/Balkendiagramm</h1>
+  <span class="cattag mathematik">Mathematik · Diagramme</span>
+  <p>Daten als Säulen oder Balken. Die Werte tippst du zeilenweise ein (<code>Hund: 6</code>); einstellbar sind
+     Ausrichtung (Säulen/Balken), Kästchenraster, Skala, Größe und Maximalwert. Mit <b>„leer"</b> wird nur die
+     Vorlage gedruckt und die Kinder zeichnen die Werte selbst ein; auch gruppierte Datenreihen sind möglich.</p>
+</article>
+
+<article id="w-kuchendiagramm" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Kuchendiagramm">
+  <h1><span class="wicon">🥧</span>Kuchendiagramm</h1>
+  <span class="cattag mathematik">Mathematik · Diagramme</span>
+  <p>Daten als Kreisdiagramm. Werte zeilenweise eingeben (<code>Hund: 6</code>), Farben je Teil wählbar,
+     Beschriftung, Werte oder Prozente im Kuchen, Legende und Größe einstellbar. Im Modus <b>„leer"</b> bleiben
+     die Sektoren weiß und werden von den Kindern ausgemalt.</p>
+</article>
+
+<article id="w-strichliste" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Strichliste / Häufigkeitstabelle">
+  <h1><span class="wicon">𝍸</span>Strichliste / Häufigkeitstabelle</h1>
+  <span class="cattag mathematik">Mathematik · Diagramme</span>
+  <p>Die klassische Häufigkeitstabelle mit Kategorie, Strichliste (5er-Bündel) und Anzahl. Vier Richtungen:
+     Zahlen gegeben → Striche <b>malen</b>, Striche gegeben → <b>zählen</b>, beides <b>leer</b> (selbst erheben)
+     oder beides <b>voll</b> (als Beispiel). Werte zeilenweise eingeben, Größe und Ausrichtung einstellbar.</p>
+</article>
+
+<article id="w-geometry" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Geometrie">
+  <h1><span class="wicon">◻</span>Geometrie</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Einfache geometrische Formen mit Maßangaben: Rechteck, Dreieck oder Kreis mit beschrifteten Seiten bzw.
+     Radius und einer Aufgabenzeile (z. B. „Berechne den Flächeninhalt."). Maße und Aufgabentext sind frei
+     einstellbar.</p>
+</article>
+
+
+
+</main>
+
+<script>
+// ── Navigation aus den Artikeln aufbauen ──
+const arts=[...document.querySelectorAll('article')];
+const nl=document.getElementById('navlist');
+const CATCLR={allgemein:'var(--c-allg)',deutsch:'var(--c-deu)',mathematik:'var(--c-mat)'};
+let lastGroup=null;
+arts.forEach(a=>{
+  const g=a.dataset.group;
+  if(g!==lastGroup){const h=document.createElement('h4');h.textContent=g;nl.appendChild(h);lastGroup=g;}
+  const l=document.createElement('a');
+  l.href='#'+a.id;l.dataset.target=a.id;
+  const cat=a.dataset.cat;
+  l.innerHTML=(cat?`<span class="dot" style="background:${CATCLR[cat]}"></span>`:'')+a.dataset.title;
+  nl.appendChild(l);
+});
+
+function show(id){
+  if(!document.getElementById(id))id=arts[0].id;
+  arts.forEach(a=>a.classList.toggle('active',a.id===id));
+  document.querySelectorAll('#navlist a').forEach(l=>l.classList.toggle('active',l.dataset.target===id));
+  buildPageNav(id);
+  const act=document.querySelector('#navlist a.active');
+  if(act)act.scrollIntoView({block:'nearest'});
+  document.getElementById('main').scrollIntoView();
+  window.scrollTo(0,0);
+}
+
+// Vor/Zurück-Links unter dem Artikel
+let pn=null;
+function buildPageNav(id){
+  if(pn)pn.remove();
+  const i=arts.findIndex(a=>a.id===id);
+  pn=document.createElement('div');pn.className='pnav';
+  const prev=arts[i-1],next=arts[i+1];
+  pn.innerHTML=(prev?`<a href="#${prev.id}"><small>← Zurück</small>${prev.dataset.title}</a>`:'<span style="flex:1"></span>')+
+               (next?`<a class="next" href="#${next.id}"><small>Weiter →</small>${next.dataset.title}</a>`:'<span style="flex:1"></span>');
+  document.getElementById('main').appendChild(pn);
+}
+
+// Suche in der Navigation
+function filterNav(q){
+  q=q.trim().toLowerCase();
+  const links=[...nl.querySelectorAll('a')];
+  links.forEach(l=>l.classList.toggle('hidden',q&&!l.textContent.toLowerCase().includes(q)));
+  nl.querySelectorAll('h4').forEach(h=>{
+    let n=h.nextElementSibling,any=false;
+    while(n&&n.tagName==='A'){if(!n.classList.contains('hidden'))any=true;n=n.nextElementSibling;}
+    h.classList.toggle('hidden',!any);
+  });
+}
+
+window.addEventListener('hashchange',()=>show(location.hash.slice(1)));
+show(location.hash.slice(1)||arts[0].id);
+</script>
+</body>
+</html>

@@ -158,7 +158,7 @@ function rtTableHtml(tbl, d) {
 }
 
 WIDGETS.push({
-  meta: { type:'rechentabelle', label:'Rechentabelle', desc:'Funktionstabelle (Plus, Minus, Mal, Geteilt)', icon:'▦', category:'mathematik' },
+  meta: { type:'rechentabelle', group:'rechenformate', label:'Rechentabelle', desc:'Funktionstabelle (Plus, Minus, Mal, Geteilt)', icon:'▦', category:'mathematik' },
 
   createData: id => {
     const w = {

@@ -126,7 +126,7 @@ function zmSvg(mauer, n, fillMode, isActive=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"zahlenmauer", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik" },
+  meta: { type:"zahlenmauer", group:"rechenformate", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik" },
 
   createData: id => {
     const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;

@@ -233,8 +233,10 @@ WIDGETS.push({
     }
 
     const pad      = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
+    const align    = d.align || 'left';
+    const ws       = align === 'justify' ? 'normal' : 'pre-wrap'; // Blocksatz: pre-wrap dehnt in WebKit keine Spatien
     return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;${pad}"
+                        color:#333;white-space:${ws};word-break:break-word;min-height:1em;text-align:${align};${pad}"
             >${content}</div>`;
   },
 
@@ -257,6 +259,7 @@ WIDGETS.push({
     return `<div class="prow"><label>Text</label></div>` +
       makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions) +
       innerPadPropsControl(d) +
+      alignToggle(d.id, d.align, true) +
       `<div class="prow" style="margin-top:8px;">
          <label>Farbe 1</label>
          <input type="color" value="${color1}"

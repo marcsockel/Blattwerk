@@ -9,14 +9,17 @@ WIDGETS.push({
     const marginH = align === "center" ? "auto" : align === "right" ? "0 0 0 auto" : "0";
     if (d.src) {
       // Bildeffekte via CSS (druckt in Chrome mit print-color-adjust:exact)
+      // Klasse img-sw: der Druck-CSS-Reset (*{filter:none!important}) würde den
+      // Inline-Filter töten — die Klasse setzt ihn im @media print gezielt wieder.
       const fil = d.grayscale ? 'filter:grayscale(100%);' : '';
+      const filCls = d.grayscale ? ' class="img-sw"' : '';
       const tfa = [];
       if (d.rotate) tfa.push(`rotate(${d.rotate}deg)`);
       if (d.flipH)  tfa.push('scaleX(-1)');
       if (d.flipV)  tfa.push('scaleY(-1)');
       const tf = tfa.length ? `transform:${tfa.join(' ')};` : '';
       return `<div style="text-align:${align};">
-        <img src="${d.src}" style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:6px;display:block;margin:${marginH};${fil}${tf}"
+        <img src="${d.src}"${filCls} style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:6px;display:block;margin:${marginH};${fil}${tf}"
           ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;

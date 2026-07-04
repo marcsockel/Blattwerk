@@ -42,6 +42,11 @@ function richSave(id, el) {
   if (def) {
     const winner = document.querySelector(`.wwrap[data-id="${id}"] .winner`);
     if (winner) winnerInnerRefresh(w, winner);
+    // Fließender Text: auch die Fortsetzungs-Widgets sofort aktualisieren
+    if (w.fliessen && typeof tfChain === 'function') tfChain(w.id).forEach(c => {
+      const el = document.querySelector(`.wwrap[data-id="${c.id}"] .winner`);
+      if (el) winnerInnerRefresh(c, el);
+    });
     if (typeof schedulePatchOverflow === 'function') schedulePatchOverflow();
   }
 }
@@ -181,13 +186,12 @@ WIDGETS.push({
   }),
 
   render: d => {
-    const font     = d.font     || "inherit";
-    const fontSize = d.fontSize || 16;
-    const align    = d.align    || "left";
-    const pad      = d.innerPad != null ? `padding:${d.innerPad}px;` : '';
-    return atHtml(d) + `<div style="font-family:${font};font-size:${fontSize}px;line-height:1.7;
-                        color:#333;white-space:pre-wrap;word-break:break-word;min-height:1em;text-align:${align};${pad}"
-            >${d.html}</div>`;
+    // Gemeinsamer Renderer (textfluss.js): Zeilennummern-Rinne, data-flowtext-Marker.
+    // Fließender Text mit Split → nur Teil 0 rendern, Rest übernimmt die Fortsetzung.
+    const html = (d.fliessen && (d.splits || []).length)
+      ? tfSlice(d.html, 0, d.splits[0])
+      : d.html;
+    return atHtml(d) + tfTextDiv(d, html, 0);
   },
 
   renderProps: d => {
@@ -203,9 +207,27 @@ WIDGETS.push({
       style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
              font-family:inherit;font-size:12px;text-align:center;">`;
 
-    return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions) +
+    const zTgl = (label, active, onclick) =>
+      `<button onclick="event.stopPropagation();${onclick}"
+        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
+               background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
+               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
+
+    return propFold('text-editor', 'Text',
+        makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions), true) +
       innerPadPropsControl(d) +
-      alignToggle(d.id, d.align) ;
+      alignToggle(d.id, d.align, true) +
+      `<div class="prow"><label>Zeilenbeschriftung (alle 5 Zeilen)</label>
+        <div style="display:flex;gap:4px;">
+          ${zTgl("Aus", !d.zeilenNr,  `upd(${d.id},'zeilenNr',false)`)}
+          ${zTgl("An",  !!d.zeilenNr, `upd(${d.id},'zeilenNr',true)`)}
+        </div>
+      </div>` +
+      `<div class="prow"><label>Über Seiten fließen</label>
+        <div style="display:flex;gap:4px;">
+          ${zTgl("Aus", !d.fliessen,  `tfSetFliessen(${d.id},false)`)}
+          ${zTgl("An",  !!d.fliessen, `tfSetFliessen(${d.id},true)`)}
+        </div>
+      </div>`;
   },
 });
