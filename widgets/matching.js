@@ -256,24 +256,28 @@ function matchingUpdate(id, value) {
   render(); renderProps(id);
 }
 
-// Draws one or two SVG connecting lines between card spans
-// matchingDraw(boxId, fromId1, toId1, lineId1 [, fromId2, toId2, lineId2])
+// Draws one or more SVG connecting lines between card spans
+// matchingDraw(boxId, fromId1, toId1, lineId1 [, fromId2, toId2, lineId2, ...])
+// Asynchron (rAF) für den Bildschirm; matchingDrawNow misst synchron
+// (nötig für den Lösungsdruck, wo vor window.print() kein Frame mehr läuft).
 function matchingDraw(boxId, ...segments) {
-  requestAnimationFrame(() => {
-    const box = document.getElementById(boxId);
-    if (!box) return;
-    const br = box.getBoundingClientRect();
-    for (let i = 0; i + 2 < segments.length; i += 3) {
-      const lEl  = document.getElementById(segments[i]);
-      const rEl  = document.getElementById(segments[i+1]);
-      const line = document.getElementById(segments[i+2]);
-      if (!lEl || !rEl || !line) continue;
-      const lr = lEl.getBoundingClientRect();
-      const rr = rEl.getBoundingClientRect();
-      line.setAttribute('x1', lr.right  - br.left);
-      line.setAttribute('y1', (lr.top + lr.bottom) / 2 - br.top);
-      line.setAttribute('x2', rr.left   - br.left);
-      line.setAttribute('y2', (rr.top + rr.bottom) / 2 - br.top);
-    }
-  });
+  requestAnimationFrame(() => matchingDrawNow(boxId, ...segments));
+}
+
+function matchingDrawNow(boxId, ...segments) {
+  const box = document.getElementById(boxId);
+  if (!box) return;
+  const br = box.getBoundingClientRect();
+  for (let i = 0; i + 2 < segments.length; i += 3) {
+    const lEl  = document.getElementById(segments[i]);
+    const rEl  = document.getElementById(segments[i+1]);
+    const line = document.getElementById(segments[i+2]);
+    if (!lEl || !rEl || !line) continue;
+    const lr = lEl.getBoundingClientRect();
+    const rr = rEl.getBoundingClientRect();
+    line.setAttribute('x1', lr.right  - br.left);
+    line.setAttribute('y1', (lr.top + lr.bottom) / 2 - br.top);
+    line.setAttribute('x2', rr.left   - br.left);
+    line.setAttribute('y2', (rr.top + rr.bottom) / 2 - br.top);
+  }
 }

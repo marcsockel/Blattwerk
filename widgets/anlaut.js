@@ -25,15 +25,20 @@ WIDGETS.push({
     const size        = d.size  || 80;
     const buchstabenAus = d.buchstabenAus || false;
     const schreibweise  = d.schreibweise  || "gross";
+    const isActive      = d.id === selId || _solutionsMode;
     const fs = Math.max(11, Math.round(size * 0.2));
 
     const rendered = items.map(item => {
       const src  = item.src || anlautDefaultSrc(item.anlaut);
       const opts = item.choices || anlautShuffleOpts(item.anlaut, null, schreibweise);
+      // richtige Antwort = Anlaut selbst (bei Digrafen der erste Buchstabe)
+      const base = (item.anlaut.length > 1 ? item.anlaut[0] : item.anlaut).toUpperCase();
 
-      const cells = opts.map((opt, j) =>
-        `<div style="flex:1;text-align:center;padding:3px 0;font-size:${fs}px;font-weight:700;font-family:inherit;${j < 2 ? "border-right:1px solid #bbb;" : ""}">${esc(opt)}</div>`
-      ).join("");
+      const cells = opts.map((opt, j) => {
+        const correct = isActive && String(opt).toUpperCase() === base;
+        const sol = correct ? "color:#2563eb;background:#dbeafe;border-radius:4px;" : "";
+        return `<div style="flex:1;text-align:center;padding:3px 0;font-size:${fs}px;font-weight:700;font-family:inherit;${j < 2 ? "border-right:1px solid #bbb;" : ""}${sol}">${esc(opt)}</div>`;
+      }).join("");
 
       const choiceBox = buchstabenAus ? "" :
         `<div style="display:flex;border:1.5px solid #bbb;border-radius:5px;overflow:hidden;width:${size}px;margin-top:5px;background:#fff;">${cells}</div>`;

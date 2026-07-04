@@ -253,7 +253,7 @@ function tfSetFliessen(id, val) {
 
 // ── Fortsetzungs-Widget ───────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:'textfluss', hidden:true, label:'Text (Fortsetzung)', desc:'Fortsetzung eines fließenden Textes', icon:'T', category:'allgemein' },
+  meta: { type:'textfluss', hidden:true, noFooter:true, label:'Text (Fortsetzung)', desc:'Fortsetzung eines fließenden Textes', icon:'T', category:'allgemein' },
 
   createData: id => ({ id, type:'textfluss', master:null, seq:1 }),
 

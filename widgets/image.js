@@ -19,7 +19,7 @@ WIDGETS.push({
       if (d.flipV)  tfa.push('scaleY(-1)');
       const tf = tfa.length ? `transform:${tfa.join(' ')};` : '';
       return `<div style="text-align:${align};">
-        <img src="${d.src}"${filCls} style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:6px;display:block;margin:${marginH};${fil}${tf}"
+        <img src="${d.src}"${filCls} style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:${d.rund ? 6 : 0}px;display:block;margin:${marginH};${fil}${tf}"
           ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;
@@ -67,6 +67,7 @@ WIDGETS.push({
           ${efx('Spiegeln ↔', d.flipH,     `upd(${d.id},'flipH',${!d.flipH})`)}
           ${efx('Spiegeln ↕', d.flipV,     `upd(${d.id},'flipV',${!d.flipV})`)}
           ${efx('Drehen 90°', !!d.rotate,  `imgRotate(${d.id})`)}
+          ${efx('Runde Ecken', !!d.rund,   `upd(${d.id},'rund',${!d.rund})`)}
         </div>
         ${d.rotate ? `<div style="font-size:10px;color:#aaa;margin-top:3px;">Drehung: ${d.rotate}° — bei 90°/270° ggf. Höhe anpassen.</div>` : ''}
       </div>` : '') +

@@ -80,6 +80,8 @@ WIDGETS.push({
     const font      = d.font     || "'Grundschrift', sans-serif";
     const fontSize  = d.fontSize || 16;
     const eintraege = aeueParseText(d.text);
+    const isActive  = d.id === selId || _solutionsMode;
+    const solStyle  = 'color:#2563eb;font-weight:700;';
 
     if (!eintraege.length)
       return `<div style="color:#aaa;font-size:13px;padding:8px;">Keine Wörter eingetragen.</div>`;
@@ -90,20 +92,24 @@ WIDGETS.push({
                  font-family:${font};font-size:${fontSize}px;`;
     const lineBase = `display:inline-block;border-bottom:2px solid #444;height:${Math.round(fontSize*0.5)}px;vertical-align:-${Math.round(fontSize*0.4)}px;`;
 
-    const rows = eintraege.map(({ art, stem, alt, end, verwandt }) =>
-      `<tr>
+    const rows = eintraege.map(({ art, stem, alt, end, verwandt }) => {
+      const richtig = alt.split('/').pop();               // Umlaut-Variante (z.B. 'ä', 'äu')
+      const geloest = `${art ? art + ' ' : ''}${stem}${richtig}${end}`; // z.B. 'die Städte'
+      const verwandtCell = isActive
+        ? `<span style="${solStyle}">${esc(verwandt)}</span>`
+        : `<span style="${lineBase}min-width:100px;"></span>`;
+      const alsoCell = isActive
+        ? `also: <span style="${solStyle}margin-left:4px;">${esc(geloest)}</span>`
+        : `also: <span style="${lineBase}min-width:150px;margin-left:4px;"></span>`;
+      return `<tr>
         <td style="${tdS};white-space:nowrap;">
           ${art ? art + ' ' : ''}${stem}<span style="background:#f0ede6;border-radius:3px;
             padding:1px 5px;font-weight:700;">${alt}</span>${end}
         </td>
-        <td style="${tdS};">
-          <span style="${lineBase}min-width:100px;"></span>
-        </td>
-        <td style="${tdS};white-space:nowrap;">
-          also: <span style="${lineBase}min-width:150px;margin-left:4px;"></span>
-        </td>
-      </tr>`
-    ).join('');
+        <td style="${tdS};">${verwandtCell}</td>
+        <td style="${tdS};white-space:nowrap;">${alsoCell}</td>
+      </tr>`;
+    }).join('');
 
     return atHtml(d) + `<table style="width:100%;border-collapse:collapse;font-family:${font};">
       <thead><tr>

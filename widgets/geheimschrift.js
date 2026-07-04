@@ -43,7 +43,7 @@ WIDGETS.push({
     // Feste Kästchenhöhe (passt zu Lineatur 1)
     const boxH = Math.round(36 * lMul);
 
-    const isSelected = (typeof selId !== "undefined") && selId === d.id;
+    const isSelected = ((typeof selId !== "undefined") && selId === d.id) || _solutionsMode;
 
     // Einfaches Kästchen ohne Lineatur, gleiche Breite wie Bild
     const kaestchen = (anlaut) =>
@@ -51,7 +51,7 @@ WIDGETS.push({
       `border:1px solid #bbb;background:#fff;box-sizing:border-box;` +
       `display:flex;align-items:center;justify-content:center;">` +
       (isSelected
-        ? `<span style="font-family:${font};font-size:${Math.round(boxH*0.55)}px;color:#89b4fa;line-height:1;">${esc(anlaut.toUpperCase())}</span>`
+        ? `<span style="font-family:${font};font-size:${Math.round(boxH*0.55)}px;color:#2563eb;font-weight:700;line-height:1;">${esc(anlaut.toUpperCase())}</span>`
         : '') +
       `</div>`;
 

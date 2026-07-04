@@ -98,6 +98,8 @@ WIDGETS.push({
     const font     = d.font     || "'Grundschrift', sans-serif";
     const fontSize = d.fontSize || 16;
     const eintraege = auslautParseText(d.text);
+    const isActive = d.id === selId || _solutionsMode;
+    const solStyle = 'color:#2563eb;font-weight:700;';
 
     if (!eintraege.length)
       return `<div style="color:#aaa;font-size:13px;padding:8px;">Keine Wörter eingetragen.</div>`;
@@ -122,9 +124,15 @@ WIDGETS.push({
         const pAfter     = plural.slice(stemLen + 1);
         const pluralHtml = `${pBefore}<u style="font-weight:700;text-decoration-thickness:2px;">${pKey}</u>${pAfter}`;
         verlCell = `viele ${pluralHtml}`;
+      } else if (isActive) {
+        verlCell = `viele <span style="${solStyle}">${esc(plural)}</span>`;
       } else {
         verlCell = `viele <span style="${lineBase}min-width:150px;margin-left:4px;"></span>`;
       }
+
+      const loesCell = isActive
+        ? `also: <span style="${solStyle}margin-left:4px;">${esc(art + ' ' + wort)}</span>`
+        : `also: <span style="${lineBase}min-width:100px;margin-left:4px;"></span>`;
 
       return `<tr>
         <td style="${tdS}">
@@ -132,9 +140,7 @@ WIDGETS.push({
             padding:1px 5px;font-weight:700;">${hard}/${soft}</span>
         </td>
         <td style="${tdS}">${verlCell}</td>
-        <td style="${tdS};white-space:nowrap;">
-          also: <span style="${lineBase}min-width:100px;margin-left:4px;"></span>
-        </td>
+        <td style="${tdS};white-space:nowrap;">${loesCell}</td>
       </tr>`;
     }).join('');
 

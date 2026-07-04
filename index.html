@@ -40,7 +40,6 @@
   --prn-page-minh:294mm;
   --prn-page-maxh:296mm;
   --prn-pad:13mm 15mm 5mm 25mm;    /* Druck-Padding (25mm links = Lochrand) */
-  --sol-header-w:190mm;
 }
 body.landscape{
   --scr-page-w:277mm;   /* 297 − 20 */
@@ -49,7 +48,6 @@ body.landscape{
   --prn-page-w:297mm;
   --prn-page-minh:207mm;
   --prn-page-maxh:209mm;
-  --sol-header-w:277mm;
 }
 body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1e1e2e;}
 /* Toolbar */
@@ -179,10 +177,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:0;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:10mm;font-size:10px;color:#333;}
-#solution-pages{display:none;}
-@media print{#solution-pages{display:block;}
-.solution-header{page-break-before:always;display:flex;align-items:center;justify-content:center;height:40mm;font-size:18px;font-weight:700;color:#444;background:#fff;width:var(--sol-header-w);}
-.solution-pages-inner .page{page-break-before:always;}}
 @media print{
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* Safari/WebKit druckt box-shadow (Chrome nicht). Ein nach unten gerichteter Schatten
@@ -234,7 +228,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   body.print-ds .page.page-back{padding-left:15mm;padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
   #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
-  #solution-pages:empty{display:none!important;}
   /* Editor-UI auf leeren Seiten NICHT mitdrucken: .page-hint ist das gestrichelte,
      abgerundete Rechteck; .empty-del der ✕-Button der leeren Seite. */
   .page-hint,.empty-del{display:none!important;}
@@ -296,7 +289,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
         Beidseitiger Druck
       </label>
       <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
-        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken (Beta)</button>
+        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
       </div>
     </div>
   </div>
@@ -319,7 +312,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     <div id="wlist"></div>
   </div>
   <div id="canvas-area"><div id="canvas-zoom"></div></div>
-  <div id="solution-pages"></div>
   <div id="props">
     <h3>Eigenschaften</h3>
     <div id="pi" style="color:#bbb;text-align:center;margin-top:20px;font-size:12px;">Widget auswählen</div>
@@ -484,6 +476,8 @@ const WIDGET_MAP = Object.fromEntries(WIDGETS.map(w=>[w.meta.type,w]));
 let widgets=[],selId=null,idC=0,dragSrc=null,activeTab="allgemein",searchFilter="",activePage=0;
 let _history=[],_future=[];
 let _solutionsMode=false;
+// Während Druckvorbereitung/-dialog: render()-Nacharbeit (rAF/checkOverflow/Zoom) unterdrücken.
+let _printLock=false;
 // Ungespeicherte Änderungen? Steuert die beforeunload-Warnung. Wird bei jeder
 // Mutation (saveHistory) auf true gesetzt und nach Speichern/Laden zurückgesetzt.
 let _dirty=false;
@@ -1133,7 +1127,7 @@ function render(){
   });
   document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
   requestAnimationFrame(()=>{
-    if(gen !== _renderGen) return;
+    if(gen !== _renderGen || _printLock) return;
     const activePage=zoomEl.querySelector('.page-active');
     if(activePage) fitCanvasPostLayout(activePage);
     zoomEl.querySelectorAll('.page').forEach(page=>{
@@ -1422,6 +1416,22 @@ function checkOverflow(ranges){
       render();
       return;
     }
+    // Fließender Text muss nicht GANZ passen — er kann splitten. Auto-Break entfernen,
+    // sobald auf der Vorseite ~3 Zeilen frei sind (der Split braucht 2 → 1 Zeile Hysterese
+    // gegen Entfernen/Wieder-Einfügen-Pingpong); der Overflow-Zweig teilt ihn dann dort.
+    if(nextWraps.length){
+      const nw=widgets[+nextWraps[0].dataset.idx];
+      if(nw&&nw.type==='text'&&nw.fliessen){
+        const frei=maxBottom-pageBottom-14;
+        if(frei>=(nw.fontSize||16)*1.7*3){
+          _ovfPasses++;
+          widgets.splice(breakIdx,1);
+          if(activePage>=getPageRanges().length)activePage=Math.max(0,activePage-1);
+          render();
+          return;
+        }
+      }
+    }
   }
 
   // ── Overflow: auto-Break einfügen wenn Inhalt zu lang ──
@@ -1597,6 +1607,10 @@ function sfLayoutBlock(id,w){
     ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}`;
 }
 function standardFooter(id,w){
+  // Unselbstständige Widgets (z.B. Textfluss-Fortsetzung): erben alles vom Original,
+  // eigene Rahmen-/Schatten-/Layout-Optionen wären wirkungslos bzw. verwirrend.
+  const def=WIDGET_MAP[w.type];
+  if(def&&def.meta&&def.meta.noFooter)return '';
   const hasTask=w.aufgabenNr!==undefined||w.aufgabenText!==undefined;
   const noBorder=['heading','subheading','divider','platzhalter'].includes(w.type);
   let inner='';
@@ -2173,34 +2187,72 @@ function updateOrientationUI(){
   });
 }
 
-function doPrint() {
-  document.getElementById('print-panel').style.display = 'none';
-  const prevSel = selId; selId = null; render();
+/** Verbindungslinien (Anlaut-Zuordnung) synchron messen — nötig vor window.print(). */
+function drawPrintConnectionLines() {
+  document.querySelectorAll('#canvas-area [data-azsegs]').forEach(box => {
+    try { matchingDrawNow(box.id, ...JSON.parse(box.dataset.azsegs)); } catch (e) {}
+  });
+}
+
+/** Canvas fürs Drucken vorbereiten: Auswahl lösen, ggf. Lösungsmodus, Zoom neutralisieren. */
+function prepareCanvasForPrint(solutions) {
+  _printLock = true;
+  const prevSel = selId;
+  selId = null;
+  if (solutions) _solutionsMode = true;
+  render();
   // FAB explizit per inline-style verstecken — position:sticky kann @media print überlisten
   document.querySelectorAll('.ov-fab').forEach(el => el.style.display = 'none');
-  // Zahlenstrahl/Tusche synchron fitten — render()'s rAF-Fit läuft sonst erst NACH window.print().
+  const zoomEl = document.getElementById('canvas-zoom');
+  const zoomT = zoomEl ? zoomEl.style.transform : '';
+  if (zoomEl) zoomEl.style.transform = 'none';
+  // Layout flushen — render()'s rAF-Fit läuft sonst erst NACH window.print().
+  void document.getElementById('canvas-area')?.offsetHeight;
   fitCanvasPostLayout(document.getElementById('canvas-area'));
+  drawPrintConnectionLines();
   updatePrintStyle();
+  return { prevSel, zoomEl, zoomT, solutions };
+}
+
+function finishPrintPrep(state) {
+  if (state.zoomEl) state.zoomEl.style.transform = state.zoomT;
+  if (state.solutions) _solutionsMode = false;
+  selId = state.prevSel;
+  _printLock = false;
+  render();
+}
+
+/** Druckdialog öffnen; Aufräumen erst nach afterprint (manche Browser drucken erst beim Klick). */
+function runPrintAfterPrep(state) {
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('afterprint', finish);
+    window.removeEventListener('beforeprint', onBefore);
+    clearTimeout(fallback);
+    finishPrintPrep(state);
+  };
+  const onBefore = () => {
+    const zoomEl = document.getElementById('canvas-zoom');
+    if (zoomEl) zoomEl.style.transform = 'none';
+    fitCanvasPostLayout(document.getElementById('canvas-area'));
+    drawPrintConnectionLines();
+  };
+  window.addEventListener('beforeprint', onBefore);
+  window.addEventListener('afterprint', finish);
+  const fallback = setTimeout(finish, 3000);
   window.print();
-  selId = prevSel; render(); // render() erstellt FAB neu, kein Restore nötig
+}
+
+function doPrint() {
+  document.getElementById('print-panel').style.display = 'none';
+  runPrintAfterPrep(prepareCanvasForPrint(false));
 }
 
 function doPrintSolutions() {
   document.getElementById('print-panel').style.display = 'none';
-  const sc = document.getElementById('solution-pages');
-  sc.innerHTML = '';
-  _solutionsMode = true;
-  getPageRanges().forEach((range, pageIdx) => {
-    const pw = widgets.slice(range.start, range.end);
-    const pageDiv = renderPage(pw, pageIdx, range);
-    pageDiv.classList.remove('page-active');
-    pageDiv.querySelectorAll('.wacts,.dh,.group-handle,.float-grip,.float-resize,.page-end').forEach(el => el.remove());
-    sc.appendChild(pageDiv);
-  });
-  _solutionsMode = false;
-  updatePrintStyle();
-  window.print();
-  sc.innerHTML = '';
+  runPrintAfterPrep(prepareCanvasForPrint(true));
 }
 
 function togglePrintPanel(e) {

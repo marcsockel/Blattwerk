@@ -40,16 +40,17 @@ WIDGETS.push({
 
     // Backward compat
     const items = d.items || [];
+    const isActive = d.id === selId || _solutionsMode;
 
     const answerFs = (lineatur === 1 ? 20 : 22) * lMul;
 
-    const textOverlay = (answer, bottomPx) =>
+    const textOverlay = (answer, bottomPx, color = '#222') =>
       `<div style="position:absolute;top:0;left:4px;right:4px;bottom:${bottomPx}px;` +
       `display:flex;align-items:flex-end;pointer-events:none;">` +
-      `<span style="font-size:${answerFs}px;font-family:${font};` +
-      `line-height:1;white-space:nowrap;overflow:visible;color:#222;">${esc(answer)}</span></div>`;
+      `<span style="font-size:${answerFs}px;font-family:${font};font-weight:${color === '#222' ? 'normal' : '700'};` +
+      `line-height:1;white-space:nowrap;overflow:visible;color:${color};">${esc(answer)}</span></div>`;
 
-    const writeLine = (answer) => {
+    const writeLine = (answer, color = '#222') => {
       if (lineatur === 1) {
         return `<div style="padding:2px 6px;">` +
           `<div style="position:relative;border-left:1px solid #bbb;border-right:1px solid #bbb;background:#fff;">` +
@@ -57,7 +58,7 @@ WIDGETS.push({
             `<div style="height:${11*lMul}px;border-top:1px solid #bbb;background:#dff0f8;"></div>` +
             `<div style="height:${11*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${3*lMul}px;border-top:1px solid #bbb;border-bottom:1px solid #bbb;"></div>` +
-            (answer !== undefined ? textOverlay(answer, 14*lMul - Math.round(answerFs * 0.2)) : ``) +
+            (answer !== undefined ? textOverlay(answer, 14*lMul - Math.round(answerFs * 0.2), color) : ``) +
           `</div></div>`;
       }
       if (lineatur === 2) {
@@ -66,14 +67,14 @@ WIDGETS.push({
             `<div style="height:${16*lMul}px;border-top:1px dashed #bbb;"></div>` +
             `<div style="height:${5*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${4*lMul}px;border-top:1px solid #bbb;"></div>` +
-            (answer !== undefined ? textOverlay(answer, 9*lMul - Math.round(answerFs * 0.2)) : ``) +
+            (answer !== undefined ? textOverlay(answer, 9*lMul - Math.round(answerFs * 0.2), color) : ``) +
           `</div></div>`;
       }
       const off0 = Math.round(answerFs * 0.1);
       const h = answer !== undefined ? answerFs + 10 : fontSize + 10;
       return `<div style="padding:2px 6px;">` +
         `<div style="position:relative;height:${h}px;border-bottom:1.5px solid #999;">` +
-          (answer !== undefined ? textOverlay(answer, off0) : ``) +
+          (answer !== undefined ? textOverlay(answer, off0, color) : ``) +
         `</div></div>`;
     };
 
@@ -87,10 +88,15 @@ WIDGETS.push({
       `row-gap:6px;align-items:center;width:100%;`;
 
     const rows = items.map((item, i) => {
-      const answer = (beispiel && i === 0) ? beispielText : undefined;
+      const src  = item.src || anlautDefaultSrc(item.anlaut);
+      const word = anlautWortFromSrc(src) || item.anlaut;
+      let answer, answerColor = '#222';
+      if (isActive)                 { answer = word;         answerColor = '#2563eb'; }
+      else if (beispiel && i === 0) { answer = beispielText; answerColor = '#222'; }
+      else                          { answer = undefined; }
       return imgCell(item) +
         `<div></div>` +
-        writeLine(answer);
+        writeLine(answer, answerColor);
     }).join("");
 
     return atHtml(d) + `<div style="${gridStyle}">${rows}</div>`;
