@@ -87,9 +87,9 @@ function drawSchein(val, cx, cy, sc=1, fill) {
 }
 
 function drawEuro(val, cx, cy, sc=1, fill) {
-  const r = Math.round(13 * sc);
+  const r = Math.round(11 * sc);
   const label = geldLabel(val);
-  const fs = Math.round(10 * sc);
+  const fs = Math.round(9 * sc);
   // fill (Farbmodus) = { outer, inner }; ohne Farbe: off-white außen, innen nur Kontur
   const outerFill = fill ? fill.outer : '#fdfdf5';
   const innerFill = fill ? fill.inner : 'none';
@@ -102,7 +102,7 @@ function drawEuro(val, cx, cy, sc=1, fill) {
 }
 
 function drawCent(val, cx, cy, sc=1, fill) {
-  const r = Math.round((val >= 10 ? 11 : 9) * sc);
+  const r = Math.round((val >= 10 ? 9 : 7.5) * sc);
   const label = geldLabel(val);
   const fs = Math.round((label.length > 3 ? 7 : 9) * sc);
   return `<g>
@@ -114,13 +114,13 @@ function drawCent(val, cx, cy, sc=1, fill) {
 
 function geldItemSize(val, sc=1) {
   let w, h;
-  if      (val === 5000) { w=54; h=29; }
-  else if (val === 2000) { w=52; h=27; }
-  else if (val === 1000) { w=46; h=25; }
-  else if (val === 500)  { w=40; h=22; }
-  else if (val >= 100)   { w=24; h=24; }
-  else if (val >= 10)    { w=20; h=20; }
-  else                   { w=17; h=17; }
+  if      (val === 5000) { w=64; h=34; }
+  else if (val === 2000) { w=61; h=32; }
+  else if (val === 1000) { w=54; h=29; }
+  else if (val === 500)  { w=47; h=26; }
+  else if (val >= 100)   { w=20; h=20; }
+  else if (val >= 10)    { w=17; h=17; }
+  else                   { w=15; h=15; }
   return {w: Math.round(w*sc), h: Math.round(h*sc)};
 }
 
@@ -165,33 +165,45 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false, farbe=false) {
       const minCY = innerPad + h / 2;
       const maxCY = innerPad + availH - h / 2;
 
+      // Drehung vorab bestimmen, damit die Kollisionsprüfung die tatsächliche
+      // (gedrehte) Ausdehnung des Items kennt.
+      const rot = (geldPseudoRand(seed * 999 + ji * 77) - 0.5) * 8; // ±4°, deterministisch
+      const rad = Math.abs(rot) * Math.PI / 180;
+      // Effektive Halb-Ausdehnung der achsenparallelen Hülle des gedrehten Rechtecks
+      const ehw = (w/2) * Math.cos(rad) + (h/2) * Math.sin(rad);
+      const ehh = (w/2) * Math.sin(rad) + (h/2) * Math.cos(rad);
+      const margin = 3; // Mindestluft zwischen zwei Hüllen
+
       let bestCX = minCX + geldPseudoRand(seed * 7 + ji * 100) * Math.max(0, maxCX - minCX);
       let bestCY = minCY + geldPseudoRand(seed * 13 + ji * 100) * Math.max(0, maxCY - minCY);
       let bestScore = -Infinity;
 
-      // 60 Versuche, Position mit größtem Mindestabstand zu bereits platzierten Items wählen
-      for (let attempt = 0; attempt < 60; attempt++) {
+      // Bis zu 120 Versuche, Position mit größter Trennung (kleinster Überlappung)
+      // zu allen bereits platzierten Items wählen. Bounding-Box statt Kreis, damit
+      // breite Scheine keine Münzen mehr verdecken.
+      for (let attempt = 0; attempt < 120; attempt++) {
         const cx = minCX + geldPseudoRand(seed * 7  + ji * 100 + attempt * 3 + 1) * Math.max(0, maxCX - minCX);
         const cy = minCY + geldPseudoRand(seed * 13 + ji * 100 + attempt * 3 + 2) * Math.max(0, maxCY - minCY);
 
-        let minDist = Infinity;
+        let sep = Infinity;
         for (const p of positions) {
-          const dx = cx - p.cx, dy = cy - p.cy;
-          const clearance = Math.sqrt(dx*dx + dy*dy) - (Math.max(w,h) + Math.max(p.w,p.h)) * 0.55;
-          minDist = Math.min(minDist, clearance);
+          const dx = Math.abs(cx - p.cx), dy = Math.abs(cy - p.cy);
+          const sepX = dx - (ehw + p.ehw) - margin;
+          const sepY = dy - (ehh + p.ehh) - margin;
+          // Zwei Rechtecke überlappen NICHT, sobald sie auf einer Achse getrennt sind
+          sep = Math.min(sep, Math.max(sepX, sepY));
         }
-        if (positions.length === 0) minDist = 999;
+        if (positions.length === 0) sep = 999;
 
-        if (minDist > bestScore) {
-          bestScore = minDist;
+        if (sep > bestScore) {
+          bestScore = sep;
           bestCX = cx;
           bestCY = cy;
         }
-        if (minDist > 6) break; // gut genug
+        if (sep >= 0) break; // keine Überlappung → gut genug
       }
 
-      const rot = (geldPseudoRand(seed * 999 + ji * 77) - 0.5) * 14; // ±7°, deterministisch
-      positions.push({val, cx: bestCX, cy: bestCY, w, h, rot});
+      positions.push({val, cx: bestCX, cy: bestCY, w, h, rot, ehw, ehh});
     });
 
     for (const {val, cx, cy, rot} of positions) {
