@@ -249,10 +249,10 @@ window._ekzDraw = {};
 
 function _ekzSnap(e, svgEl, cs) {
   const snap = cs / 2;
-  const r = svgEl.getBoundingClientRect();
+  const p = screenToElLocal(e.clientX, e.clientY, svgEl);
   return {
-    x: Math.round((e.clientX - r.left) / snap) * snap,
-    y: Math.round((e.clientY - r.top)  / snap) * snap,
+    x: Math.round(p.x / snap) * snap,
+    y: Math.round(p.y / snap) * snap,
   };
 }
 

@@ -96,8 +96,11 @@ WIDGETS.push({
       const drawCall = is3
         ? `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}','mmid-${d.id}','mright2-${d.id}','mline2-${d.id}')`
         : `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}')`;
+      const segArr = is3
+        ? [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`, `mmid-${d.id}`, `mright2-${d.id}`, `mline2-${d.id}`]
+        : [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`];
       return atHtml(d) +
-        `<div id="mbox-${d.id}" style="position:relative;display:block;width:100%;">` +
+        `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;display:block;width:100%;">` +
           `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
           hHtml +
           `<img src="data:image/png;base64,!" onerror="${drawCall}" style="display:none">` +
@@ -146,10 +149,13 @@ WIDGETS.push({
     const drawCall = is3
       ? `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}','mmid-${d.id}','mright2-${d.id}','mline2-${d.id}')`
       : `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}')`;
+    const segArr = is3
+      ? [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`, `mmid-${d.id}`, `mright2-${d.id}`, `mline2-${d.id}`]
+      : [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`];
 
     const boxDisplay = schreiblinien ? `display:block;width:100%;` : `display:inline-block;`;
     return atHtml(d) +
-      `<div id="mbox-${d.id}" style="position:relative;${boxDisplay}">` +
+      `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;${boxDisplay}">` +
         `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
         tableHtml +
         `<img src="data:image/png;base64,!" onerror="${drawCall}" style="display:none">` +
@@ -267,7 +273,6 @@ function matchingDraw(boxId, ...segments) {
 function matchingDrawNow(boxId, ...segments) {
   const box = document.getElementById(boxId);
   if (!box) return;
-  const br = box.getBoundingClientRect();
   for (let i = 0; i + 2 < segments.length; i += 3) {
     const lEl  = document.getElementById(segments[i]);
     const rEl  = document.getElementById(segments[i+1]);
@@ -275,9 +280,11 @@ function matchingDrawNow(boxId, ...segments) {
     if (!lEl || !rEl || !line) continue;
     const lr = lEl.getBoundingClientRect();
     const rr = rEl.getBoundingClientRect();
-    line.setAttribute('x1', lr.right  - br.left);
-    line.setAttribute('y1', (lr.top + lr.bottom) / 2 - br.top);
-    line.setAttribute('x2', rr.left   - br.left);
-    line.setAttribute('y2', (rr.top + rr.bottom) / 2 - br.top);
+    const p1 = screenToElLocal(lr.right, (lr.top + lr.bottom) / 2, box);
+    const p2 = screenToElLocal(rr.left,  (rr.top + rr.bottom) / 2, box);
+    line.setAttribute('x1', p1.x);
+    line.setAttribute('y1', p1.y);
+    line.setAttribute('x2', p2.x);
+    line.setAttribute('y2', p2.y);
   }
 }

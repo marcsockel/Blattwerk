@@ -412,9 +412,91 @@ function arithSetErgaenzung(id, val) {
   render(); renderProps(id);
 }
 
+function arithParseStandardTask(task) {
+  const norm = task.replace(/[×*]/g, "·").replace(/[÷]/g, ":");
+  const mErg = norm.match(/^(-?\d+|_)\s*([+\-·:])\s*(-?\d+|_)\s*=\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (mErg) {
+    return {
+      kind: 'erg',
+      left: mErg[1],
+      op: mErg[2],
+      right: mErg[3],
+      result: +String(mErg[4]).replace(',', '.'),
+    };
+  }
+  const hasEq = norm.trimEnd().endsWith('=');
+  const core = hasEq ? norm.slice(0, norm.lastIndexOf('=')).trim() : norm.trim();
+  const m = core.match(/^(-?\d+(?:[.,]\d+)?)\s*([+\-·:])\s*(-?\d+(?:[.,]\d+)?)$/);
+  if (!m) return null;
+  return {
+    kind: 'normal',
+    left: +String(m[1]).replace(',', '.'),
+    op: m[2],
+    right: +String(m[3]).replace(',', '.'),
+  };
+}
+
+function arithComputeResult(a, op, b) {
+  if (op === '+') return a + b;
+  if (op === '-') return a - b;
+  if (op === '·') return a * b;
+  return a / b;
+}
+
+function arithFmtNum(n) {
+  return Number.isInteger(n) ? String(n) : String(n);
+}
+
+/** Rechenaufgaben „a op b =" → Ergänzung „_ op b = r" / „a op _ = r". */
+function arithConvertNormalToErgaenzung(tasksText, luecke) {
+  return tasksText.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return line;
+    const p = arithParseStandardTask(t);
+    if (!p || p.kind !== 'normal') return line;
+    const result = arithComputeResult(p.left, p.op, p.right);
+    if (!Number.isFinite(result)) return line;
+    const resStr = arithFmtNum(result);
+    const erste = luecke === 'erste' ? true : luecke === 'zweite' ? false : Math.random() < 0.5;
+    if (erste) return `_ ${p.op} ${arithFmtNum(p.right)} = ${resStr}`;
+    return `${arithFmtNum(p.left)} ${p.op} _ = ${resStr}`;
+  }).join('\n');
+}
+
+/** Ergänzung → Rechenaufgaben „a op b =". */
+function arithConvertErgaenzungToNormal(tasksText) {
+  return tasksText.split('\n').map(line => {
+    const t = line.trim();
+    if (!t) return line;
+    const p = arithParseStandardTask(t);
+    if (!p || p.kind !== 'erg') return line;
+    const b = p.right === '_' ? null : +p.right;
+    const a = p.left === '_' ? null : +p.left;
+    const res = p.result;
+    let left, right;
+    if (p.left === '_') {
+      if (p.op === '+') left = res - b;
+      else if (p.op === '-') left = res + b;
+      else if (p.op === '·') left = res / b;
+      else left = res * b;
+      right = b;
+    } else {
+      left = a;
+      if (p.op === '+') right = res - a;
+      else if (p.op === '-') right = a - res;
+      else if (p.op === '·') right = res / a;
+      else right = a / res;
+    }
+    if (!Number.isFinite(left) || !Number.isFinite(right)) return line;
+    return `${arithFmtNum(left)} ${p.op} ${arithFmtNum(right)} =`;
+  }).join('\n');
+}
+
 function arithSetModus(id, modus) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
+  const prevModus = w.ergaenzung ? 'ergaenzung' : w.zeichen ? 'zeichen' : w.vergleich ? 'vergleich' : 'normal';
+
   w.ergaenzung = modus === 'ergaenzung';
   w.zeichen    = modus === 'zeichen';
   w.vergleich  = modus === 'vergleich';
@@ -422,6 +504,21 @@ function arithSetModus(id, modus) {
   if (modus === 'vergleich')  w.vergleichSeiten = w.vergleichSeiten || 'gemischt';
   // Lösung anzeigen gibt es bei Rechenzeichen/Vergleich nicht → abwählen
   if (modus === 'zeichen' || modus === 'vergleich') w.showLoesungen = false;
+
+  const hasTasks = !!(w.tasks || '').trim();
+  const convertNormalErg = hasTasks && (
+    (prevModus === 'normal' && modus === 'ergaenzung') ||
+    (prevModus === 'ergaenzung' && modus === 'normal')
+  );
+
+  if (convertNormalErg) {
+    w.tasks = modus === 'ergaenzung'
+      ? arithConvertNormalToErgaenzung(w.tasks, w.luecke || 'erste')
+      : arithConvertErgaenzungToNormal(w.tasks);
+    render(); renderProps(id);
+    return;
+  }
+
   arithGenerate(id);
 }
 

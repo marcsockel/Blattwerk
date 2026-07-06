@@ -197,7 +197,8 @@ function anlautDefaultSrc(anlaut) {
 
 function anlautImg(src, size) {
   size = size || 80;
-  return `<img src="assets/anlaut/${src}.svg" width="${size}" height="${size}" style="display:block;object-fit:contain;">`;
+  return `<img src="assets/anlaut/${src}.svg" alt="" width="${size}" height="${size}" ` +
+    `style="display:block;width:${size}px;height:${size}px;min-width:${size}px;max-width:${size}px;object-fit:contain;">`;
 }
 
 function anlautAddItem(id, anlaut) {

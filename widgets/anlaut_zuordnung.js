@@ -61,68 +61,79 @@ WIDGETS.push({
 
     const right = order.map(i => items[i].wort);
 
+    const imgColW = imgSize + 12; // Bild + horiz. Padding (6+6)
+
     const imgCell = (item, id, extra = "") => {
       const src = item.src || anlautDefaultSrc(item.anlaut);
-      return `<div style="padding:2px 6px;">` +
-        (id ? `<span id="${id}" style="display:inline-block;">` : "") +
+      // Immer gleicher Span-Wrapper (feste Maße) — verhindert Grid-Stauchung beim Lösungsmodus.
+      return `<div style="padding:2px 6px;box-sizing:border-box;width:${imgColW}px;min-width:${imgColW}px;line-height:0;">` +
+        `<span${id ? ` id="${id}"` : ""} style="display:block;width:${imgSize}px;height:${imgSize}px;line-height:0;">` +
         anlautImg(src, imgSize) +
-        (id ? `</span>` : "") +
+        `</span>` +
         extra +
         `</div>`;
     };
 
+    const imgColH = imgSize + 4; // Bildhöhe + vert. Padding der Bildzelle (2+2px)
+
     const wordCard = (word, id) =>
-      `<div style="padding:2px 6px;font-size:${fontSize}px;font-family:${font};white-space:nowrap;">` +
-      `<span ${id ? `id="${id}"` : ""}` +
+      `<div style="padding:2px 6px;box-sizing:border-box;height:${imgColH}px;display:flex;align-items:center;align-self:start;` +
+      `font-size:${fontSize}px;font-family:${font};white-space:nowrap;line-height:1.2;">` +
+      `<span${id ? ` id="${id}"` : ""}` +
       ` style="display:block;border:1.5px solid #bbb;border-radius:5px;` +
       `padding:3px 10px;text-align:center;background:#fff;">${esc(word)}</span></div>`;
 
     const answerFs = (lineatur === 1 ? 20 : 22) * lMul;
 
-    const textOverlay = (answer, bottomPx, color = '#222') =>
+    const textOverlay = (answer, bottomPx, color = '#222', visible = true) =>
       `<div style="position:absolute;top:0;left:4px;right:4px;bottom:${bottomPx}px;` +
       `display:flex;align-items:flex-end;pointer-events:none;">` +
-      `<span style="font-size:${answerFs}px;font-family:${font};font-weight:${color === '#222' ? 'normal' : '700'};` +
-      `line-height:1;white-space:nowrap;overflow:visible;color:${color};">${esc(answer)}</span></div>`;
+      `<span style="font-size:${answerFs}px;font-family:${font};` +
+      `font-weight:${visible && color !== '#222' ? '700' : 'normal'};` +
+      `line-height:1;white-space:nowrap;overflow:hidden;` +
+      `color:${visible ? color : 'transparent'};">${esc(visible && answer !== undefined ? answer : '\u00a0')}</span></div>`;
 
     const writeLine = (answer, color = '#222') => {
+      const show = answer !== undefined;
       if (lineatur === 1) {
+        const rowH = (11 + 11 + 11 + 3) * lMul;
         return `<div style="padding:2px 6px;">` +
-          `<div style="position:relative;border-left:1px solid #bbb;border-right:1px solid #bbb;background:#fff;">` +
+          `<div style="position:relative;height:${rowH}px;border-left:1px solid #bbb;border-right:1px solid #bbb;background:#fff;">` +
             `<div style="height:${11*lMul}px;border-top:1px solid #bbb;"></div>` +
             `<div style="height:${11*lMul}px;border-top:1px solid #bbb;background:#dff0f8;"></div>` +
             `<div style="height:${11*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${3*lMul}px;border-top:1px solid #bbb;border-bottom:1px solid #bbb;"></div>` +
-            (answer !== undefined ? textOverlay(answer, 14*lMul - Math.round(answerFs * 0.2), color) : ``) +
+            textOverlay(answer, 14*lMul - Math.round(answerFs * 0.2), color, show) +
           `</div></div>`;
       }
       if (lineatur === 2) {
+        const rowH = (16 + 5 + 4) * lMul;
         return `<div style="padding:2px 6px;">` +
-          `<div style="position:relative;background:#fff;">` +
+          `<div style="position:relative;height:${rowH}px;background:#fff;">` +
             `<div style="height:${16*lMul}px;border-top:1px dashed #bbb;"></div>` +
             `<div style="height:${5*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${4*lMul}px;border-top:1px solid #bbb;"></div>` +
-            (answer !== undefined ? textOverlay(answer, 9*lMul - Math.round(answerFs * 0.2), color) : ``) +
+            textOverlay(answer, 9*lMul - Math.round(answerFs * 0.2), color, show) +
           `</div></div>`;
       }
       const off0 = Math.round(answerFs * 0.1);
-      const h = answer !== undefined ? answerFs + 10 : fontSize + 10;
+      const h = answerFs + 10;
       return `<div style="padding:2px 6px;">` +
         `<div style="position:relative;height:${h}px;border-bottom:1.5px solid #999;">` +
-          (answer !== undefined ? textOverlay(answer, off0, color) : ``) +
+          textOverlay(answer, off0, color, show) +
         `</div></div>`;
     };
 
     const lineaturAus = d.lineaturAus || false;
 
     const colTpl = buchstabenAus
-      ? (lineaturAus ? `max-content` : `max-content 10px 1fr`)
-      : (lineaturAus ? `max-content ${gap}px max-content` : `max-content ${gap}px max-content 10px 1fr`);
+      ? (lineaturAus ? `${imgColW}px` : `${imgColW}px 10px 1fr`)
+      : (lineaturAus ? `${imgColW}px ${gap}px max-content` : `${imgColW}px ${gap}px max-content 10px 1fr`);
 
     const gridStyle =
       `display:grid;grid-template-columns:${colTpl};` +
-      `row-gap:6px;align-items:center;` +
-      (align === "left" ? "width:100%;" : "");
+      `row-gap:6px;align-items:start;` +
+      (align === "left" ? "max-width:100%;" : "");
 
     const alignWrap = align === "center" ? "display:flex;justify-content:center;"
                     : align === "right"  ? "display:flex;justify-content:flex-end;"
@@ -135,6 +146,7 @@ WIDGETS.push({
     const drawSet = new Set(drawIdx);
     const strokeCol = isActive ? '#2563eb' : '#ccc';
     const strokeW   = isActive ? 2 : 1.5;
+    const solUnderH = Math.round(fontSize * 0.85) + 4;
 
     const rows = items.map((item, i) => {
       // Bild i bekommt eine ID, wenn eine Linie an ihm hängt
@@ -147,8 +159,10 @@ WIDGETS.push({
       else if (beispiel && i === exPos) { answer = beispielText; answerColor = '#222'; }
       else                              { answer = undefined; }
       // Fallback ohne Wortkarten UND ohne Schreiblinie: Lösungswort in Blau unter das Bild
-      const solUnderImg = (isActive && buchstabenAus && lineaturAus)
-        ? `<div style="font-family:${font};font-size:${Math.round(fontSize*0.85)}px;color:#2563eb;font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;">${esc(item.wort)}</div>`
+      const solUnderImg = (buchstabenAus && lineaturAus)
+        ? (isActive
+          ? `<div style="font-family:${font};font-size:${Math.round(fontSize*0.85)}px;color:#2563eb;font-weight:700;text-align:center;margin-top:2px;white-space:nowrap;line-height:1.2;">${esc(item.wort)}</div>`
+          : `<div style="min-height:${solUnderH}px;"></div>`)
         : ``;
       if (buchstabenAus) {
         return imgCell(item, leftId, solUnderImg) + (lineaturAus ? `` : `<div></div>` + writeLine(answer, answerColor));
@@ -162,20 +176,19 @@ WIDGETS.push({
       ? `<div style="${alignWrap}">${gridHtml}</div>`
       : gridHtml;
 
-    if (!linesOn) return atHtml(d) + tableHtml;
+    // Immer gleicher äußerer Wrapper (verhindert Layout-Sprung Fokus ↔ Lösung),
+    // Linien nur zeichnen wenn linesOn.
+    if (buchstabenAus) return atHtml(d) + tableHtml;
 
     const linesSvg = drawIdx.map(i =>
       `<line id="azln-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
     ).join('');
-    // flache Segmentliste [from,to,line, from,to,line, …] für matchingDraw / -Now
     const segArr = drawIdx.flatMap(i => [`azl-${d.id}-${i}`, `azm-${d.id}-${i}`, `azln-${d.id}-${i}`]);
-    const segCall = segArr.map(s => `'${s}'`).join(',');
 
     return atHtml(d) +
-      `<div id="azbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;display:block;width:100%;">` +
+      `<div id="azbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;display:block;max-width:100%;">` +
         `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${linesSvg}</svg>` +
         tableHtml +
-        `<img src="data:image/png;base64,!" onerror="matchingDraw('azbox-${d.id}',${segCall})" style="display:none">` +
       `</div>`;
   },
 

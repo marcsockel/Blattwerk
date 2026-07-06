@@ -316,6 +316,16 @@ function winnerInnerRefresh(w, winner) {
   if (typeof fitNumberlineSvg === 'function') {
     winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);
   }
+  // Verbindungslinien (Anlaut-Zuordnung etc.) nach Layout neu messen
+  requestAnimationFrame(() => {
+    if (typeof matchingDrawNow !== 'function') return;
+    winner.querySelectorAll('[data-azsegs]').forEach(box => {
+      try {
+        const segs = JSON.parse(box.dataset.azsegs || '[]');
+        if (segs.length) matchingDrawNow(box.id, ...segs);
+      } catch (e) {}
+    });
+  });
 }
 
 /** Misst Container und zeichnet Tusche-Rand mit einheitlicher px-Skalierung. */
@@ -374,4 +384,24 @@ function winnerInner(w) {
   const def = typeof WIDGET_MAP !== 'undefined' ? WIDGET_MAP[w.type] : null;
   if (!def) return '';
   return frameInkInsert(frameStyleSrc(w)) + def.render(w);
+}
+
+/**
+ * Ansichts-Zoom (#canvas-zoom transform:scale, transform-origin:top center).
+ * Screen → Element-lokal: (client − getBoundingClientRect) / scale — nicht nur /z von links,
+ * weil top-center die horizontale Position beim Zoomen mitverschiebt.
+ */
+function viewZoomScale() {
+  const wrap = document.getElementById('canvas-zoom');
+  if (!wrap) return 1;
+  const tr = wrap.style.transform;
+  if (!tr || tr === 'none') return 1;
+  const m = tr.match(/scale\(([\d.]+)\)/);
+  return m ? parseFloat(m[1]) : 1;
+}
+
+function screenToElLocal(clientX, clientY, el) {
+  const r = el.getBoundingClientRect();
+  const z = viewZoomScale();
+  return { x: (clientX - r.left) / z, y: (clientY - r.top) / z };
 }

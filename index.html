@@ -507,6 +507,7 @@ function applyViewZoom() {
   requestAnimationFrame(() => {
     if (!wrap.offsetHeight) { wrap.style.marginBottom = '0'; return; }
     wrap.style.marginBottom = z < 1 ? `${-(wrap.offsetHeight * (1 - z))}px` : '0';
+    if (typeof redrawConnectionLines === 'function') redrawConnectionLines();
   });
 }
 
@@ -2187,11 +2188,16 @@ function updateOrientationUI(){
   });
 }
 
-/** Verbindungslinien (Anlaut-Zuordnung) synchron messen — nötig vor window.print(). */
-function drawPrintConnectionLines() {
+/** Verbindungslinien (Anlaut-Zuordnung, Zuordnung-Beispiel) synchron neu messen. */
+function redrawConnectionLines() {
   document.querySelectorAll('#canvas-area [data-azsegs]').forEach(box => {
     try { matchingDrawNow(box.id, ...JSON.parse(box.dataset.azsegs)); } catch (e) {}
   });
+}
+
+/** Verbindungslinien (Anlaut-Zuordnung) synchron messen — nötig vor window.print(). */
+function drawPrintConnectionLines() {
+  redrawConnectionLines();
 }
 
 /** Canvas fürs Drucken vorbereiten: Auswahl lösen, ggf. Lösungsmodus, Zoom neutralisieren. */
