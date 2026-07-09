@@ -32,9 +32,9 @@ WIDGETS.push({
     const maxDigits = String(Math.abs(+d.zahlenraum) || 20).length;
     const numW = maxDigits + 'ch';
     const allTasks = d.tasks.split("\n").map(t => t.trim()).filter(Boolean);
-    // Größe: klein = bisherige Maße (Faktor 1), mittel = 1.3x, groß = 1.6x.
+    // Größe: klein = bisherige Maße (Faktor 1), mittel = 1.3x, groß = 1.5x.
     // ch-basierte Slots skalieren automatisch über die Schriftgröße mit.
-    const S = d.groesse === 'gross' ? 1.6 : d.groesse === 'mittel' ? 1.3 : 1;
+    const S = d.groesse === 'gross' ? 1.5 : d.groesse === 'mittel' ? 1.3 : 1;
     const px = v => Math.round(v * S);
     const FS = px(16);   // Schriftgröße
     const LH = px(20);   // Zeilen-/Kästchenhöhe
@@ -64,10 +64,11 @@ WIDGETS.push({
     const tdBase = `padding:${px(3)}px 0;font-size:${FS}px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:${LH}px;`;
     // Die Schrift hat KEINE Tabellenziffern (kein tnum-Feature — „1" ist 6.6px, „8" 8.9px),
     // font-variant-numeric:tabular-nums wirkt also nicht. Darum bekommt jede Ziffer eine
-    // eigene 1ch-Zelle (zentriert) → Einer stehen unter Einern, egal welche Ziffer.
+    // eigene Zelle (zentriert) → Einer stehen unter Einern, egal welche Ziffer. Etwas
+    // breiter als 1ch, sonst berühren sich benachbarte Ziffern (v.a. Nullen ≈ 1ch breit).
     const digitCells = v => String(v).split("").map(c =>
       /[0-9]/.test(c)
-        ? `<span style="display:inline-block;width:1ch;text-align:center;">${c}</span>`
+        ? `<span style="display:inline-block;width:1.2ch;text-align:center;">${c}</span>`
         : esc(c)
     ).join("");
     const numSpan = (v, w = numW) => `<span style="display:inline-block;min-width:${w};min-height:${LH}px;line-height:${LH}px;text-align:right;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${digitCells(v)}</span>`;
@@ -540,11 +541,22 @@ function arithSetLayout(id, key, value) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   w[key] = value;
-  // Tasks neu generieren damit Anzahl stimmt
-  arithGenerate(id);
+  // Bei reiner Mengenänderung (Päckchen/Aufgaben) vorhandene Aufgaben behalten,
+  // sonst (Zahlenraum/Übergänge) komplett neu würfeln.
+  if (key === 'cols' || key === 'aufgabenProPaeckchen') {
+    arithResize(w);
+    render(); renderProps(id);
+  } else {
+    arithGenerate(id);
+  }
 }
 
-function arithDoGenerate(w) {
+function arithTotal(w) {
+  return (w.aufgabenProPaeckchen || 4) * (w.cols || 2);
+}
+
+// Baut `count` neue Aufgaben-Zeilen anhand der Einstellungen von w.
+function arithBuildLines(w, count) {
   const zr   = w.zahlenraum || 20;
   // Zehnerübergang: 'ohne' | 'gemischt' | 'nur' (Legacy bool: false→ohne, true→gemischt)
   const _u = w.ueberschreitung;
@@ -555,15 +567,12 @@ function arithDoGenerate(w) {
   // ('nur' darf nicht auf Hunderter bestehen — im ZR 100 kaum erfüllbar).
   const hueMode = zr > 100 ? (w.hueberschreitung || 'ohne')
                            : (ueMode === 'ohne' ? 'ohne' : 'gemischt');
-  const app    = w.aufgabenProPaeckchen || 4;
-  const cols   = w.cols || 2;
   const ops    = w.ops || ["+", "-"];
   const erg    = w.ergaenzung || false;
   const zeichen= w.zeichen || false;
   const vergleich = w.vergleich || false;
   const vglSeiten = w.vergleichSeiten || 'gemischt';
   const luecke = w.luecke || "erste";
-  const total = app * cols;
 
   const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
@@ -705,11 +714,26 @@ function arithDoGenerate(w) {
   const makeVergleich = () => `${makeVergleichSide()} <?> ${makeVergleichSide()}`;
 
   const lines = [];
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < count; i++) {
     const op = ops[Math.floor(Math.random() * ops.length)];
     lines.push(vergleich ? makeVergleich() : zeichen ? makeZeichen(op) : erg ? makeErgaenzung(op) : makeNormal(op));
   }
-  w.tasks = lines.join("\n");
+  return lines;
+}
+
+// Alle Aufgaben neu würfeln.
+function arithDoGenerate(w) {
+  w.tasks = arithBuildLines(w, arithTotal(w)).join("\n");
+}
+
+// Nur die Anzahl anpassen: vorhandene Aufgaben behalten, fehlende ergänzen bzw.
+// überzählige abschneiden (z.B. beim Hinzufügen eines Päckchens).
+function arithResize(w) {
+  const total = arithTotal(w);
+  let lines = (w.tasks || '').split('\n').map(t => t.trim()).filter(Boolean);
+  if (lines.length > total) lines = lines.slice(0, total);
+  else if (lines.length < total) lines = lines.concat(arithBuildLines(w, total - lines.length));
+  w.tasks = lines.join('\n');
 }
 
 function arithGenerate(id) {

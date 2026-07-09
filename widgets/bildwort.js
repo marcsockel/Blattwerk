@@ -24,13 +24,19 @@ WIDGETS.push({
 
   render: d => {
     const size = d.imageSize || 80;
-    const checkbox = `<span style="display:inline-block;width:13px;height:13px;border:1.5px solid #555;
-                        border-radius:2px;flex-shrink:0;"></span>`;
+    const isActive = d.id === selId || _solutionsMode;
+    const checkbox = on => {
+      const bCol = on ? '#2563eb' : '#555';
+      const bg = on ? '#2563eb' : 'transparent';
+      return `<span style="display:inline-block;width:13px;height:13px;border:1.5px solid ${bCol};`
+        + `border-radius:2px;flex-shrink:0;background:${bg};"></span>`;
+    };
 
     const items = (d.aufgaben||[]).map(a => {
       const allWords = [a.word, ...(a.distractors || ["", ""])];
       const order    = a.order || [0,1,2];
       const words    = order.map(i => allWords[i] || "");
+      const correctPos = order.indexOf(0);
 
       const imgEl = a.src
         ? `<img src="${a.src}" style="width:${size}px;height:${size}px;object-fit:contain;display:block;border-radius:4px;">`
@@ -39,8 +45,8 @@ WIDGETS.push({
              font-size:11px;color:#bbb;">Bild</div>`;
 
       const wordList = `<div style="display:flex;flex-direction:column;justify-content:space-between;height:${size}px;min-width:0;flex:1;">` +
-        words.map(w =>
-          `<div style="display:flex;align-items:center;gap:7px;min-width:0;">${checkbox}
+        words.map((w, i) =>
+          `<div style="display:flex;align-items:center;gap:7px;min-width:0;">${checkbox(isActive && i === correctPos)}
             <span style="font-size:14px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(w)}</span>
           </div>`
         ).join("") +

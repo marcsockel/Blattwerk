@@ -439,6 +439,7 @@ const WIDGETS = [];
 <script src="widgets/anlaut.js"></script>
 <script src="widgets/anlaut_zuordnung.js"></script>
 <script src="widgets/wort_schreiben.js"></script>
+<script src="widgets/wortchips.js"></script>
 <script src="widgets/buchstabensalat2.js"></script>
 <script src="widgets/geheimschrift.js"></script>
 <script src="widgets/bild_wort_zuordnung2.js"></script>
@@ -450,6 +451,8 @@ const WIDGETS = [];
 <script src="widgets/crossword.js"></script>
 <script src="widgets/multiplechoice.js"></script>
 <script src="widgets/zahlenkette.js"></script>
+<script src="widgets/nachbarzahlen.js"></script>
+<script src="widgets/nachbarzahlen_tabelle.js"></script>
 <script src="widgets/stellenwert.js"></script>
 <script src="widgets/geld.js"></script>
 <script src="widgets/zwanzigerfeld.js"></script>
@@ -795,6 +798,7 @@ function fitCanvasPostLayout(root, opts) {
     if (typeof fitNumberlineSvg === 'function') fitNumberlineSvg(svg);
   });
   if (typeof fitAllFrameInkSvgs === 'function') fitAllFrameInkSvgs(scope);
+  if (typeof redrawConnectionLines === 'function') redrawConnectionLines();
 }
 
 function patchWidgetPost(w, root) {

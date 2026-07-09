@@ -140,64 +140,146 @@ function guGenOne(d) {
   return { f: 'einfach', fromVal, fromU: hi.u, toU: lo.u, ans: fromVal * best };
 }
 
-function guGenerate(d) {
+function guTotal(d) {
   const app = Math.max(1, Math.min(20, d.aufgabenProPaeckchen || 5));
   const cols = Math.max(1, Math.min(36, d.cols || 2));
-  const n = app * cols;
+  return app * cols;
+}
+
+// Alle Aufgaben neu würfeln.
+function guGenerate(d) {
+  const n = guTotal(d);
   d.items = Array.from({ length: n }, () => guGenOne(d));
+}
+
+// Nur die Anzahl anpassen: vorhandene Aufgaben behalten, fehlende ergänzen bzw.
+// überzählige abschneiden (z.B. beim Hinzufügen eines Päckchens).
+function guResize(d) {
+  const n = guTotal(d);
+  const items = (d.items || []).slice(0, n);
+  while (items.length < n) items.push(guGenOne(d));
+  d.items = items;
 }
 
 // ── Darstellung ───────────────────────────────────────────────────
 function guUnitLbl(u, val) { return u === 'Tag' ? (val === 1 ? 'Tag' : 'Tage') : u; }
 
-function guBlank(ans, active, minw) {
-  return `<span style="display:inline-block;min-width:${minw}px;text-align:center;`
-       + `border-bottom:1.6px solid #333;color:#2563eb;font-weight:700;line-height:1.15;">`
-       + `${active ? ans : '&nbsp;'}</span>`;
-}
-function guRelBox(rel, active) {
-  return `<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:23px;`
-       + `border:1.6px solid #333;border-radius:3px;color:#2563eb;font-weight:700;`
-       + `vertical-align:middle;">${active ? rel : '&nbsp;'}</span>`;
+// Größenfaktor wie Rechenaufgaben: klein = 1, mittel = 1.3, groß = 1.5.
+function guScale(d) {
+  const S = d.groesse === 'gross' ? 1.5 : d.groesse === 'mittel' ? 1.3 : 1;
+  const px = v => Math.round(v * S);
+  return { S, px, FS: px(16), LH: px(20) };
 }
 
-// Eine Aufgabe als Tabellenzeile: linke Seite (rechtsbündig) | = bzw. Vergleichs-
-// kästchen (zentriert) | rechte Seite (linksbündig). Durch die gemeinsame Tabelle
-// je Päckchen stehen alle „=" exakt untereinander.
-function guItemRow(it, d, active) {
-  const big = (d.groesse || 'gross') !== 'klein';
-  const fs = big ? 17 : 14;
-  const bw = ans => Math.max(26, String(ans).length * 11 + 6);
-  const ff = `font-family:'DidactGothic7',sans-serif;font-size:${fs}px;`;
-  const tdL = `${ff}text-align:right;white-space:nowrap;padding:2px 0;color:#222;`;
-  const tdM = `${ff}text-align:center;white-space:nowrap;padding:2px 7px;color:#222;`;
-  const tdR = `${ff}text-align:left;white-space:nowrap;padding:2px 0;color:#222;`;
-  let left, mid, right;
-  if (it.f === 'einfach') {
-    left = `${it.fromVal} ${guUnitLbl(it.fromU, it.fromVal)}`;
-    mid = '=';
-    right = `${guBlank(it.ans, active, bw(it.ans))} ${guUnitLbl(it.toU, it.ans)}`;
-  } else if (it.f === 'vergleich') {
-    left = `${it.leftVal} ${guUnitLbl(it.leftU, it.leftVal)}`;
-    mid = guRelBox(it.rel, active);
-    right = `${it.rightVal} ${guUnitLbl(it.rightU, it.rightVal)}`;
-  } else if (it.mode === 'split') {
-    left = `${it.total} ${guUnitLbl(it.loU, it.total)}`;
-    mid = '=';
-    right = `${guBlank(it.a, active, bw(it.a))} ${guUnitLbl(it.hiU, it.a)} `
-          + `${guBlank(it.b, active, bw(it.b))} ${guUnitLbl(it.loU, it.b)}`;
-  } else {
-    left = `${it.a} ${guUnitLbl(it.hiU, it.a)} ${it.b} ${guUnitLbl(it.loU, it.b)}`;
-    mid = '=';
-    right = `${guBlank(it.total, active, bw(it.total))} ${guUnitLbl(it.loU, it.total)}`;
+// Ziffern-Zellenbreite in ch. Etwas breiter als 1ch, sonst berühren sich benachbarte
+// Ziffern (v.a. Nullen, deren Glyphe ≈ 1ch breit ist). Auch bei Rechenaufgaben so.
+const GU_DW = 1.2;
+
+// Ziffern-Zellen wie Rechenaufgaben: jede Ziffer in eigener Zelle (zentriert), die
+// Schrift hat keine Tabellenziffern → so stehen Einer unter Einern, mit etwas Luft.
+function guDigitCells(v) {
+  return String(v).split('').map(c =>
+    /[0-9]/.test(c)
+      ? `<span style="display:inline-block;width:${GU_DW}ch;text-align:center;">${c}</span>`
+      : esc(c)
+  ).join('');
+}
+// Zahl rechtsbündig in FESTER Slot-Breite (digits × GU_DW ch) → rechte Kante und „="
+// stehen widgetweit exakt untereinander (auch zwischen Päckchen).
+function guNumSpan(v, digits, FS, LH) {
+  const w = (digits * GU_DW).toFixed(2);
+  return `<span style="display:inline-block;width:${w}ch;min-height:${LH}px;line-height:${LH}px;`
+       + `text-align:right;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${guDigitCells(v)}</span>`;
+}
+// Lösungsstrich fester Breite (digits Slots) → jeder Strich gleich lang, Ergebnis blau bei active.
+function guBlankSpan(v, active, digits, FS, LH) {
+  const w = (digits * GU_DW).toFixed(2);
+  return `<span style="display:inline-block;width:${w}ch;min-height:${LH}px;line-height:${LH}px;`
+       + `text-align:right;border-bottom:1.6px solid #333;color:#2563eb;font-weight:700;`
+       + `font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${active ? guDigitCells(v) : '&nbsp;'}</span>`;
+}
+function guRelBox(rel, active, px, FS) {
+  return `<span style="display:inline-flex;align-items:center;justify-content:center;`
+       + `width:${px(26)}px;height:${px(23)}px;border:1.6px solid #333;border-radius:3px;`
+       + `color:#2563eb;font-weight:700;font-size:${FS}px;vertical-align:middle;">${active ? rel : '&nbsp;'}</span>`;
+}
+
+// Vorgegebene (schwarze) Zahlen bzw. Lösungswerte einer Aufgabe — für Layout-Kennzahlen.
+function guGivenNums(it) {
+  if (it.f === 'einfach') return [it.fromVal];
+  if (it.f === 'vergleich') return [it.leftVal, it.rightVal];
+  if (it.mode === 'split') return [it.total];
+  return [it.a, it.b]; // join
+}
+function guBlankNums(it) {
+  if (it.f === 'einfach') return [it.ans];
+  if (it.f === 'vergleich') return [];
+  if (it.mode === 'split') return [it.a, it.b];
+  return [it.total]; // join
+}
+// Alle in einer Aufgabe vorkommenden Einheiten (für die Kürzel-Breite).
+function guUnits(it) {
+  if (it.f === 'einfach') return [it.fromU, it.toU];
+  if (it.f === 'vergleich') return [it.leftU, it.rightU];
+  if (it.mode === 'split') return [it.loU, it.hiU];
+  return [it.hiU, it.loU]; // join
+}
+// Einheitliche Slots fürs ganze Widget: Ziffern (vorgegeben / Ergebnis) und Kürzel-Breite.
+// unitW = längstes Kürzel in Zeichen (Worst Case „Tage" statt „Tag") → alle Kürzel-Zellen
+// gleich breit, damit „=" widgetweit exakt untereinander steht.
+function guMetrics(items) {
+  let numDigits = 1, blankDigits = 1, unitW = 1;
+  for (const it of items) {
+    if (!it) continue;
+    for (const v of guGivenNums(it)) numDigits = Math.max(numDigits, String(v).length);
+    for (const v of guBlankNums(it)) blankDigits = Math.max(blankDigits, String(v).length);
+    for (const u of guUnits(it)) unitW = Math.max(unitW, guUnitLbl(u, 2).length);
   }
-  return `<tr><td style="${tdL}">${left}</td><td style="${tdM}">${mid}</td>`
-       + `<td style="${tdR}">${right}</td></tr>`;
+  return { numDigits, blankDigits, unitW };
+}
+
+// Eine Aufgabe als Tabellenzeile. Zahl und Einheitskürzel stehen in EIGENEN Zellen
+// (wie die Komponenten bei Rechenaufgaben) → Ziffern-Ende und Einheit-Anfang stehen
+// je Spalte exakt untereinander, „=" ebenfalls. Format ist je Widget fix; „gemischt"
+// nutzt ein einheitliches 9-Spalten-Raster (split/join teilen sich die Spalten).
+function guItemRow(it, d, active, m, sc) {
+  const { px, FS, LH } = sc;
+  const tdBase = `padding:${px(3)}px 0;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`
+    + `line-height:${LH}px;vertical-align:middle;color:#222;`;
+  // Feste Kürzel-Breite (in ch): längstes Kürzel + 1 als Puffer (Buchstaben > „0").
+  const unitCh = (m.unitW + 1);
+  const numCh = (m.numDigits * GU_DW).toFixed(2);
+  const tdNum = `${tdBase}text-align:right;white-space:nowrap;`;
+  const tdUnit = `${tdBase}text-align:left;white-space:nowrap;padding-left:${px(4)}px;padding-right:${px(9)}px;`;
+  const tdMid = `${tdBase}text-align:center;white-space:nowrap;padding-left:${px(6)}px;padding-right:${px(6)}px;`;
+  const cNum = v => `<td style="${tdNum}">${guNumSpan(v, m.numDigits, FS, LH)}</td>`;
+  const cBlank = v => `<td style="${tdNum}">${guBlankSpan(v, active, m.blankDigits, FS, LH)}</td>`;
+  const cUnit = (u, val) => `<td style="${tdUnit}"><span style="display:inline-block;`
+    + `width:${unitCh}ch;text-align:left;">${esc(guUnitLbl(u, val))}</span></td>`;
+  const cMid = html => `<td style="${tdMid}">${html}</td>`;
+  // Leerslots mit fester Breite → Spalten (und „=") stehen auch bei split/join gleich.
+  const cEmptyNum = `<td style="${tdNum}"><span style="display:inline-block;width:${numCh}ch;"></span></td>`;
+  const cEmptyUnit = `<td style="${tdUnit}"><span style="display:inline-block;width:${unitCh}ch;"></span></td>`;
+
+  if (it.f === 'einfach') {
+    return `<tr>${cNum(it.fromVal)}${cUnit(it.fromU, it.fromVal)}${cMid('=')}`
+         + `${cBlank(it.ans)}${cUnit(it.toU, it.ans)}</tr>`;
+  }
+  if (it.f === 'vergleich') {
+    return `<tr>${cNum(it.leftVal)}${cUnit(it.leftU, it.leftVal)}${cMid(guRelBox(it.rel, active, px, FS))}`
+         + `${cNum(it.rightVal)}${cUnit(it.rightU, it.rightVal)}</tr>`;
+  }
+  if (it.mode === 'split') {
+    return `<tr>${cNum(it.total)}${cUnit(it.loU, it.total)}${cEmptyNum}${cEmptyUnit}${cMid('=')}`
+         + `${cBlank(it.a)}${cUnit(it.hiU, it.a)}${cBlank(it.b)}${cUnit(it.loU, it.b)}</tr>`;
+  }
+  return `<tr>${cNum(it.a)}${cUnit(it.hiU, it.a)}${cNum(it.b)}${cUnit(it.loU, it.b)}${cMid('=')}`
+       + `${cBlank(it.total)}${cUnit(it.loU, it.total)}${cEmptyNum}${cEmptyUnit}</tr>`;
 }
 
 // Ein Päckchen = eine Tabelle (Zeilen untereinander, „=" ausgerichtet).
-function guGroupTable(group, d, active) {
-  const rows = group.map(it => guItemRow(it, d, active)).join('');
+function guGroupTable(group, d, active, m, sc) {
+  const rows = group.map(it => guItemRow(it, d, active, m, sc)).join('');
   return `<table style="border-collapse:collapse;">${rows}</table>`;
 }
 
@@ -211,7 +293,7 @@ WIDGETS.push({
       id, type: 'groessen',
       bereich: 'laenge', format: 'einfach', stufe: 'leicht',
       aktiveEinheiten: guDefaultUnits(),
-      groesse: 'gross', aufgabenProPaeckchen: 5, cols: 2,
+      groesse: 'klein', aufgabenProPaeckchen: 5, cols: 2,
       aufgabenNr: 0, aufgabenText: '',
     };
     guGenerate(w);
@@ -221,19 +303,27 @@ WIDGETS.push({
   render: d => {
     const items = d.items || [];
     const active = d.id === selId || _solutionsMode;
-    const big = (d.groesse || 'gross') !== 'klein';
     const app = Math.max(1, Math.min(20, d.aufgabenProPaeckchen || 5));
     const cols = Math.max(1, Math.min(36, d.cols || 2));
     // In Päckchen aufteilen (je app Aufgaben), jedes Päckchen = eine Tabelle.
     const groups = Array.from({ length: cols },
       (_, i) => items.slice(i * app, (i + 1) * app)).filter(g => g.length);
     const fmt = d.format || 'einfach';
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Box-Breite
-    // itemW → alle Päckchen gleich breit.
-    const itemW = big ? (fmt === 'gemischt' ? 250 : 200) : (fmt === 'gemischt' ? 200 : 160);
+    const sc = guScale(d);
+    // Einheitliche Slot-Anzahlen fürs ganze Widget → Ziffern-Enden stehen
+    // zeilenübergreifend exakt untereinander; Lösungsstriche gleich lang.
+    const m = guMetrics(items);
+    // Verteilungs-Layout wie Rechenaufgaben (flexDistribute in helpers.js): itemW nur
+    // GROB geschätzt für die Voll/Nicht-voll-Entscheidung, echte Spaltenzahl misst der Browser.
+    const digitPx = 9, unitPx = 22;
+    const est = fmt === 'gemischt'
+      ? 3 * m.numDigits * digitPx + 4 * unitPx + 60
+      : 2 * m.numDigits * digitPx + 2 * unitPx + 50;
+    const itemW = Math.round(est * sc.S);
     return atHtml(d) + flexDistribute(
-      groups.map(g => guGroupTable(g, d, active)),
-      { gap: 36, marginBottom: 16, itemSize: `width:${itemW}px;`, itemW, d }
+      groups.map(g => guGroupTable(g, d, active, m, sc)),
+      { gap: 24, marginBottom: 16, sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
+        itemW, d, estimate: true }
     );
   },
 
@@ -241,7 +331,7 @@ WIDGETS.push({
     const bereich = d.bereich || 'laenge';
     const format = d.format || 'einfach';
     const stufe = d.stufe || 'leicht';
-    const size = d.groesse || 'gross';
+    const size = d.groesse || 'klein';
     const app = d.aufgabenProPaeckchen || 5;
     const cols = d.cols || 2;
 
@@ -274,7 +364,8 @@ WIDGETS.push({
       row('Schwierigkeit', GU_STUFEN, stufe, 'stufe') +
       `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">`
       + btn(size === 'klein', 'Klein', `upd(${d.id},'groesse','klein')`)
-      + btn(size !== 'klein', 'Groß', `upd(${d.id},'groesse','gross')`)
+      + btn(size === 'mittel', 'Mittel', `upd(${d.id},'groesse','mittel')`)
+      + btn(size === 'gross', 'Groß', `upd(${d.id},'groesse','gross')`)
       + `</div></div>` +
       pr('Aufgaben pro Päckchen',
         `<input type="number" min="1" max="20" value="${app}" onclick="event.stopPropagation()"
@@ -295,7 +386,9 @@ function guSet(id, key, val) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   w[key] = val;
-  guGenerate(w);
+  // Bei reiner Mengenänderung (Päckchen/Aufgaben) vorhandene Aufgaben behalten.
+  if (key === 'cols' || key === 'aufgabenProPaeckchen') guResize(w);
+  else guGenerate(w);
   render(); renderProps(id);
 }
 

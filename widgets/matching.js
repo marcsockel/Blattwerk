@@ -18,6 +18,7 @@ WIDGETS.push({
     const schreiblinien = d.schreiblinien || false;
     const beispiel      = d.beispiel      || false;
     const beispielText  = d.beispielText  ?? "";
+    const isActive      = d.id === selId || _solutionsMode;
     const is3           = d.pairs.length > 0 && d.pairs[0].length >= 3;
 
     let order  = d.rightOrder  || matchingShuffleIdx(d.pairs.length);
@@ -40,6 +41,13 @@ WIDGETS.push({
     const right2 = is3 ? order2.map(i => d.pairs[i][2]) : null;
     const exPos  = beispiel ? order.indexOf(0)  : -1;
     const exPos2 = (beispiel && is3) ? order2.indexOf(0) : -1;
+    const linesOn = isActive || beispiel;
+    const drawIdx = linesOn
+      ? (isActive ? Array.from({ length: d.pairs.length }, (_, i) => i) : [0])
+      : [];
+    const drawSet = new Set(drawIdx);
+    const strokeCol = isActive ? '#2563eb' : '#ccc';
+    const strokeW   = isActive ? 2 : 1.5;
 
     const card = (val, id) =>
       `<div style="padding:3px 6px;font-size:${fontSize}px;font-family:${font};white-space:nowrap;">` +
@@ -62,17 +70,19 @@ WIDGETS.push({
       const rowStyle = `display:flex;gap:${gap}px;align-items:flex-start;flex-wrap:wrap;`;
 
       const topRow = left.map((val, i) => {
-        const leftId = (beispiel && i === 0) ? `mleft-${d.id}` : null;
+        const leftId = drawSet.has(i) ? `mleft-${d.id}-${i}` : null;
         return card(val, leftId);
       }).join("");
 
       const midRow = right1.map((val, i) => {
-        const midId = (beispiel && i === exPos) ? `mmid-${d.id}` : null;
+        const pairIdx = order[i];
+        const midId = drawSet.has(pairIdx) ? `mmid-${d.id}-${pairIdx}` : null;
         return card(val, midId);
       }).join("");
 
       const mid2Row = is3 ? right2.map((val, i) => {
-        const rightId = (beispiel && i === exPos2) ? `mright2-${d.id}` : null;
+        const pairIdx = order2[i];
+        const rightId = drawSet.has(pairIdx) ? `mright2-${d.id}-${pairIdx}` : null;
         return card(val, rightId);
       }).join("") : "";
 
@@ -87,23 +97,23 @@ WIDGETS.push({
       if (is3)         hHtml += `<div style="${rowStyle};margin-top:${gap}px;">${mid2Row}</div>`;
       if (schreiblinien) hHtml += `<div style="${rowStyle};margin-top:6px;">${lineRow}</div>`;
 
-      if (!beispiel) return atHtml(d) + hHtml;
+      if (!linesOn) return atHtml(d) + hHtml;
 
-      const lines = is3
-        ? `<line id="mline1-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5"/>` +
-          `<line id="mline2-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5"/>`
-        : `<line id="mline1-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5"/>`;
-      const drawCall = is3
-        ? `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}','mmid-${d.id}','mright2-${d.id}','mline2-${d.id}')`
-        : `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}')`;
-      const segArr = is3
-        ? [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`, `mmid-${d.id}`, `mright2-${d.id}`, `mline2-${d.id}`]
-        : [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`];
+      const lines = drawIdx.map(i =>
+        is3
+          ? `<line id="mline1-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>` +
+            `<line id="mline2-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
+          : `<line id="mline1-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
+      ).join('');
+      const segArr = drawIdx.flatMap(i =>
+        is3
+          ? [`mleft-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mline1-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mright2-${d.id}-${i}`, `mline2-${d.id}-${i}`]
+          : [`mleft-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mline1-${d.id}-${i}`]
+      );
       return atHtml(d) +
-        `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;display:block;width:100%;">` +
+        `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' data-azanchor="tb" style="position:relative;display:block;width:100%;">` +
           `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
           hHtml +
-          `<img src="data:image/png;base64,!" onerror="${drawCall}" style="display:none">` +
         `</div>`;
     }
 
@@ -123,9 +133,11 @@ WIDGETS.push({
       (schreiblinien ? `width:100%;` : ``);
 
     const rows = left.map((_, i) => {
-      const leftId  = (beispiel && i === 0)     ? `mleft-${d.id}`   : null;
-      const midId   = (beispiel && i === exPos)  ? `mmid-${d.id}`    : null;
-      const rightId = (beispiel && i === exPos2) ? `mright2-${d.id}` : null;
+      const leftId  = drawSet.has(i) ? `mleft-${d.id}-${i}` : null;
+      const midPair = order[i];
+      const midId   = drawSet.has(midPair) ? `mmid-${d.id}-${midPair}` : null;
+      const rightPair = is3 ? order2[i] : null;
+      const rightId = (is3 && drawSet.has(rightPair)) ? `mright2-${d.id}-${rightPair}` : null;
       const writeTxt = schreiblinien
         ? (is3 ? (i === exPos2 ? beispielText : undefined)
                 : (i === exPos  ? beispielText : undefined))
@@ -138,27 +150,27 @@ WIDGETS.push({
 
     const tableHtml = `<div style="${gridStyle}">${rows}</div>`;
 
-    if (!beispiel) return atHtml(d) + tableHtml;
+    if (!linesOn) return atHtml(d) + tableHtml;
 
     // SVG overlay for connecting line(s)
-    const lines = is3
-      ? `<line id="mline1-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5" stroke-dasharray="none"/>` +
-        `<line id="mline2-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5" stroke-dasharray="none"/>`
-      : `<line id="mline1-${d.id}" x1="0" y1="0" x2="0" y2="0" stroke="#ccc" stroke-width="1.5" stroke-dasharray="none"/>`;
+    const lines = drawIdx.map(i =>
+      is3
+        ? `<line id="mline1-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>` +
+          `<line id="mline2-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
+        : `<line id="mline1-${d.id}-${i}" x1="0" y1="0" x2="0" y2="0" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
+    ).join('');
 
-    const drawCall = is3
-      ? `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}','mmid-${d.id}','mright2-${d.id}','mline2-${d.id}')`
-      : `matchingDraw('mbox-${d.id}','mleft-${d.id}','mmid-${d.id}','mline1-${d.id}')`;
-    const segArr = is3
-      ? [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`, `mmid-${d.id}`, `mright2-${d.id}`, `mline2-${d.id}`]
-      : [`mleft-${d.id}`, `mmid-${d.id}`, `mline1-${d.id}`];
+    const segArr = drawIdx.flatMap(i =>
+      is3
+        ? [`mleft-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mline1-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mright2-${d.id}-${i}`, `mline2-${d.id}-${i}`]
+        : [`mleft-${d.id}-${i}`, `mmid-${d.id}-${i}`, `mline1-${d.id}-${i}`]
+    );
 
     const boxDisplay = schreiblinien ? `display:block;width:100%;` : `display:inline-block;`;
     return atHtml(d) +
-      `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' style="position:relative;${boxDisplay}">` +
+      `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' data-azanchor="lr" style="position:relative;${boxDisplay}">` +
         `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
         tableHtml +
-        `<img src="data:image/png;base64,!" onerror="${drawCall}" style="display:none">` +
       `</div>`;
   },
 
@@ -273,6 +285,7 @@ function matchingDraw(boxId, ...segments) {
 function matchingDrawNow(boxId, ...segments) {
   const box = document.getElementById(boxId);
   if (!box) return;
+  const anchorMode = (box.getAttribute('data-azanchor') || 'lr').toLowerCase();
   for (let i = 0; i + 2 < segments.length; i += 3) {
     const lEl  = document.getElementById(segments[i]);
     const rEl  = document.getElementById(segments[i+1]);
@@ -280,8 +293,12 @@ function matchingDrawNow(boxId, ...segments) {
     if (!lEl || !rEl || !line) continue;
     const lr = lEl.getBoundingClientRect();
     const rr = rEl.getBoundingClientRect();
-    const p1 = screenToElLocal(lr.right, (lr.top + lr.bottom) / 2, box);
-    const p2 = screenToElLocal(rr.left,  (rr.top + rr.bottom) / 2, box);
+    const p1 = anchorMode === 'tb'
+      ? screenToElLocal((lr.left + lr.right) / 2, lr.bottom, box)
+      : screenToElLocal(lr.right, (lr.top + lr.bottom) / 2, box);
+    const p2 = anchorMode === 'tb'
+      ? screenToElLocal((rr.left + rr.right) / 2, rr.top, box)
+      : screenToElLocal(rr.left, (rr.top + rr.bottom) / 2, box);
     line.setAttribute('x1', p1.x);
     line.setAttribute('y1', p1.y);
     line.setAttribute('x2', p2.x);
