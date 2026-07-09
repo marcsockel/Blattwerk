@@ -24,15 +24,20 @@ WIDGETS.push({
     id, type:"multiplechoice",
     text: "Was ist die Hauptstadt von Deutschland?\nBerlin\nMünchen\nHamburg\nWien\n\nWelches Tier ist ein Säugetier?\nDelfin\nLachs\nAdler\nEidechse",
     cols: 1,
-    shuffle: false, aufgabenNr:0, aufgabenText:''
+    shuffle: false,
+    font: "inherit", fontSize: 13,
+    aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {
     const cols      = d.cols || 1;
+    const font      = d.font || "inherit";
+    const fontSize  = d.fontSize || 13;
     const questions = mcParseText(d.text);
     const isActive  = d.id === selId || _solutionsMode;
     const labels    = ["a","b","c","d","e","f","g","h"];
     const doShuffle = d.shuffle !== false && d.shuffle;
+    const ff = `font-family:${font};font-size:${fontSize}px;`;
 
     const qBlocks = questions.map((item, qi) => {
       // Antworten ggf. mischen (deterministisch per seed = widget-id + frage-index)
@@ -47,14 +52,14 @@ WIDGETS.push({
                                background:${isCorrect ? '#2563eb' : 'transparent'};"></span>`;
         return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
           ${circle}
-          <span style="font-size:13px;font-family:inherit;">
+          <span style="${ff}">
             <span style="font-weight:600;">${labels[ai] || ai+1})</span>&nbsp;${esc(entry.text)}
           </span>
         </div>`;
       }).join('');
 
       return `<div style="margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:700;margin-bottom:5px;font-family:inherit;">
+        <div style="${ff}font-weight:700;margin-bottom:5px;">
           ${qi+1}.&nbsp;${esc(item.q)}
         </div>
         <div style="padding-left:4px;">${answers}</div>
@@ -70,18 +75,45 @@ WIDGETS.push({
   },
 
   renderProps: d => {
-    const cols = d.cols || 1;
+    const cols     = d.cols || 1;
+    const font     = d.font || "inherit";
+    const fontSize = d.fontSize || 13;
+    const fontOptions = GAP_FONTS.map(f =>
+      `<option value="${f.value}" ${font===f.value?"selected":""}>${f.label}</option>`
+    ).join("");
+
+    const sizeInput = `<input type="number" min="8" max="32" value="${fontSize}"
+      onclick="event.stopPropagation()"
+      onchange="upd(${d.id},'fontSize',+this.value)"
+      style="width:46px;padding:2px 4px;border:1.5px solid #ddd;border-radius:4px;
+             font-family:inherit;font-size:11px;text-align:center;background:#fff;">`;
+
+    const editorBox = `<div style="border:1.5px solid #ddd;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:flex-end;padding:5px 6px;
+                  border-bottom:1px solid #eee;background:#fafafa;">
+        ${sizeInput}
+      </div>
+      <textarea onclick="event.stopPropagation()"
+        onchange="mcUpdate(${d.id},this.value)"
+        style="display:block;width:100%;margin:0;font-family:${font};font-size:${fontSize}px;border:none;border-radius:0;
+               padding:8px 10px;min-height:160px;resize:vertical;box-sizing:border-box;line-height:1.6;
+               outline:none;color:#333;vertical-align:top;"
+      >${esc(d.text||'')}</textarea>
+      <div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
+        <select onchange="upd(${d.id},'font',this.value)"
+          style="width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;outline:none;cursor:pointer;">
+          ${fontOptions}
+        </select>
+      </div>
+    </div>`;
+
     return `
       <div class="prow"><label>Fragen & Antworten</label></div>
       <div style="font-size:11px;color:#888;margin-bottom:4px;line-height:1.5;">
         1. Zeile = Frage · folgende Zeilen = Antworten<br>
         Erste Antwort = richtige Antwort · Leerzeile trennt Fragen
       </div>
-      <textarea onclick="event.stopPropagation()"
-        onchange="mcUpdate(${d.id},this.value)"
-        style="width:100%;font-family:inherit;font-size:12px;border:1.5px solid #ddd;border-radius:4px;
-               padding:6px 8px;min-height:160px;resize:vertical;box-sizing:border-box;line-height:1.6;"
-      >${esc(d.text||'')}</textarea>
+      ${editorBox}
       ${pr('Spalten', `<input type="number" min="1" max="4" value="${cols}"
         onclick="event.stopPropagation()"
         onchange="upd(${d.id},'cols',+this.value)"

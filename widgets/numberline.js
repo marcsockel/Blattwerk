@@ -31,8 +31,10 @@ function nlBuild(d, W, isActive) {
       ticks += `<line x1="${x}" y1="16" x2="${x}" y2="40" stroke="#000" stroke-width="2"/>`;
       if (modus === 'luecken' && gaps.has(v)) {
         const boxW = (step >= 100 ? 36 : step >= 10 ? 28 : 22) * 1.5; // 1,5× größere Kästchen
-        if (isActive) labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${v}</text>`;
-        else          labels += `<rect x="${x-boxW/2}" y="42" width="${boxW}" height="24" rx="2" fill="white" stroke="#000" stroke-width="1.2"/>`;
+        labels += `<rect x="${x-boxW/2}" y="42" width="${boxW}" height="24" rx="2" fill="white" stroke="#000" stroke-width="1.2"/>`;
+        if (isActive) {
+          labels += `<text x="${x}" y="58" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${v}</text>`;
+        }
       } else if (!nurRandwerte || v===start || v===end) {
         labels += `<text x="${x}" y="55" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" fill="#000">${v}</text>`;
       }

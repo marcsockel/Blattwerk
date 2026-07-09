@@ -7,7 +7,8 @@
 //   −:  außen − innen = mitte      (außen = mitte + innen)
 //   ×:  innen × außen = mitte      (Faktorpaare von mitte)
 //   ÷:  außen ÷ innen = mitte      (außen = mitte × innen)
-// Entweder der Innen- ODER der Außenring ist leer (zum Ausfüllen).
+// Entweder der Innen- ODER der Außenring ist leer (zum Ausfüllen),
+// oder im Modus "gemischt" segmentweise abwechselnd innen/außen.
 // Im Lösungs-/Auswahlmodus werden die leeren Felder blau eingeblendet.
 
 function zrRand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -134,6 +135,8 @@ function zrWheelSvg(wh, d) {
   for (let i = 0; i < n; i++) {
     const ac = start + (i + 0.5) * step;
     const seg = wh.segs[i];
+    const blankInnen = blank === 'innen' || (blank === 'gemischt' && i % 2 === 0);
+    const blankAussen = blank === 'aussen' || (blank === 'gemischt' && i % 2 === 1);
     const put = (r, val, isBlankRing) => {
       if (isBlankRing && !isActive) return ''; // leeres Feld
       const x = cx + r * Math.cos(ac), y = cy + r * Math.sin(ac);
@@ -141,8 +144,8 @@ function zrWheelSvg(wh, d) {
       const fw  = isBlankRing ? '700' : '400';
       return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" font-family="${ff}" font-size="${fsR}" font-weight="${fw}" fill="${col}">${val}</text>`;
     };
-    g += put(rInn, seg.innen, blank === 'innen');
-    g += put(rAus, seg.aussen, blank === 'aussen');
+    g += put(rInn, seg.innen, blankInnen);
+    g += put(rAus, seg.aussen, blankAussen);
   }
   return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${g}</svg>`;
 }
@@ -229,6 +232,7 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">
           ${tgl(blank,'innen','Innenring','blank')}
           ${tgl(blank,'aussen','Außenring','blank')}
+          ${tgl(blank,'gemischt','Gemischt','blank')}
         </div>
       </div>
       <div class="prow"><label>Größe</label>

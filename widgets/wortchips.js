@@ -69,21 +69,36 @@ WIDGETS.push({
       `<option value="${f.value}" ${font === f.value ? "selected" : ""}>${f.label}</option>`
     ).join("");
 
-    return pr("Wörter (eine Zeile pro Wort oder mit , ; trennen)",
-      `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;`
-      + `border-radius:4px;padding:3px 6px;min-height:90px;resize:vertical;" `
-      + `onchange="upd(${d.id},'wordsText',this.value)">${esc(d.wordsText || "")}</textarea>`) +
-      `<div class="prow"><label>Schrift</label>
-        <div style="display:flex;gap:4px;align-items:center;">
-          <select onchange="upd(${d.id},'font',this.value)"
-            style="flex:1;font-size:11px;padding:2px 4px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;">
-            ${fontOptions}
-          </select>
-          <input type="number" min="8" max="40" value="${fs}" onclick="event.stopPropagation()"
-            onchange="upd(${d.id},'fontSize',+this.value)"
-            style="width:52px;padding:2px 4px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:11px;text-align:center;">
-        </div>
-      </div>` +
+    const sizeInput = `<input type="number" min="8" max="40" value="${fs}"
+      onclick="event.stopPropagation()"
+      onchange="upd(${d.id},'fontSize',+this.value)"
+      style="width:46px;padding:2px 4px;border:1.5px solid #ddd;border-radius:4px;
+             font-family:inherit;font-size:11px;text-align:center;background:#fff;">`;
+
+    const editorBox = `<div style="border:1.5px solid #ddd;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:flex-end;padding:5px 6px;
+                  border-bottom:1px solid #eee;background:#fafafa;">
+        ${sizeInput}
+      </div>
+      <textarea onclick="event.stopPropagation()"
+        onchange="upd(${d.id},'wordsText',this.value)"
+        style="display:block;width:100%;margin:0;font-family:${font};font-size:${fs}px;border:none;border-radius:0;
+               padding:8px 10px;min-height:90px;resize:vertical;box-sizing:border-box;line-height:1.6;
+               outline:none;color:#333;vertical-align:top;"
+      >${esc(d.wordsText || "")}</textarea>
+      <div style="border-top:1px solid #eee;background:#fafafa;padding:4px 6px;">
+        <select onchange="upd(${d.id},'font',this.value)"
+          style="width:100%;border:none;background:transparent;font-family:inherit;font-size:12px;outline:none;cursor:pointer;">
+          ${fontOptions}
+        </select>
+      </div>
+    </div>`;
+
+    return `<div class="prow"><label>Wörter</label></div>
+      <div style="font-size:11px;color:#888;margin-bottom:4px;line-height:1.5;">
+        Eine Zeile pro Wort oder mit <code>,</code> / <code>;</code> trennen
+      </div>
+      ${editorBox}` +
       pr("Abstand horizontal",
         `<input type="number" min="0" max="40" value="${gapX}" onclick="event.stopPropagation()"
           onchange="upd(${d.id},'gapX',+this.value)">`) +
