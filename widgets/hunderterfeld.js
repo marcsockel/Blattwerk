@@ -7,7 +7,51 @@
 //   Kästchen durchgestrichen (weißes X) — wie Zwanzigerfeld bei Minus.
 // Antwort/Lücke: im Auswahl-/Lösungsmodus blau eingeblendet.
 
+
+const HF_WINNER_PAD = 18;
+
+// Größen: Klein 4/Reihe · Mittel 3/Reihe · Groß 2/Reihe
+const HF_SIZE = {
+  klein: {
+    pts: { s: 13, r: 5, m: 2, gap: 0 },
+    box: { cs: 12, m: 2, gap: 0 },
+    fs: 15, bs: 24, colGap: 32, rowGap: 48,
+  },
+  mittel: {
+    pts: { s: 17, r: 6, m: 3, gap: 14 },
+    box: { cs: 17, m: 2, gap: 0 },
+    fs: 21, bs: 31, colGap: 32, rowGap: 52,
+  },
+  gross: {
+    pts: { s: 28, r: 10, m: 3, gap: 13 },
+    box: { cs: 28, m: 2, gap: 0 },
+    fs: 24, bs: 36, colGap: 40, rowGap: 56,
+  },
+};
+
+function hfGroesse(d) {
+  const g = d.groesse || 'klein';
+  return g === 'mittel' || g === 'gross' ? g : 'klein';
+}
+
+function hfSizeTier(d) {
+  return HF_SIZE[hfGroesse(d)];
+}
+
+function hfFullContentW() {
+  if (typeof geom === 'function') return Math.round(geom().contentW - HF_WINNER_PAD);
+  return 400;
+}
+
+function hfContentW(d) {
+  if (typeof geom === 'function' && typeof widthFrac === 'function') {
+    return Math.round(geom().contentW * widthFrac(d) - HF_WINNER_PAD);
+  }
+  return 400;
+}
+
 function hfRand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
+
 // Zahl mit Zehner UND Einer (Zehner 1..maxTens, Einer 1..9) → nie z.B. „1" oder „70".
 function hfRandTO(maxTens) { return hfRand(1, maxTens) * 10 + hfRand(1, 9); }
 
@@ -103,16 +147,38 @@ function hfFill(d) {
   return farbig ? '#d62828' : '#7a7a7a';                                     // rot / grau
 }
 
+function hfPerRow(d) {
+  const g = hfGroesse(d);
+  return g === 'klein' ? 4 : g === 'mittel' ? 3 : 2;
+}
+
 function hfDims(d) {
-  const big = (d.groesse || 'gross') !== 'klein';
+  const tier = hfSizeTier(d);
   const square = d.darstellung === 'kaestchen';
-  const g = square ? 0 : (big ? 11 : 7);   // 5er-Lücke nur bei Punkten
   if (square) {
-    const cs = big ? 20 : 14, m = 2;
-    return { big, square, g, cs, m, W: 2 * m + 10 * cs + g };
+    const { cs, m, gap } = tier.box;
+    const W = 2 * m + 10 * cs + gap;
+    return { square, cs, m, g: gap, W, tier };
   }
-  const s = big ? 22 : 15, r = big ? 7 : 5, m = 3;
-  return { big, square, g, s, r, m, W: 2 * m + 2 * r + 9 * s + g };
+  const { s, r, m, gap } = tier.pts;
+  const W = 2 * m + 2 * r + 9 * s + gap;
+  return { square, s, r, m, g: gap, W, tier };
+}
+
+function hfItemW(d) {
+  const tier = hfSizeTier(d);
+  const perRow = hfPerRow(d);
+  const ideal = Math.floor((hfFullContentW() - (perRow - 1) * tier.colGap) / perRow);
+  return Math.min(ideal, hfContentW(d));
+}
+
+function hfGridHtml(cells, d) {
+  const tier = hfSizeTier(d);
+  const itemW = hfItemW(d);
+  const inner = cells.map(c =>
+    `<div style="width:${itemW}px;flex:0 0 auto;">${c}</div>`
+  ).join('');
+  return `<div style="display:flex;flex-wrap:wrap;column-gap:${tier.colGap}px;row-gap:${tier.rowGap}px;">${inner}</div>`;
 }
 
 function hfSvg(base, op, d) {
@@ -147,7 +213,7 @@ function hfSvg(base, op, d) {
       }
     }
   }
-  return `<svg viewBox="0 0 ${D.W} ${D.W}" width="${D.W}" height="${D.W}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${cells}</svg>`;
+  return `<svg viewBox="0 0 ${D.W} ${D.W}" width="${D.W}" height="${D.W}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-width:${D.W}px;">${cells}</svg>`;
 }
 
 // Gestapelte Plus-Ansicht: nur a Zellen (1. Summand), eine freie Zeile, dann b
@@ -191,16 +257,15 @@ function hfStackSvg(a, b, d) {
   };
   for (let i = 0; i < a; i++) draw(i, cellY(i, A, 0));
   for (let i = 0; i < b; i++) draw(i, cellY(i, B, baseTopB));
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${cells}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-width:${W}px;">${cells}</svg>`;
 }
 
 // Aufgabenzeile (Gleichung / Antwortkästchen) unter dem Feld.
 function hfLabel(item, d) {
   if (item.typ === 'feld') return '';
   const isActive = d.id === selId || _solutionsMode;
-  const big = (d.groesse || 'gross') !== 'klein';
-  const bs = big ? 32 : 24, fs = big ? 18 : 15;
-  const bw = Math.round(bs * 1.5); // halbe Breite mehr → Platz für zweistellige Zahlen
+  const { fs, bs } = hfSizeTier(d);
+  const bw = Math.round(bs * 1.5);
   const box = v => `<span style="display:inline-flex;align-items:center;justify-content:center;width:${bw}px;height:${bs}px;
       border:2px solid #555;border-radius:4px;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;
       font-weight:700;color:#2563eb;">${isActive ? v : ''}</span>`;
@@ -241,8 +306,6 @@ WIDGETS.push({
   render: d => {
     const anz = Math.max(1, Math.min(24, d.anzahl || 1));
     if (!Array.isArray(d.items) || d.items.length !== anz) { hfEnsure(d); d.tasks = hfSerialize(d.items); }
-    const D = hfDims(d);
-    // Gestapelte Plus-Ansicht: einheitliche SVG-Höhe → Gleichung darunter auf gleicher Höhe.
     const stapel = d.plusStapel;
     let maxH = 0;
     if (stapel) d.items.forEach(it => { if (it.typ === 'plus') maxH = Math.max(maxH, hfStackDims(it.a, it.b, d).H); });
@@ -256,13 +319,12 @@ WIDGETS.push({
       }
       return `${svgBlock}${hfLabel(item, d)}`;
     });
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Feldbreite D.W.
-    return atHtml(d) + flexDistribute(cells, { gap: 22, marginBottom: 26, itemSize: `width:${D.W}px;`, itemW: D.W, d });
+    return atHtml(d) + hfGridHtml(cells, d);
   },
 
   renderProps: d => {
     const modus = d.modus || 'feld';
-    const size  = d.groesse || 'gross';
+    const size = hfGroesse(d);
     const dar   = d.darstellung || 'punkte';
     const far   = d.farbe || 'sw';
     const luecke = d.luecke || 'erste';
@@ -334,7 +396,11 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;">${vtgl(far,'sw','S/W','farbe')}${vtgl(far,'farbig','Farbig','farbe')}</div>
       </div>
       <div class="prow"><label>Größe</label>
-        <div style="display:flex;gap:4px;">${vtgl(size,'klein','Klein','groesse')}${vtgl(size,'gross','Groß','groesse')}</div>
+        <div style="display:flex;gap:4px;">
+          ${vtgl(size,'klein','Klein','groesse')}
+          ${vtgl(size,'mittel','Mittel','groesse')}
+          ${vtgl(size,'gross','Groß','groesse')}
+        </div>
       </div>`;
   },
 });
