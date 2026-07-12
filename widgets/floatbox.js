@@ -56,7 +56,7 @@ function makeFloatEl(f) {
   const div = document.createElement('div');
   // Ohne gewählten Rahmen: KEIN echter Rahmen (nur eine Bildschirm-Hilfslinie via .float-noborder,
   // die im Druck ausgeblendet wird) — sonst druckt der gestrichelte groupBorderCss-Fallback mit.
-  div.className = 'wwrap floatbox' + (frameBorder(f) ? '' : ' float-noborder') + (selId === f.id ? ' sel' : '');
+  div.className = 'wwrap floatbox' + wrapEckenClass(f) + (frameBorder(f) ? '' : ' float-noborder') + (selId === f.id ? ' sel' : '');
   div.dataset.id = f.id;
   div.style.cssText = `position:absolute;left:${f.x}%;top:${f.y}%;width:${f.w}%;`
     + `min-height:${f.h}%;z-index:40;box-sizing:border-box;margin:0;`;

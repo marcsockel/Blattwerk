@@ -50,6 +50,7 @@ function htmlToMarkup(html) {
  * Uses d.aufgabenNr (0 = no badge) and d.aufgabenText.
  */
 function atHtml(d) {
+  if (d._mtCell != null) return '';
   const nr  = d.aufgabenNr || 0;
   const txt = (d.aufgabenText || '').trim();
   if (!nr && !txt) return '';
@@ -70,6 +71,15 @@ function atHtml(d) {
            color:#222;">${esc(txt)}</span>`
       : ''}
   </div>`;
+}
+
+function widgetIsActive(d) {
+  if (_solutionsMode) return true;
+  if (d._mtCell != null && d._mtParent != null) {
+    return selId === d._mtParent && _mtSel
+      && _mtSel.id === d._mtParent && _mtSel.idx === d._mtCell;
+  }
+  return d.id === selId;
 }
 
 // Ausrichtungs-Toggle (Links / Mitte / Rechts) für Text-Widgets.
@@ -157,7 +167,7 @@ function seededShuffle(arr, seed) {
  * EIN Modus für alle: flex-wrap. Der Browser bricht an der ECHTEN Breite um.
  *  - Volle Zeile → über die Breite verteilt (space-between; erstes randbündig links, letztes
  *    rechts), letzte/unvolle Zeile via unsichtbarer Füller (echtes Item auf Höhe 0) ausgerichtet.
- *  - Wenige Items / Zeile nicht voll → eng linksbündig (flex-start), NICHT vorab verteilt.
+ *  - Wenige Items / Zeile nicht voll → eng gruppiert, Ausrichtung über d.align (left/center/right).
  * Die Voll/Nicht-voll-Entscheidung nutzt eine perRow-Schätzung aus opts.itemW + opts.d
  * (geom().contentW×widthFrac(d) MINUS .winner-Padding). Die echte Spaltenzahl macht der Browser.
  *
@@ -189,8 +199,9 @@ function flexDistribute(innerHtmls, opts) {
   // Zeilenabstand als Leerraum unter dem Widget (Abstand unten > oben, z.B. Uhren).
   const comp = mb ? `margin-bottom:-${mb}px;` : '';
   if (n < perRow) {
-    // keine volle Zeile → eng linksbündig, ohne Füller
-    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:flex-start;${comp}">${items}</div>`;
+    const align = (opts.d && opts.d.align) || 'left';
+    const jc = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:${jc};${comp}">${items}</div>`;
   }
   // Füller (echtes Item auf Höhe 0) richten die letzte Zeile an denselben Spalten aus.
   const filler  = `<div aria-hidden="true" style="flex:0 0 auto;margin:0;${sz}height:0;overflow:hidden;">${samp}</div>`;

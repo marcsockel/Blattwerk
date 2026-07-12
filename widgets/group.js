@@ -76,7 +76,7 @@ function groupBorderCss(b) {
 // gIdx = globaler Index des group-Markers, kidBase = globaler Index des 1. Kindes.
 function makeGroupWrap(g, gIdx, kids, kidBase) {
   const div = document.createElement('div');
-  div.className = 'wwrap' + (selId === g.id ? ' sel' : '');
+  div.className = 'wwrap' + wrapEckenClass(g) + (selId === g.id ? ' sel' : '');
   div.dataset.idx = gIdx;
   div.dataset.id  = g.id;
   div.style.marginBottom = '14px';
@@ -147,6 +147,7 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
 function patchGroupFrame(g) {
   const wrap = document.querySelector(`.wwrap[data-id="${g.id}"]`);
   if (!wrap) return false;
+  syncWrapEcken(wrap, g);
   const frame = wrap.querySelector('.group-frame');
   const kidsEl = wrap.querySelector('.group-kids');
   if (!frame || !kidsEl) return false;

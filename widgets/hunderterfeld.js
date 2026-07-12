@@ -15,17 +15,17 @@ const HF_SIZE = {
   klein: {
     pts: { s: 13, r: 5, m: 2, gap: 0 },
     box: { cs: 12, m: 2, gap: 0 },
-    fs: 15, bs: 24, colGap: 32, rowGap: 48,
+    fs: 15, colGap: 32, rowGap: 48,
   },
   mittel: {
     pts: { s: 17, r: 6, m: 3, gap: 14 },
     box: { cs: 17, m: 2, gap: 0 },
-    fs: 21, bs: 31, colGap: 32, rowGap: 52,
+    fs: 21, colGap: 32, rowGap: 52,
   },
   gross: {
     pts: { s: 28, r: 10, m: 3, gap: 13 },
     box: { cs: 28, m: 2, gap: 0 },
-    fs: 24, bs: 36, colGap: 40, rowGap: 56,
+    fs: 24, colGap: 40, rowGap: 56,
   },
 };
 
@@ -235,7 +235,11 @@ function hfStackDims(a, b, d) {
 
 function hfStackSvg(a, b, d) {
   const { D, step, onesGap, A, B, W, H } = hfStackDims(a, b, d);
-  const baseFill = hfFill(d);
+  const farbig = d.farbe === 'farbig';
+  // Gestapelt: hellerer Kästchen-Ton wie Aufgabenteil in der Standard-Ansicht
+  const stackFill = D.square
+    ? (farbig ? '#c8a06e' : '#a8a8a8')
+    : hfFill(d);
   const baseTopB = A.height + step;                  // eine freie Zeile zwischen den Summanden
   let cells = '';
   // y-Offset einer Zelle innerhalb eines Blocks (mit Einer-Abstand).
@@ -249,10 +253,10 @@ function hfStackSvg(a, b, d) {
       const x = D.m + col * D.cs + (col >= 5 ? D.g : 0), y = D.m + y0;
       cells += `<rect x="${x}" y="${y}" width="${D.cs}" height="${D.cs}" fill="#ffffff" stroke="#888" stroke-width="1.2"/>`;
       const pad = 2, ix = x + pad, iy = y + pad, ic = D.cs - 2 * pad;
-      cells += `<rect x="${ix}" y="${iy}" width="${ic}" height="${ic}" fill="${baseFill}" rx="1.5"/>`;
+      cells += `<rect x="${ix}" y="${iy}" width="${ic}" height="${ic}" fill="${stackFill}" rx="1.5"/>`;
     } else {
       const cx = D.m + D.r + col * D.s + (col >= 5 ? D.g : 0), cy = D.m + D.r + y0;
-      cells += `<circle cx="${cx}" cy="${cy}" r="${D.r}" fill="${baseFill}" stroke="${baseFill}" stroke-width="1"/>`;
+      cells += `<circle cx="${cx}" cy="${cy}" r="${D.r}" fill="${stackFill}" stroke="${stackFill}" stroke-width="1"/>`;
     }
   };
   for (let i = 0; i < a; i++) draw(i, cellY(i, A, 0));
@@ -260,32 +264,39 @@ function hfStackSvg(a, b, d) {
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:auto;max-width:${W}px;">${cells}</svg>`;
 }
 
-// Aufgabenzeile (Gleichung / Antwortkästchen) unter dem Feld.
+// Aufgabenzeile (Gleichung / Antwortkästchen) — Optik wie Rechenaufgaben.
 function hfLabel(item, d) {
   if (item.typ === 'feld') return '';
   const isActive = d.id === selId || _solutionsMode;
-  const { fs, bs } = hfSizeTier(d);
-  const bw = Math.round(bs * 1.5);
-  const box = v => `<span style="display:inline-flex;align-items:center;justify-content:center;width:${bw}px;height:${bs}px;
-      border:2px solid #555;border-radius:4px;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;
-      font-weight:700;color:#2563eb;">${isActive ? v : ''}</span>`;
+  const g = hfGroesse(d);
+  const S = g === 'gross' ? 1.5 : g === 'mittel' ? 1.3 : 1;
+  const px = v => Math.round(v * S);
+  const FS = px(16);
+  const LH = px(20);
+  const BW = px(36);
+  const boxBase = `display:inline-flex;width:${BW}px;height:${LH}px;align-items:center;justify-content:center;`
+    + `border:1.5px solid #999;border-radius:2px;background:#fff;vertical-align:middle;`;
+  const emptyBox = `<span style="${boxBase}"></span>`;
+  const blueBox = v => `<span style="${boxBase}font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`
+    + `color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+  const box = v => isActive ? blueBox(v) : emptyBox;
   if (item.typ === 'zahl') return `<div style="text-align:center;margin-top:6px;">${box(item.n)}</div>`;
   const sym = item.typ === 'plus' ? '+' : '−';
   const num = v => `<span>${v}</span>`;
   const fmt = d.format || (d.ergaenzung ? 'luecke' : 'ergebnis');
   let aS, bS, rS;
-  if (fmt === 'alle') {              // ▢ + ▢ = ▢ (alle selbst eintragen)
+  if (fmt === 'alle') {
     aS = box(item.a); bS = box(item.b); rS = box(item.result);
-  } else if (fmt === 'luecke') {     // ein Operand als Lücke, Ergebnis vorgegeben
+  } else if (fmt === 'luecke') {
     aS = item.blank === 'a' ? box(item.a) : num(item.a);
     bS = item.blank === 'b' ? box(item.b) : num(item.b);
     rS = num(item.result);
-  } else {                           // 'ergebnis': a + b = ▢
+  } else {
     aS = num(item.a); bS = num(item.b); rS = box(item.result);
   }
-  return `<div style="margin-top:6px;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;
-      display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">
-      ${aS}<span>${sym}</span>${bS}<span>=</span>${rS}</div>`;
+  return `<div style="margin-top:6px;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`
+    + `display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;">`
+    + `${aS}<span>${sym}</span>${bS}<span>=</span>${rS}</div>`;
 }
 
 WIDGETS.push({

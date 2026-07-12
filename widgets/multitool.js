@@ -15,8 +15,12 @@ const MT_TYPES = [
   ['checklist', 'Checkliste'],
   ['image',     'Bild'],
   ['grid',      'Kästchen'],
+  ['zwanzigerfeld',   'Zwanzigerfeld'],
+  ['erste_paketchen', 'Erste Paketchen'],
 ];
-const MT_ICON = { empty:'·', write:'✍', text:'T', checklist:'☑', image:'🖼', grid:'⊞' };
+const MT_ICON = { empty:'·', write:'✍', text:'T', checklist:'☑', image:'🖼', grid:'⊞',
+  zwanzigerfeld:'⬛', erste_paketchen:'📦' };
+const MT_EMBED_TYPES = new Set(['zwanzigerfeld', 'erste_paketchen']);
 
 function mtEnsureCells(w) {
   const n = (w.gx || 2) * (w.gy || 2);
@@ -172,6 +176,15 @@ function mtRenderCell(d, cell, i) {
         background-image:linear-gradient(#aaa 1px,transparent 1px),linear-gradient(90deg,#aaa 1px,transparent 1px);
         background-size:${cs}px ${cs}px;"></div>`;
     return mtAlignWrap(cell, inner);
+  }
+
+  if (MT_EMBED_TYPES.has(t)) {
+    const def = WIDGET_MAP[t];
+    if (!def) return '';
+    if (!cell.embed) cell.embed = mtCreateEmbed(t);
+    const nested = { ...cell.embed, type: t, id: d.id, _mtParent: d.id, _mtCell: i };
+    const inner = def.render(nested);
+    return mtAlignWrap(cell, `<div style="max-width:100%;overflow-x:auto;">${inner}</div>`);
   }
 
   return `<div class="mt-empty-hint" style="min-height:40px;display:flex;align-items:center;justify-content:center;
@@ -377,7 +390,11 @@ function mtCellEditor(d, idx, c) {
     return out;
   }
 
-  return '';
+  if (MT_EMBED_TYPES.has(t)) {
+    return out + mtEmbedProps(d.id, idx, c);
+  }
+
+  return out;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
@@ -395,12 +412,114 @@ function mtSelCell(id, idx) {
   render(); renderProps(id);
 }
 
+function mtCreateEmbed(type) {
+  const def = WIDGET_MAP[type];
+  if (!def) return {};
+  const data = def.createData(0);
+  delete data.id;
+  delete data.aufgabenNr;
+  delete data.aufgabenText;
+  if (type === 'erste_paketchen') epDoGenerate(data);
+  return data;
+}
+
+function mtEmbedProps(parentId, idx, cell) {
+  const type = cell.type;
+  if (!cell.embed) cell.embed = mtCreateEmbed(type);
+  const nested = { ...cell.embed, type, id: parentId, _mtParent: parentId, _mtCell: idx };
+  let html = WIDGET_MAP[type].renderProps(nested);
+  const p = parentId;
+  const fns = ['epSetModus', 'epSetLuecke', 'epToggleOp', 'epSetLayout', 'epGenerate', 'zfSet', 'zfRoll', 'zfManual'];
+  for (const fn of fns) {
+    html = html.split(`${fn}(${p},`).join(`mtEmbedFn('${fn}',${p},${idx},`);
+    html = html.split(`${fn}(${p})`).join(`mtEmbedFn('${fn}',${p},${idx})`);
+  }
+  html = html.split(`upd(${p},`).join(`mtEmbedFn('upd',${p},${idx},`);
+  return html;
+}
+
+function mtEmbedFn(name, parentId, idx, a, b) {
+  const w = widgets.find(x => x.id === parentId); if (!w) return;
+  mtEnsureCells(w);
+  const cell = w.cells[idx];
+  if (!cell.embed) cell.embed = mtCreateEmbed(cell.type);
+  const emb = cell.embed;
+  saveHistory();
+  switch (name) {
+    case 'upd':
+      emb[a] = b;
+      break;
+    case 'zfSet':
+      emb[a] = b;
+      if (a === 'anzahl') zfResize(emb);
+      else {
+        emb.aufgaben = zfGenForWidget(emb);
+        emb.manualText = zfTasksToText(emb);
+      }
+      break;
+    case 'zfRoll':
+      emb.aufgaben = zfGenForWidget(emb);
+      emb.manualText = zfTasksToText(emb);
+      break;
+    case 'zfManual':
+      zfApplyManual(emb, a);
+      break;
+    case 'epGenerate':
+      epDoGenerate(emb);
+      break;
+    case 'epSetModus': {
+      const prev = epGetModus(emb);
+      emb.ergaenzung = a === 'ergaenzung';
+      emb.umkehr = a === 'umkehr';
+      emb.zehnerStop = a === 'zehnerStop';
+      emb.zeichen = false;
+      emb.vergleich = false;
+      if (a === 'zehnerStop' && emb.zahlenraum === 10) emb.zahlenraum = 20;
+      if (a === 'ergaenzung') emb.luecke = emb.luecke || 'erste';
+      const hasTasks = !!(emb.tasks || '').trim();
+      if (hasTasks && prev === 'normal' && a === 'ergaenzung') {
+        emb.tasks = arithConvertNormalToErgaenzung(emb.tasks, emb.luecke || 'erste');
+        break;
+      }
+      if (hasTasks && prev === 'ergaenzung' && a === 'normal') {
+        emb.tasks = arithConvertErgaenzungToNormal(emb.tasks);
+        break;
+      }
+      epDoGenerate(emb);
+      break;
+    }
+    case 'epSetLuecke':
+      emb.luecke = a;
+      epDoGenerate(emb);
+      break;
+    case 'epToggleOp': {
+      const ops = (emb.ops || ['+', '-']).slice();
+      const opIdx = ops.indexOf(a);
+      if (opIdx >= 0) { if (ops.length > 1) ops.splice(opIdx, 1); }
+      else ops.push(a);
+      emb.ops = ops;
+      epDoGenerate(emb);
+      break;
+    }
+    case 'epSetLayout':
+      emb[a] = b;
+      if (a === 'cols' || a === 'aufgabenProPaeckchen') epResize(emb);
+      else epDoGenerate(emb);
+      break;
+  }
+  _dirty = true;
+  if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
+  render();
+  renderProps(parentId);
+}
+
 function mtDefaultCell(type) {
   if (type === 'write')     return { type:'write', lines:3, label:'', lineatur:0, lineaturGross:false, html:'', font:'inherit', fontSize:13, align:'left' };
   if (type === 'text')      return { type:'text', html:'', font:'inherit', fontSize:13, align:'left' };
   if (type === 'checklist') return { type:'checklist', items:['Punkt 1', 'Punkt 2'], font:'inherit', fontSize:13, align:'left' };
   if (type === 'image')     return { type:'image', src:'', caption:'', height:120, align:'center', flush:false, grayscale:false, flipH:false, flipV:false, rotate:0 };
   if (type === 'grid')      return { type:'grid', groesse:'mittel', zeilen:4, align:'left' };
+  if (MT_EMBED_TYPES.has(type)) return { type, embed: mtCreateEmbed(type), align:'center' };
   return { type:'empty' };
 }
 

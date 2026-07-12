@@ -22,6 +22,7 @@ function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
   }).join("");
 
   let hands = "";
+  const hubColor = farbe ? "#111" : "#222";
   if (showHands) {
     // Hour hand
     const hAngle = ((h % 12) + m/60) * 30 - 90;
@@ -41,15 +42,14 @@ function uhrSvg(h, m, size, showHands=true, farbe=false, showNums=true) {
     const mby = cy.toFixed(2);
     const hColor = farbe ? "#dc2626" : "#222";
     const mColor = farbe ? "#2563eb" : "#444";
-    const cColor = farbe ? "#111"    : "#222";
     hands = `<line x1="${hbx}" y1="${hby}" x2="${hx}" y2="${hy}" stroke="${hColor}" stroke-width="${size<100?3:4}" stroke-linecap="round"/>
-    <line x1="${mbx}" y1="${mby}" x2="${mx2}" y2="${my2}" stroke="${mColor}" stroke-width="${size<100?2:2.5}" stroke-linecap="round"/>
-    <circle cx="${cx}" cy="${cy}" r="3.5" fill="${cColor}"/>`;
+    <line x1="${mbx}" y1="${mby}" x2="${mx2}" y2="${my2}" stroke="${mColor}" stroke-width="${size<100?2:2.5}" stroke-linecap="round"/>`;
   }
+  const hub = `<circle cx="${cx}" cy="${cy}" r="3.5" fill="${hubColor}"/>`;
 
   return `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="display:block;">
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="#333" stroke-width="2"/>
-    ${ticks}${nums}${hands}
+    ${ticks}${nums}${hands}${hub}
   </svg>`;
 }
 
@@ -108,8 +108,9 @@ WIDGETS.push({
     const blackBox = (text) =>
       `<div style="margin-top:4px;width:${size}px;height:${bh}px;border:1.5px solid #555;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
         <span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#222;font-weight:700;">${text} Uhr</span></div>`;
+    const showHands = !zeigerAus || _solutionsMode;
     const items = uhren.map(u => {
-      const svg = uhrSvg(u.h, u.m, size, !zeigerAus, zeigerFarbe, !zahlenAus);
+      const svg = uhrSvg(u.h, u.m, size, showHands, zeigerFarbe, !zahlenAus);
       let label = "";
       if (zeigerAus) {
         // Zeiger aus → Zeit als Aufgabenstellung (immer sichtbar, schwarz)

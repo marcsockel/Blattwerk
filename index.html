@@ -123,7 +123,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .ov-cont-badge.right{right:-9px;border-radius:3px 0 0 3px;}
 .ov-cont-badge.left {left:-9px; border-radius:0 3px 3px 0;}
 /* Widgets on canvas */
-.wwrap{position:relative;margin-bottom:14px;border-radius:7px;outline:2px solid transparent;transition:outline-color .15s;display:flex;flex-direction:column;}
+.wwrap{position:relative;margin-bottom:14px;border-radius:6px;outline:2px solid transparent;transition:outline-color .15s;display:flex;flex-direction:column;}
+.wwrap.ecke-eckig{border-radius:0;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
 .wacts{display:none;position:absolute;top:-13px;gap:3px;z-index:10;}
 .wacts.wacts-right{right:3px;left:auto;}
@@ -421,6 +422,7 @@ const WIDGETS = [];
 <script src="widgets/matching.js"></script>
 <script src="widgets/numbering.js"></script>
 <script src="widgets/arithmetic.js"></script>
+<script src="widgets/erste_paketchen.js"></script>
 <script src="widgets/numberline.js"></script>
 <script src="widgets/geometry.js"></script>
 <script src="widgets/zahlenmauer.js"></script>
@@ -747,6 +749,8 @@ function dupPage(){
 // Verträgt Altdaten: border-Werte mit Suffix '-rect' = eckig.
 function frameBorder(w){ const b=w.border||''; return b.endsWith('-rect')?b.slice(0,-5):b; }
 function frameEcken(w){ if(w.ecken==='rund'||w.ecken==='eckig') return w.ecken; return (w.border||'').endsWith('-rect')?'eckig':'rund'; }
+function wrapEckenClass(w){ return frameEcken(w)==='eckig'?' ecke-eckig':''; }
+function syncWrapEcken(wrap,w){ if(wrap) wrap.classList.toggle('ecke-eckig',frameEcken(w)==='eckig'); }
 function frameDeco(w){
   const lines={dashed:'1.5px dashed #555',thin:'1px solid #333',medium:'2px solid #333',thick:'3px solid #333'};
   const b=frameBorder(w);
@@ -830,6 +834,7 @@ function patchWidget(id) {
   if (!winner) return false;
 
   const src = typeof frameStyleSrc === 'function' ? frameStyleSrc(w) : w;
+  syncWrapEcken(wrap, src);
   winner.className = winnerClass(src);
   winner.style.cssText = winnerStyle(src);
   replaceWinnerContent(winner, typeof winnerInner === 'function' ? winnerInner(w) : def.render(w));
@@ -841,6 +846,7 @@ function patchWidget(id) {
       const cwrap = document.querySelector(`.wwrap[data-id="${c.id}"]`);
       const cwin = cwrap && cwrap.querySelector(':scope > .winner');
       if (!cwin) return;
+      syncWrapEcken(cwrap, w);
       cwin.className = winnerClass(w);
       cwin.style.cssText = winnerStyle(w);
       replaceWinnerContent(cwin, winnerInner(c));
@@ -900,7 +906,7 @@ function makeWrap(w, idx, rowCtx) {
   const isFlowCont=w.type==='textfluss';
   const sw=typeof frameStyleSrc==='function'?frameStyleSrc(w):w;
   const div=document.createElement("div");
-  div.className="wwrap"+(selId===w.id?" sel":"");
+  div.className="wwrap"+wrapEckenClass(sw)+(selId===w.id?" sel":"");
   div.draggable=!isFlowCont;div.dataset.idx=idx;div.dataset.id=w.id;
   if(inRow){
     div.dataset.rowPos=String(rowCtx.posInRow);
