@@ -15,12 +15,19 @@ const MT_TYPES = [
   ['checklist', 'Checkliste'],
   ['image',     'Bild'],
   ['grid',      'Kästchen'],
-  ['zwanzigerfeld',   'Zwanzigerfeld'],
-  ['erste_paketchen', 'Erste Paketchen'],
+  ['zwanzigerfeld',     'Zwanzigerfeld'],
+  ['erste_paketchen',   'Erste Päckchen'],
+  ['ep_zehner_stop',    '10er Stop'],
+  ['ep_analogie',       'Analogie'],
+  ['ep_zerlegung',      'Zahlenzerlegung'],
+  ['ep_umkehr',         'Umkehraufgabe'],
 ];
 const MT_ICON = { empty:'·', write:'✍', text:'T', checklist:'☑', image:'🖼', grid:'⊞',
-  zwanzigerfeld:'⬛', erste_paketchen:'📦' };
-const MT_EMBED_TYPES = new Set(['zwanzigerfeld', 'erste_paketchen']);
+  zwanzigerfeld:'⬛', erste_paketchen:'📦', ep_zehner_stop:'🔟', ep_analogie:'↔️',
+  ep_zerlegung:'✂️', ep_umkehr:'🔄' };
+const MT_EMBED_TYPES = new Set([
+  'zwanzigerfeld', 'erste_paketchen', 'ep_zehner_stop', 'ep_analogie', 'ep_zerlegung', 'ep_umkehr',
+]);
 
 function mtEnsureCells(w) {
   const n = (w.gx || 2) * (w.gy || 2);
@@ -419,7 +426,7 @@ function mtCreateEmbed(type) {
   delete data.id;
   delete data.aufgabenNr;
   delete data.aufgabenText;
-  if (type === 'erste_paketchen') epDoGenerate(data);
+  if (MT_EMBED_TYPES.has(type) && typeof epDoGenerate === 'function') epDoGenerate(data);
   return data;
 }
 
@@ -429,7 +436,7 @@ function mtEmbedProps(parentId, idx, cell) {
   const nested = { ...cell.embed, type, id: parentId, _mtParent: parentId, _mtCell: idx };
   let html = WIDGET_MAP[type].renderProps(nested);
   const p = parentId;
-  const fns = ['epSetModus', 'epSetLuecke', 'epToggleOp', 'epSetLayout', 'epGenerate', 'zfSet', 'zfRoll', 'zfManual'];
+  const fns = ['epSetErgaenzung', 'epSetLuecke', 'epToggleOp', 'epSetLayout', 'epGenerate', 'zfSet', 'zfRoll', 'zfManual'];
   for (const fn of fns) {
     html = html.split(`${fn}(${p},`).join(`mtEmbedFn('${fn}',${p},${idx},`);
     html = html.split(`${fn}(${p})`).join(`mtEmbedFn('${fn}',${p},${idx})`);
@@ -467,21 +474,16 @@ function mtEmbedFn(name, parentId, idx, a, b) {
     case 'epGenerate':
       epDoGenerate(emb);
       break;
-    case 'epSetModus': {
-      const prev = epGetModus(emb);
-      emb.ergaenzung = a === 'ergaenzung';
-      emb.umkehr = a === 'umkehr';
-      emb.zehnerStop = a === 'zehnerStop';
-      emb.zeichen = false;
-      emb.vergleich = false;
-      if (a === 'zehnerStop' && emb.zahlenraum === 10) emb.zahlenraum = 20;
-      if (a === 'ergaenzung') emb.luecke = emb.luecke || 'erste';
+    case 'epSetErgaenzung': {
+      const prev = !!emb.ergaenzung;
+      emb.ergaenzung = a === true || a === 'true';
+      if (emb.ergaenzung) emb.luecke = emb.luecke || 'erste';
       const hasTasks = !!(emb.tasks || '').trim();
-      if (hasTasks && prev === 'normal' && a === 'ergaenzung') {
+      if (hasTasks && !prev && emb.ergaenzung) {
         emb.tasks = arithConvertNormalToErgaenzung(emb.tasks, emb.luecke || 'erste');
         break;
       }
-      if (hasTasks && prev === 'ergaenzung' && a === 'normal') {
+      if (hasTasks && prev && !emb.ergaenzung) {
         emb.tasks = arithConvertErgaenzungToNormal(emb.tasks);
         break;
       }
