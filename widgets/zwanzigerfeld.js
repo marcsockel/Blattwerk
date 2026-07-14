@@ -72,11 +72,26 @@ function zfResize(w) {
   w.manualText = zfTasksToText(w);
 }
 
-function zfGridSvg(auf, bw=false, small=false) {
-  const { a, b, op, result } = auf;
-  const cw = small ? 14 : 22, ch = small ? 14 : 22, gx = small ? 2 : 3, gy = small ? 2 : 3;
-  const W = 10 * (cw + gx) + gx;
+function zfGridMetrics(size) {
+  const isSmall = size === 'klein';
+  const isMedium = size === 'mittel';
+  const cw = isSmall ? 14 : isMedium ? 16 : 22;
+  const gx = isSmall ? 2 : isMedium ? 2 : 3;
+  const fiverExtra = Math.round(96 / 25.4); // +1 mm gegenüber normaler Kästchenlücke
+  const gy = gx;
+  const ch = cw;
+  const W = 10 * (cw + gx) + gx + fiverExtra;
   const H = 2 * (ch + gy) + gy;
+  const colX = col => (col < 5
+    ? gx + col * (cw + gx)
+    : gx + 5 * (cw + gx) + fiverExtra + (col - 5) * (cw + gx));
+  const fiverLineX = colX(4) + cw + (gx + fiverExtra) / 2;
+  return { cw, ch, gx, gy, fiverExtra, W, H, colX, fiverLineX };
+}
+
+function zfGridSvg(auf, bw=false, size='klein') {
+  const { a, b, op, result } = auf;
+  const { cw, ch, gx, gy, W, H, colX, fiverLineX } = zfGridMetrics(size);
 
   // Addition:    first a = color1, next b = color2
   // Subtraction: all a cells = same color, last b of them get an X (crossed out)
@@ -89,7 +104,7 @@ function zfGridSvg(auf, bw=false, small=false) {
 
   for (let i = 0; i < 20; i++) {
     const row = Math.floor(i / 10), col = i % 10;
-    const x = gx + col * (cw + gx), y = gy + row * (ch + gy);
+    const x = colX(col), y = gy + row * (ch + gy);
     const num = i + 1;
     const crossed = !isPlus && num > c1 && num <= c2;
     let fill, stroke;
@@ -108,19 +123,26 @@ function zfGridSvg(auf, bw=false, small=false) {
     }
   }
 
-  // 5er-Trennlinie (zwischen Spalte 4 und 5)
-  const lx = gx + 5 * (cw + gx) - 1;
-  s += `<line x1="${lx}" y1="${gy}" x2="${lx}" y2="${H - gy}" stroke="#aaa" stroke-width="1.5"/>`;
+  // 5er-Trennlinie (zwischen Spalte 4 und 5) — in der um 1 mm breiteren Fünferlücke
+  s += `<line x1="${fiverLineX}" y1="${gy}" x2="${fiverLineX}" y2="${H - gy}" stroke="#aaa" stroke-width="1.5"/>`;
 
   s += '</svg>';
   return s;
+}
+
+function zfSize(d) {
+  // Migration: früher nur gross:boolean (und ganz früher small:boolean).
+  if (d && d.groesse) return d.groesse;
+  if (d && d.gross !== undefined) return d.gross ? 'gross' : 'klein';
+  if (d && d.small !== undefined) return d.small ? 'klein' : 'gross';
+  return 'mittel';
 }
 
 WIDGETS.push({
   meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik" },
 
   createData: id => {
-    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, gross:false, align:'left', aufgabenNr:0, aufgabenText:''};
+    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, groesse:'mittel', align:'left', aufgabenNr:0, aufgabenText:''};
     return { id, type:"zwanzigerfeld", ...cfg, aufgaben: zfGen(cfg.anzahl, cfg.op) };
   },
 
@@ -133,9 +155,12 @@ WIDGETS.push({
     const showRes  = d.loesung || isActive;
     const blue     = isActive && !d.loesung;
     const bw       = d.bw    || false;
-    const gross    = d.gross !== undefined ? !!d.gross : !d.small; // Migration: früher 'small'
-    const small    = !gross;
-    const fs       = small ? 30 : 38;
+    const size     = zfSize(d);
+    const small    = size === 'klein';
+    const medium   = size === 'mittel';
+    // Aufgaben-Schrift minimal kleiner als vorher (30/38).
+    const fs       = small ? 28 : medium ? 32 : 35;
+    const ff       = (d.font || "'Arial', sans-serif");
 
     const items = aufgaben.map(auf => {
       const { a, b, op: o, result } = auf;
@@ -145,20 +170,21 @@ WIDGETS.push({
           ? `<span style="font-weight:700;color:${blue ? '#2563eb' : '#1a7f3c'};">${result}</span>`
           : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?44:56}px;height:${small?6:8}px;align-self:flex-end;margin-bottom:2px;"></span>`;
         label = modus === 'zahl'
-          ? `<div style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;display:flex;align-items:center;gap:6px;">${resEl}</div>`
-          : `<div style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;display:flex;align-items:center;gap:${small?4:7}px;">
+          ? `<div style="font-family:${ff};font-size:${fs}px;display:flex;align-items:center;gap:6px;">${resEl}</div>`
+          : `<div style="font-family:${ff};font-size:${fs}px;display:flex;align-items:center;gap:${small?4:7}px;">
               <span>${a}</span><span>${o}</span><span>${b}</span><span>=</span>${resEl}
              </div>`;
       }
       return `<div style="display:flex;flex-direction:column;align-items:center;gap:${modus==='ansicht'?0:(small?10:14)}px;">
-        ${zfGridSvg(auf, bw, small)}
+        ${zfGridSvg(auf, bw, size)}
         ${label}
       </div>`;
     });
 
-    const svgW    = small ? (10*(14+2)+2) : (10*(22+3)+3);
-    const colGap  = small ? 20 : 48; // verdoppelt (Abstand im engen Modus war zu klein)
-    const rowGap  = small ? 36 : 48;
+    const { W: svgW } = zfGridMetrics(size);
+    // Mittel so gewählt, dass typischerweise 3 Spalten auf „Voll“ passen.
+    const colGap  = small ? 20 : medium ? 22 : 48; // verdoppelt (Abstand im engen Modus war zu klein)
+    const rowGap  = small ? 36 : medium ? 40 : 48;
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Feldbreite svgW,
     // Inhalt zentriert.
     return atHtml(d) + flexDistribute(items, {
@@ -173,7 +199,7 @@ WIDGETS.push({
     const anz   = d.anzahl  || 4;
     const sl    = d.loesung || false;
     const bw    = d.bw      || false;
-    const gross = d.gross !== undefined ? !!d.gross : !d.small; // Migration: früher 'small'
+    const size  = zfSize(d);
 
     const toggleBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -203,8 +229,9 @@ WIDGETS.push({
       alignToggle(d.id, d.align) +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
-          ${toggleBtn("Klein", !gross, `upd(${d.id},'gross',false)`)}
-          ${toggleBtn("Groß",   gross, `upd(${d.id},'gross',true)`)}
+          ${toggleBtn("Klein",  size==='klein',  `upd(${d.id},'groesse','klein')`)}
+          ${toggleBtn("Mittel", size==='mittel', `upd(${d.id},'groesse','mittel')`)}
+          ${toggleBtn("Groß",   size==='gross',  `upd(${d.id},'groesse','gross')`)}
         </div></div>` +
       `<div class="prow"><label>Farbe</label>
         <div style="display:flex;gap:4px;">

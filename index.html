@@ -32,17 +32,20 @@
 /* ── Seitengeometrie (A4). Default = Hochformat. body.landscape überschreibt → Querformat.
    ALLE festen Blattmaße hängen an diesen Variablen; JS-Pendants in PAGE_GEOM (Überlauf/Übersicht). */
 :root{
-  --scr-page-w:190mm;   /* Bildschirm-Seite: Breite (= Blattbreite − 20mm, wie bisher) */
+  /* --extra-w: Zusatz-Inhaltsbreite. Wird beim Start aus EXTRA_W_MM (JS, bei PAGE_GEOM) gesetzt —
+     NUR DORT umstellen, nicht hier. 0mm = klassisch (170mm Inhalt, 15mm rechter Rand). */
+  --extra-w:0mm;
+  --scr-page-w:calc(190mm + var(--extra-w));   /* Bildschirm-Seite: Breite (Inhalt + 2×10mm Padding) */
   --scr-page-h:297mm;   /* Bildschirm-Seite: Höhe (= volle Blatthöhe) */
   --page-pad:13mm 10mm 5mm 10mm;   /* Bildschirm-Padding */
   --page-end-top:280mm; /* Hilfslinie / Inhalts-Unterkante */
   --prn-page-w:210mm;   /* Druck: volle Blattbreite */
   --prn-page-minh:294mm;
   --prn-page-maxh:296mm;
-  --prn-pad:13mm 15mm 5mm 25mm;    /* Druck-Padding (25mm links = Lochrand) */
+  --prn-pad:13mm calc(15mm - var(--extra-w)) 5mm 25mm;    /* Druck-Padding (25mm links = Lochrand) */
 }
 body.landscape{
-  --scr-page-w:277mm;   /* 297 − 20 */
+  --scr-page-w:calc(277mm + var(--extra-w));
   --scr-page-h:210mm;
   --page-end-top:193mm; /* 210 − ~17mm unten */
   --prn-page-w:297mm;
@@ -178,6 +181,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:0;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:10mm;font-size:10px;color:#333;}
+/* Dezente Marke mittig im Footer (Höhe der Seitenzahl) — nur im Druck sichtbar. */
+.pg-brand{display:none;position:absolute;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;font-weight:600;letter-spacing:1px;color:#b8b4aa;font-family:'Nunito',sans-serif;pointer-events:none;}
 @media print{
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* Safari/WebKit druckt box-shadow (Chrome nicht). Ein nach unten gerichteter Schatten
@@ -204,13 +209,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      border-radius:4px) als grauen Rundbalken unten aufs Blatt — Chrome NICHT.
      Im Druck Scrollen abschalten (overflow:visible oben) + Scrollbalken ausblenden. */
   ::-webkit-scrollbar{display:none!important;width:0!important;height:0!important;}
-  /* border-top als 5px TRANSPARENT (nicht none): erhält den 5px-Layout-Versatz vom
-     Bildschirm (.page hat border-top:5px solid #ccc) → Druck-Layout deckungsgleich mit
-     App (WYSIWYG), aber ohne die graue Linie zu drucken. */
-  .page,.page.page-before-overflow,.page.page-overflow{box-shadow:none!important;border-top:5px solid transparent!important;border-radius:0!important;}
+  /* border-top in mm (nicht px): px wird beim Druck engine-abhängig umgerechnet (Chrome ≠ Safari)
+     und frisst unten Platz weg → Abschnitt am Blattrand. 1.3mm ≈ 5px Bildschirm. */
+  .page,.page.page-before-overflow,.page.page-overflow{box-shadow:none!important;border-top:1.3mm solid transparent!important;border-radius:0!important;}
   /* DRUCK: jede .page = EXAKT ein A4-Blatt (210×297mm) bei @page margin:0.
      Die früheren Ränder (5mm @page + 8/10mm Seiten-Padding) sind ins Padding gewandert,
-     Inhaltsbereich: 170mm breit, 25mm von links (Lochrand), 13mm von oben, 5mm von unten. Weil die
+     Inhaltsbereich: (170mm + --extra-w) breit, 25mm von links (Lochrand), 13mm von oben, 5mm von unten. Weil die
      Seite das Blatt (fast) füllt und overflow:hidden gesetzt ist, kann KEIN Pixel auf ein
      Folgeblatt "bluten" → keine Phantom-Leerseiten, keine Sliver.
      Engine-übergreifend robust (insb. WebKit/Safari, das empfindlicher paginiert als Chrome). */
@@ -219,19 +223,22 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
      Daher height:auto (Seite nur so hoch wie Inhalt) + harter Deckel max-height:296mm,
      damit nie die Blattkante erreicht wird. Inhalt (Unterkante ≤280mm, Padding 5mm unten
      → Seite ≤~285mm) wird dabei nicht abgeschnitten; maxBottom in checkOverflow hält das ein. */
-  /* min-height:294mm → Druckseite hat IMMER (fast) volle Blatthöhe, unabhängig vom Inhalt.
-     Nötig, damit die absolut positionierte Seitenzahl (.pg-num, bottom) fix am Blattende
-     sitzt statt mit dem Inhalt nach oben zu wandern. 294mm < max-height:296mm < 297mm Blatt
-     → kein WebKit-Bleed (overflow:hidden bleibt als Netz). Inhalt ≤285mm < 294mm, wird nicht berührt. */
-  .page{box-sizing:border-box;width:var(--prn-page-w);height:auto;min-height:var(--prn-page-minh);max-height:var(--prn-page-maxh);overflow:hidden;
-        padding:var(--prn-pad);page-break-inside:avoid;break-inside:avoid;}
+  /* Seitenhöhe in px (--print-page-*-px, vor Druck kalibriert): mm→px-Rundung ist in Chrome
+     anders als in Safari; feste px-Höhe + overflow:hidden verhindert Abschnitt unten UND
+     WebKit-Sliver (Bleed-Puffer in calibratePrintPageBox). Fallback: mm-Variablen. */
+  .page{box-sizing:border-box;width:var(--prn-page-w);
+        height:var(--print-page-max-px,var(--prn-page-maxh));
+        min-height:var(--print-page-min-px,var(--prn-page-minh));
+        max-height:var(--print-page-max-px,var(--prn-page-maxh));
+        overflow:hidden;padding:var(--prn-pad);page-break-inside:avoid;break-inside:avoid;}
   /* Standard (einseitig + beidseitig-Vorderseiten): breiter Rand LINKS (25mm) zum Lochen. */
-  body.print-ds .page.page-back{padding-left:15mm;padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
+  body.print-ds .page.page-back{padding-left:calc(15mm - var(--extra-w));padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
   #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
   /* Editor-UI auf leeren Seiten NICHT mitdrucken: .page-hint ist das gestrichelte,
      abgerundete Rechteck; .empty-del der ✕-Button der leeren Seite. */
   .page-hint,.empty-del{display:none!important;}
+  .pg-brand{display:block;}
   .page-end,.page-spacer{display:none;}
   body{background:#fff;height:auto;}
   .wwrap{outline:none!important;margin-bottom:14px;} /* = Bildschirm-Abstand → WYSIWYG (war 12px, Druck dadurch enger) */
@@ -291,6 +298,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
       </label>
       <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
         <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
+      </div>
+      <!-- Nur Chrome/macOS: „PDF in Vorschau öffnen" im Chrome-Druckdialog rendert via
+           Quartz und fällt auf US Letter zurück (ignoriert Papierformat + macOS-Standard)
+           → unten ~18mm abgeschnitten. Einblendung via JS, siehe initChromePdfHint(). -->
+      <div id="chrome-pdf-hint" style="display:none;border-top:1px solid #313244;margin-top:10px;padding-top:9px;font-size:10.5px;line-height:1.45;color:#f9e2af;">
+        💡 PDF bitte über <b>„Als PDF speichern"</b> erzeugen — der Link „PDF in Vorschau öffnen" im Chrome-Druckdialog erzeugt US-Letter-Format und schneidet unten ab.
       </div>
     </div>
   </div>
@@ -493,8 +506,15 @@ let _dirty=false;
 //  endTop = Inhalts-Unterkante in mm (maxBottom)
 //  ovH = Seitenhöhe in mm für die Übersicht-Thumbnails
 // contentW = nutzbare Inhaltsbreite in px (Blatt − Seitenränder), Basis für die
-// JS-Spaltenberechnung (perRow) der flex-wrap-Widgets. Portrait 640 = wie bisher.
-const PAGE_GEOM={ portrait:{scrW:190,endTop:280,ovH:267,contentW:640}, landscape:{scrW:277,endTop:193,ovH:189,contentW:971} };
+// JS-Spaltenberechnung (perRow) der flex-wrap-Widgets. Portrait 640 = wie bisher (leicht konservativ).
+// ── EXTRA_W_MM: DER Schalter für die Inhaltsbreite. Verkleinert den rechten Druckrand
+//    (Nicht-Lochrand-Seite): 0 = klassisch (15mm Rand, 170mm Inhalt), 5 = breiter (10mm Rand,
+//    175mm Inhalt). Setzt die CSS-Variable --extra-w und fließt in PAGE_GEOM ein —
+//    CSS (Bildschirm + Druck + Duplex-Rückseiten) folgt automatisch.
+const EXTRA_W_MM = 0;
+document.documentElement.style.setProperty('--extra-w', EXTRA_W_MM + 'mm');
+const EXTRA_W_PX = Math.floor(EXTRA_W_MM * 96 / 25.4);
+const PAGE_GEOM={ portrait:{scrW:190+EXTRA_W_MM,endTop:280,ovH:267,contentW:640+EXTRA_W_PX}, landscape:{scrW:277+EXTRA_W_MM,endTop:193,ovH:189,contentW:971+EXTRA_W_PX} };
 let _orientation='portrait';
 function geom(){ return PAGE_GEOM[_orientation]||PAGE_GEOM.portrait; }
 
@@ -1077,6 +1097,7 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     pageDiv.appendChild(pdz);
   }
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
+  const brandEl=document.createElement("div");brandEl.className="pg-brand";brandEl.textContent="Blattwerk";pageDiv.appendChild(brandEl);
   if(pageWidgets.length===0){
     const hint=document.createElement("div");hint.className="page-hint";
     hint.textContent="← Widget aus der Liste wählen und einfügen";
@@ -1388,6 +1409,12 @@ function closeOverviewAndGoTo(pageIdx) {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOverview(); });
 
 let _ovfPasses=0;
+/** Widget-Unterkante inkl. margin-bottom (für Überlauf — offsetHeight zählt Margin nicht). */
+function wrapFlowBottom(el) {
+  const mb = parseFloat(getComputedStyle(el).marginBottom) || 0;
+  return el.offsetTop + el.offsetHeight + mb;
+}
+
 function checkOverflow(ranges){
   if(!ranges)ranges=getPageRanges();
   // Guard gegen Oszillation: Underflow entfernt einen Auto-Break (Schätzung),
@@ -1416,11 +1443,11 @@ function checkOverflow(ranges){
     // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
     const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
-    const pageBottom=wraps.length?wraps[wraps.length-1].offsetTop+wraps[wraps.length-1].offsetHeight:0;
+    const pageBottom=wraps.length?wrapFlowBottom(wraps[wraps.length-1]):0;
     // Höhe des ersten Widgets der nächsten Seite messen
     const nextPage=pages[pi+1];
     const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox')):[];
-    const firstNextH=nextWraps.length?nextWraps[0].offsetHeight+14:Infinity; // +14px Margin
+    const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0]):Infinity;
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
       _ovfPasses++;
@@ -1457,7 +1484,7 @@ function checkOverflow(ranges){
     // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
     const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
     for(let i=0;i<wraps.length;i++){
-      if(wraps[i].offsetTop+wraps[i].offsetHeight>maxBottom){
+      if(wrapFlowBottom(wraps[i])>maxBottom){
         // Fließender Text: wortweise splitten statt komplett verschieben (textfluss.js)
         const ovw=widgets[+wraps[i].dataset.idx];
         if(ovw&&typeof tfTrySplit==='function'&&((ovw.type==='text'&&ovw.fliessen)||ovw.type==='textfluss')){
@@ -1616,8 +1643,20 @@ function sfLayoutBlock(id,w){
       style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
              background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:${val==='full'?'11px':'15px'};font-weight:700;
              line-height:1.1;cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('');
+  // Innenabstand (flush): global über winnerStyle (w.flush → padding:0). Typen mit
+  // EIGENEM Innenabstand-Konzept ausnehmen: group/image (eigener Toggle),
+  // platzhalter (immer bündig), text/silbentext/gap_text (px-Slider innerPad).
+  const ownFlush=['group','image','platzhalter','text','silbentext','gap_text'].includes(w.type);
+  const flushRow=ownFlush?'':`
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Innenabstand</span>
+      <div style="display:flex;gap:4px;flex:1;">
+        ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!w.flush===val;return `<button onclick="event.stopPropagation();upd(${id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
+      </div>
+    </div>`;
   return `<div style="display:flex;gap:4px;">${btns}</div>
-    ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}`;
+    ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
+    ${flushRow}`;
 }
 function standardFooter(id,w){
   // Unselbstständige Widgets (z.B. Textfluss-Fortsetzung): erben alles vom Original,
@@ -2155,6 +2194,56 @@ function showRestoreBanner(draft){
 
 // ── PRINT OPTIONS ────────────────────────────────────────────────
 let printOpts = { pageNumbers: false, doubleSided: false };
+let _printMarginBackup = null;
+
+/** mm→px des aktuellen Browsers messen — Chrome und Safari rechnen leicht unterschiedlich. */
+function calibratePrintPageBox() {
+  const isLandscape = _orientation === 'landscape';
+  const pageHmm = isLandscape ? 210 : 297;
+  const pageWmm = isLandscape ? 297 : 210;
+  const probe = document.createElement('div');
+  probe.style.cssText = `position:fixed;left:-9999px;top:0;height:${pageHmm}mm;width:${pageWmm}mm;`
+    + 'visibility:hidden;pointer-events:none;margin:0;padding:0;border:0;';
+  document.body.appendChild(probe);
+  const pageHPx = probe.offsetHeight;
+  document.body.removeChild(probe);
+  const bleedPx = 3;
+  const maxPx = Math.max(1, pageHPx - bleedPx);
+  const minRatio = isLandscape ? 207 / 210 : 294 / 297;
+  const minPx = Math.max(1, Math.round(maxPx * minRatio));
+  const root = document.documentElement;
+  root.style.setProperty('--print-page-max-px', maxPx + 'px');
+  root.style.setProperty('--print-page-min-px', minPx + 'px');
+}
+
+function clearPrintPageCalibration() {
+  document.documentElement.style.removeProperty('--print-page-max-px');
+  document.documentElement.style.removeProperty('--print-page-min-px');
+}
+
+/** Druck-Layout: Kalibrierung, Scroll-Reset, letztes Widget ohne Rand-Margin (wird sonst abgeschnitten). */
+function applyPrintLayoutFixes() {
+  calibratePrintPageBox();
+  window.scrollTo(0, 0);
+  if (_printMarginBackup) return;
+  _printMarginBackup = [];
+  document.querySelectorAll('#canvas-area .page').forEach(pageEl => {
+    const wraps = [...pageEl.querySelectorAll('.wwrap')]
+      .filter(el => !el.closest('.group-frame') && !el.closest('.floatbox'));
+    if (!wraps.length) return;
+    const last = wraps[wraps.length - 1];
+    _printMarginBackup.push({ el: last, mb: last.style.marginBottom });
+    last.style.marginBottom = '0';
+  });
+}
+
+function clearPrintLayoutFixes() {
+  if (_printMarginBackup) {
+    _printMarginBackup.forEach(({ el, mb }) => { el.style.marginBottom = mb; });
+    _printMarginBackup = null;
+  }
+  clearPrintPageCalibration();
+}
 
 function updatePrintStyle() {
   const ds = printOpts.doubleSided;
@@ -2229,10 +2318,12 @@ function prepareCanvasForPrint(solutions) {
   fitCanvasPostLayout(document.getElementById('canvas-area'));
   drawPrintConnectionLines();
   updatePrintStyle();
+  applyPrintLayoutFixes();
   return { prevSel, zoomEl, zoomT, solutions };
 }
 
 function finishPrintPrep(state) {
+  clearPrintLayoutFixes();
   if (state.zoomEl) state.zoomEl.style.transform = state.zoomT;
   if (state.solutions) _solutionsMode = false;
   selId = state.prevSel;
@@ -2256,6 +2347,7 @@ function runPrintAfterPrep(state) {
     if (zoomEl) zoomEl.style.transform = 'none';
     fitCanvasPostLayout(document.getElementById('canvas-area'));
     drawPrintConnectionLines();
+    applyPrintLayoutFixes();
   };
   window.addEventListener('beforeprint', onBefore);
   window.addEventListener('afterprint', finish);
@@ -2278,6 +2370,19 @@ function togglePrintPanel(e) {
   const p = document.getElementById('print-panel');
   p.style.display = p.style.display === 'none' ? 'block' : 'none';
 }
+
+/** Hinweis nur für Chrome/Chromium auf macOS: dessen Druckdialog-Link „PDF in Vorschau
+ *  öffnen" rendert via Quartz mit US Letter (ignoriert Papierformat + Systemstandard)
+ *  → A4-Inhalt wird unten ~18mm abgeschnitten. Safari/Firefox haben den Link nicht. */
+function initChromePdfHint() {
+  const isChromium = /Chrom(e|ium)\//.test(navigator.userAgent);
+  const isMac = /Mac/.test(navigator.platform || '');
+  if (isChromium && isMac) {
+    const el = document.getElementById('chrome-pdf-hint');
+    if (el) el.style.display = 'block';
+  }
+}
+initChromePdfHint();
 
 // ── Sonderzeichen-Palette (universell) ───────────────────────────
 // Fügt das Zeichen am Cursor des zuletzt fokussierten Textfeldes ein.

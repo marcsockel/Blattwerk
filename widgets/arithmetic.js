@@ -1,4 +1,6 @@
 // Widget: Rechenaufgaben
+const ARITH_DEFAULT_FONT = "'Arial', sans-serif";
+
 WIDGETS.push({
   meta: { type:"arithmetic", label:"Rechenaufgaben", desc:"Plus, Minus, Mal, Geteilt", icon:"➕", category:"mathematik" },
 
@@ -17,7 +19,7 @@ WIDGETS.push({
       vergleich: false,
       vergleichSeiten: "gemischt",
       luecke: "erste",
-      showLoesungen: false, groesse:'klein', aufgabenNr:0, aufgabenText:'',
+      showLoesungen: false, groesse:'klein', font: ARITH_DEFAULT_FONT, aufgabenNr:0, aufgabenText:'',
     };
     arithDoGenerate(w);
     return w;
@@ -38,6 +40,7 @@ WIDGETS.push({
     const px = v => Math.round(v * S);
     const FS = px(16);   // Schriftgröße
     const LH = px(20);   // Zeilen-/Kästchenhöhe
+    const FF = d.font || ARITH_DEFAULT_FONT;
     const BW = px(36);   // Antwortkästchen-Breite (ungeteilt)
     const CW = px(18);   // Stellen-Zellenbreite
     const box = `<span style="display:inline-block;width:${BW}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
@@ -48,20 +51,20 @@ WIDGETS.push({
     const boxW = n => n*CW + (n-1) + 3; // Außenbreite inkl. Trennstriche+Rahmen (Footprint für blaue Lösung)
     // Kästchen in Original-Optik, blau gefüllt (Lösungsvorschau = Original + Inhalt)
     const blueBox = (v, w, h = LH) =>
-      `<span style="display:inline-flex;width:${w}px;height:${h}px;align-items:center;justify-content:center;border:1.5px solid #999;border-radius:2px;background:#fff;vertical-align:middle;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+      `<span style="display:inline-flex;width:${w}px;height:${h}px;align-items:center;justify-content:center;border:1.5px solid #999;border-radius:2px;background:#fff;vertical-align:middle;font-family:${FF};font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
     const boxN = (n, v) => {
       if (!stellen || !n || n < 1) return v === undefined ? box : blueBox(v, BW);
       const s = v === undefined ? null : String(v);
       return `<span style="display:inline-flex;height:${LH}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;">` +
         Array.from({length:n}, (_,i) => {
           const ch = s && s.length >= n - i ? esc(s[s.length - n + i]) : '';
-          return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${CW}px;height:100%;${i ? 'border-left:1px solid #999;' : ''}font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${ch}</span>`;
+          return `<span style="display:inline-flex;align-items:center;justify-content:center;width:${CW}px;height:100%;${i ? 'border-left:1px solid #999;' : ''}font-family:${FF};font-size:${FS}px;color:#2563eb;font-weight:700;">${ch}</span>`;
         }).join("") +
       `</span>`;
     };
     const ansDigits = v => v == null ? 0 : String(v).replace(/\D/g, "").length;
     const ansW = v => (stellen && ansDigits(v)) ? boxW(ansDigits(v)) : BW;
-    const tdBase = `padding:${px(3)}px 0;font-size:${FS}px;font-family:'DidactGothic7',sans-serif;vertical-align:middle;line-height:${LH}px;`;
+    const tdBase = `padding:${px(3)}px 0;font-size:${FS}px;font-family:${FF};vertical-align:middle;line-height:${LH}px;`;
     // Die Schrift hat KEINE Tabellenziffern (kein tnum-Feature — „1" ist 6.6px, „8" 8.9px),
     // font-variant-numeric:tabular-nums wirkt also nicht. Darum bekommt jede Ziffer eine
     // eigene Zelle (zentriert) → Einer stehen unter Einern, egal welche Ziffer. Etwas
@@ -71,11 +74,11 @@ WIDGETS.push({
         ? `<span style="display:inline-block;width:1.2ch;text-align:center;">${c}</span>`
         : esc(c)
     ).join("");
-    const numSpan = (v, w = numW) => `<span style="display:inline-block;min-width:${w};min-height:${LH}px;line-height:${LH}px;text-align:right;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${digitCells(v)}</span>`;
+    const numSpan = (v, w = numW) => `<span style="display:inline-block;min-width:${w};min-height:${LH}px;line-height:${LH}px;text-align:right;font-family:${FF};font-size:${FS}px;">${digitCells(v)}</span>`;
     // Blaue Lösung: in eine Box mit GENAU der Breite des jeweiligen Platzhalter-Kästchens
     // (w px) gesetzt → ausgewählt (Zahl) und abgewählt (Kästchen) sind gleich breit, der
     // Umbruch/die Position bleibt identisch.
-    const blueVal = (v, w) => `<span style="display:inline-block;width:${w}px;text-align:center;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
+    const blueVal = (v, w) => `<span style="display:inline-block;width:${w}px;text-align:center;font-family:${FF};font-size:${FS}px;color:#2563eb;font-weight:700;">${esc(String(v))}</span>`;
 
     // Parse a task string into parts.
     // Normal:      "12 + 4 ="        → { left:"12", op:"+", right:"4", result:null }
@@ -116,11 +119,6 @@ WIDGETS.push({
       return { raw: norm.replace(/\s*=\s*$/, ""), hasEq };
     };
 
-    const cell = (val, align = "right", override = null, w = numW) => {
-      const content = override !== null ? override : val === "_" ? box : numSpan(val, w);
-      return `<td style="text-align:${align};${tdBase}min-width:${w};font-variant-numeric:tabular-nums;">${content}</td>`;
-    };
-
     const parsed = allTasks.map(parse);
     // Slot-Breiten aus den ECHT vorkommenden Zahlen statt pauschal aus dem Zahlenraum:
     // rechtsbündig (stellengerecht) bleibt, aber ohne Dauerlücke nach dem Rechenzeichen,
@@ -135,6 +133,10 @@ WIDGETS.push({
       dRes = Math.max(dRes, digitsOf(p.result));
     });
     const lW = (dL || maxDigits) + 'ch', rW = (dR || maxDigits) + 'ch', resW = (dRes || maxDigits) + 'ch';
+    const cell = (val, align = "right", override = null, w = numW) => {
+      const content = override !== null ? override : val === "_" ? box : numSpan(val, w);
+      return `<td style="text-align:${align};${tdBase}min-width:${w};font-variant-numeric:tabular-nums;">${content}</td>`;
+    };
     const perCol = Math.ceil(parsed.length / numCols);
     const groups = Array.from({length: numCols}, (_, i) =>
       parsed.slice(i * perCol, (i + 1) * perCol)
@@ -209,44 +211,99 @@ WIDGETS.push({
         dAns = Math.max(dAns, ansDigits(computeAns(p)));
     });
 
+    const ergaenzungZufall = !!(d.ergaenzung && d.luecke === 'zufall');
+    let zSlotL = dL, zSlotR = dR, zSlotRes = dRes;
+    if (ergaenzungZufall) {
+      parsed.forEach(p => {
+        if (p.raw !== undefined || p.isVergleich || p.result == null) return;
+        const gap = computeAns(p);
+        if (p.left === '_') zSlotL = Math.max(zSlotL, ansDigits(gap));
+        if (p.right === '_') zSlotR = Math.max(zSlotR, ansDigits(gap));
+      });
+      zSlotL = zSlotL || maxDigits;
+      zSlotR = zSlotR || maxDigits;
+      zSlotRes = zSlotRes || maxDigits;
+    }
+
+    const renderZufallRow = p => {
+      const placeW = '1.2ch';
+      const placeTd = ch =>
+        `<td style="text-align:center;${tdBase}width:${placeW};min-width:${placeW};max-width:${placeW};padding-left:0;padding-right:0;vertical-align:middle;">`
+        + (ch ? `<span style="display:inline-block;width:${placeW};text-align:center;">${esc(ch)}</span>` : '')
+        + `</td>`;
+      const placeTable = (val, nPlaces, gapAns) => {
+        if (val === '_') {
+          const n = Math.max(1, ansDigits(gapAns));
+          return isActive && gapAns != null
+            ? (stellen ? boxN(n, gapAns) : blueBox(gapAns, BW))
+            : (stellen ? boxN(n) : box);
+        }
+        const digits = String(val).replace(/\D/g, '');
+        const cells = [];
+        for (let i = 0; i < nPlaces; i++) {
+          const fromRight = nPlaces - i;
+          const dIdx = digits.length - fromRight;
+          cells.push(placeTd(dIdx >= 0 ? digits[dIdx] : ''));
+        }
+        return `<table style="border-collapse:collapse;margin:0 auto;"><tr>${cells.join('')}</tr></table>`;
+      };
+      const wrapCell = inner =>
+        `<td style="text-align:center;${tdBase}padding-left:0;padding-right:0;vertical-align:middle;white-space:nowrap;">${inner}</td>`;
+      const gapAns = (p.left === '_' || p.right === '_') ? computeAns(p) : null;
+      const opCell = `<td style="text-align:center;${tdBase}padding-left:4px;padding-right:4px;"><span style="display:inline-block;width:${px(9)}px;text-align:center;">${esc(p.op)}</span></td>`;
+      const eqCell = `<td style="${tdBase}padding-left:5px;padding-right:6px;text-align:center;white-space:nowrap;vertical-align:middle;">=</td>`;
+      return `<tr>`
+        + wrapCell(placeTable(p.left, zSlotL, gapAns))
+        + opCell
+        + wrapCell(placeTable(p.right, zSlotR, gapAns))
+        + eqCell
+        + wrapCell(placeTable(p.result, zSlotRes, null))
+        + `</tr>`;
+    };
+
+    const renderTaskRow = p => {
+      if (p.raw !== undefined) {
+        const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueBox(computeAns(p)??'?', BW)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
+        return `<tr><td colspan="5" style="${tdBase}">${esc(p.raw)}${ans}</td></tr>`;
+      }
+      const sqBoxInner = `<span style="display:block;width:${LH}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
+      const sqBoxSlot = (inner, w = px(28)) => `<span style="display:inline-flex;width:${w}px;height:${LH}px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
+      const sqBox = sqBoxSlot(sqBoxInner);
+      if (p.isVergleich) {
+        const cmpBox = `<span style="display:inline-block;width:${px(24)}px;height:${px(24)}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
+        const mid = isActive ? blueBox(p.sym, px(24), px(24)) : cmpBox;
+        return `<tr>
+          <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
+          <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
+          <td style="text-align:left;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.right)}</td>
+        </tr>`;
+      }
+      const opCell = p.isZeichen
+        ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueBox(p.op, LH)) : sqBox}</td>`
+        : `<td style="text-align:center;${tdBase}padding-left:4px;padding-right:4px;"><span style="display:inline-block;width:${px(9)}px;text-align:center;">${esc(p.op)}</span></td>`;
+      const gapAns = (p.left === "_" || p.right === "_") ? computeAns(p) : null;
+      const leftContent  = (p.left === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.left === "_" ? boxN(ansDigits(gapAns)) : null);
+      const rightContent = (p.right === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.right === "_" ? boxN(ansDigits(gapAns)) : null);
+      if (p.result !== null) {
+        return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result, resW)}</td></tr>`;
+      }
+      const ans = computeAns(p);
+      const ansInner = isActive && ans ? boxN(ansDigits(ans), ans) : boxN(ansDigits(ans));
+      const ansSlot = (stellen && dAns)
+        ? `<span style="display:inline-block;min-width:${boxW(dAns)}px;text-align:right;vertical-align:middle;">${ansInner}</span>`
+        : ansInner;
+      const ansCell = p.hasEq
+        ? `<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${ansSlot}</td>`
+        : `<td></td>`;
+      return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}${ansCell}</tr>`;
+    };
+
     const renderGroup = group => {
       const rows = group.map(p => {
-        if (p.raw !== undefined) {
-          const ans = p.hasEq ? (isActive ? `&thinsp;<span style="margin-right:6px;">=</span>${blueBox(computeAns(p)??'?', BW)}` : `&thinsp;<span style="margin-right:6px;">=</span>${box}`) : "";
-          return `<tr><td colspan="5" style="${tdBase}">${esc(p.raw)}${ans}</td></tr>`;
-        }
-        const sqBoxInner = `<span style="display:block;width:${LH}px;height:${LH}px;border:1.5px solid #999;border-radius:2px;background:#fff;flex-shrink:0;"></span>`;
-        const sqBoxSlot = (inner, w = px(28)) => `<span style="display:inline-flex;width:${w}px;height:${LH}px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
-        const sqBox = sqBoxSlot(sqBoxInner);
-        if (p.isVergleich) {
-          const cmpBox = `<span style="display:inline-block;width:${px(24)}px;height:${px(24)}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
-          const mid = isActive ? blueBox(p.sym, px(24), px(24)) : cmpBox;
-          return `<tr>
-            <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
-            <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
-            <td style="text-align:left;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.right)}</td>
-          </tr>`;
-        }
-        const opCell = p.isZeichen
-          ? `<td style="text-align:center;${tdBase}padding-left:6px;padding-right:2px;">${isActive ? sqBoxSlot(blueBox(p.op, LH)) : sqBox}</td>`
-          : `<td style="text-align:center;${tdBase}padding-left:4px;padding-right:4px;"><span style="display:inline-block;width:${px(9)}px;text-align:center;">${esc(p.op)}</span></td>`;
-        const gapAns = (p.left === "_" || p.right === "_") ? computeAns(p) : null;
-        const leftContent  = (p.left === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.left === "_" ? boxN(ansDigits(gapAns)) : null);
-        const rightContent = (p.right === "_" && isActive) ? boxN(ansDigits(gapAns), gapAns ?? '?') : (p.right === "_" ? boxN(ansDigits(gapAns)) : null);
-        if (p.result !== null) {
-          return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${numSpan(p.result, resW)}</td></tr>`;
-        } else {
-          const ans = computeAns(p);
-          const ansInner = isActive && ans ? boxN(ansDigits(ans), ans) : boxN(ansDigits(ans));
-          const ansSlot = (stellen && dAns)
-            ? `<span style="display:inline-block;min-width:${boxW(dAns)}px;text-align:right;vertical-align:middle;">${ansInner}</span>`
-            : ansInner;
-          const ansCell = p.hasEq
-            ? `<td style="${tdBase}padding-left:5px;white-space:nowrap;"><span style="margin-right:6px;">=</span>${ansSlot}</td>`
-            : `<td></td>`;
-          return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}${ansCell}</tr>`;
-        }
-      }).join("");
+        if (ergaenzungZufall && p.result != null && p.raw === undefined && !p.isVergleich && !p.isZeichen)
+          return renderZufallRow(p);
+        return renderTaskRow(p);
+      }).join('');
       return `<table style="border-collapse:collapse;">${rows}</table>`;
     };
 
@@ -265,7 +322,7 @@ WIDGETS.push({
 
     const loesungenHtml = `
       <div style="margin-top:12px;border-top:1.5px dashed #ccc;padding-top:8px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 10px;">
-        ${shuffled.map(a => `<span style="font-family:'DidactGothic7',sans-serif;font-size:${px(14)}px;color:#555;">${esc(a)}</span>`).join("")}
+        ${shuffled.map(a => `<span style="font-family:${FF};font-size:${px(14)}px;color:#555;">${esc(a)}</span>`).join("")}
       </div>`;
 
     return tasksHtml + loesungenHtml;

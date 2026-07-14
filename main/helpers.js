@@ -165,9 +165,10 @@ function seededShuffle(arr, seed) {
  * (Rechenpäckchen, Karten, SVG-Felder, Räder, Tabellen, Stücke …).
  *
  * EIN Modus für alle: flex-wrap. Der Browser bricht an der ECHTEN Breite um.
- *  - Volle Zeile → über die Breite verteilt (space-between; erstes randbündig links, letztes
- *    rechts), letzte/unvolle Zeile via unsichtbarer Füller (echtes Item auf Höhe 0) ausgerichtet.
+ *  - Volle Zeile + Blocksatz (d.align === 'justify') → über die Breite verteilt (space-between).
+ *  - Volle Zeile + links/mitte/rechts → eng gruppiert wie bei wenigen Items.
  *  - Wenige Items / Zeile nicht voll → eng gruppiert, Ausrichtung über d.align (left/center/right).
+ *  - Nur eine Spalte passt (z. B. Layout ⅓) → ebenfalls Ausrichtungsmodus (nicht space-between).
  * Die Voll/Nicht-voll-Entscheidung nutzt eine perRow-Schätzung aus opts.itemW + opts.d
  * (geom().contentW×widthFrac(d) MINUS .winner-Padding). Die echte Spaltenzahl macht der Browser.
  *
@@ -189,18 +190,26 @@ function flexDistribute(innerHtmls, opts) {
   // WICHTIG: vom Blatt-Inhaltsmaß (geom().contentW) das .winner-Padding (~18px links+rechts)
   // ABZIEHEN — sonst zählt die Schätzung eine Spalte zu viel (Bug: „nur 4 passen, aber bei 4
   // wird nicht verteilt"). Die echte Spaltenzahl macht weiterhin der Browser (flex-wrap).
+  // Bei bündigen Widgets (d.flush → winnerStyle padding:0) entfällt das Padding.
   const WINNER_PAD = 18;
   let perRow = Infinity;
   if (opts.itemW && opts.d && typeof geom === 'function' && typeof widthFrac === 'function') {
-    const avail = geom().contentW * widthFrac(opts.d) - WINNER_PAD;
+    const pad = opts.d.flush ? 0 : WINNER_PAD;
+    const avail = geom().contentW * widthFrac(opts.d) - pad;
     perRow = Math.max(1, Math.floor((avail + gap) / (opts.itemW + gap)));
   }
   // margin-bottom der LETZTEN Zeile am Container kompensieren — sonst hängt der
   // Zeilenabstand als Leerraum unter dem Widget (Abstand unten > oben, z.B. Uhren).
   const comp = mb ? `margin-bottom:-${mb}px;` : '';
-  if (n < perRow) {
-    const align = (opts.d && opts.d.align) || 'left';
-    const jc = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+  const align = opts.d && opts.d.align;
+  const hasAlign = align != null && align !== '';
+  // Ohne gesetztes align: bisheriges Verhalten (volle Zeile verteilen). Mit align: nur bei justify.
+  const spreadRow = align === 'justify' || !hasAlign;
+  if (n < perRow || perRow === 1 || !spreadRow) {
+    const jcAlign = align === 'justify' ? 'left'
+      : hasAlign ? align
+      : (perRow === 1 ? 'center' : 'left');
+    const jc = jcAlign === 'center' ? 'center' : jcAlign === 'right' ? 'flex-end' : 'flex-start';
     return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:${jc};${comp}">${items}</div>`;
   }
   // Füller (echtes Item auf Höhe 0) richten die letzte Zeile an denselben Spalten aus.

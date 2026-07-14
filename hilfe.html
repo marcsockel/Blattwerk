@@ -154,7 +154,12 @@
   <h2>Layout (Breite)</h2>
   <p>Jedes Widget kann die volle Blattbreite einnehmen oder nur einen Teil: ¼, ⅓, ½, ⅔ oder ¾. Widgets mit
      Teilbreite rücken automatisch nebeneinander in eine Zeile – zwei halbe Widgets ergeben also eine
-     zweispaltige Zeile. Viele Widgets passen ihre Inhalte (z. B. Spaltenzahl) an die schmalere Breite an.</p>
+     zweispaltige Zeile. Viele Widgets passen ihre Inhalte (z. B. Spaltenzahl) an die schmalere Breite an.
+     Steht bei schmaler Breite nur ein Element in der Zeile, wird es je nach Widget zentriert (z. B. Zwanzigerfeld
+     mit eigener <b>Ausrichtung</b>).</p>
+  <p>Die fünf Widgets unter <b>Erste Päckchen</b> teilen sich ein gemeinsames Kästchen-Layout; jedes hat eigene
+     Aufgabenlogik (Rechenaufgaben, 10er Stop, Analogie, Zerlegung, Umkehr). Details in den jeweiligen
+     Hilfe-Artikeln.</p>
 </article>
 
 <!-- ══════════ DIE APP ══════════ -->
@@ -254,8 +259,9 @@
     <li><b>Lösung drucken (Beta):</b> druckt das Blatt mit allen Lösungen in Blau – als Kontrollblatt für
         dich oder zur Selbstkontrolle der Kinder.</li>
   </ul>
-  <div class="tip"><b>Tipp:</b> Stelle im Druckdialog die Ränder auf „Keine"/„Standard" und deaktiviere
-     „Kopf- und Fußzeilen", falls der Browser welche anbietet – Blattwerk bringt sein Seitenlayout selbst mit.</div>
+  <div class="tip"><b>Tipp:</b> Stelle im Druckdialog die Ränder auf „Keine"/„Standard", die Skalierung auf
+     <b>100&nbsp;%</b> und deaktiviere „Kopf- und Fußzeilen", falls der Browser welche anbietet – Blattwerk bringt
+     sein Seitenlayout selbst mit. In Chrome kann „An Seitengröße anpassen" sonst unten abschneiden.</div>
 </article>
 
 <!-- ══════════ WIDGETS: ALLGEMEIN ══════════ -->
@@ -391,9 +397,11 @@
   <h1><span class="wicon">🧩</span>Multitool <small style="font-size:13px;color:var(--muted)">(Beta)</small></h1>
   <span class="cattag allgemein">Allgemein · Profi-Tools</span>
   <p>Ein frei belegbares Raster: Du wählst die Zeilen- und Spaltenzahl, dann weist du jeder Zelle über die
-     Mini-Karte im Eigenschaften-Panel einen Typ zu – leer, Schreiblinien, Text, Checkliste, Bild oder
-     Kästchengitter. Damit baust du kompakte Kombi-Aufgaben, z. B. „Bild links, daneben Linien, darunter
-     Kästchen".</p>
+     Mini-Karte im Eigenschaften-Panel einen Typ zu – leer, Schreiblinien, Text, Checkliste, Bild, Kästchengitter
+     oder eingebettete Mathe-Widgets (<b>Zwanzigerfeld</b> und alle fünf <b>Erste-Päckchen</b>-Typen). Damit baust
+     du kompakte Kombi-Aufgaben, z. B. „Bild links, daneben Linien, darunter ein Zwanzigerfeld".</p>
+  <p>Eingebettete Rechen-Widgets übernehmen ihre eigenen Einstellungen aus dem Multitool-Feld – würfeln und
+     bearbeiten funktioniert wie beim normalen Widget.</p>
 </article>
 
 <!-- ══════════ WIDGETS: DEUTSCH ══════════ -->
@@ -551,6 +559,82 @@
      einzeln nachbearbeiten; Lösungen erscheinen blau, solange das Widget ausgewählt ist.</p>
 </article>
 
+<article id="w-erste-paketchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Erste Päckchen">
+  <h1><span class="wicon">📦</span>Erste Päckchen</h1>
+  <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
+  <p>Rechenaufgaben und Ergänzungsaufgaben im Kästchen-Layout – das klassische „Päckchen" für den Anfangsunterricht.
+     In der linken Leiste findest du die fünf Typen unter <b>Erste Päckchen</b>; dieses Widget ist der Einstieg für
+     normale Plus- und Minusaufgaben (ohne Pfeile/Zerlegung).</p>
+  <ul>
+    <li><b>Modus:</b> <i>Rechenaufgaben</i> (z. B. 3 + 4 =) oder <i>Ergänzung</i> (z. B. 3 + _ = 10). Bei Ergänzung
+        wählst du, ob die Lücke in der 1. Zahl, der 2. Zahl oder zufällig sitzt.</li>
+    <li><b>Rechenzeichen:</b> Plus und/oder Minus (einzeln oder kombiniert).</li>
+    <li><b>Zahlenraum:</b> 10, 20 oder 100; optional <b>Zehnerübergang</b> (ohne / gemischt / nur mit).</li>
+    <li><b>Aufgaben pro Päckchen</b> und <b>Anzahl Päckchen</b> (Spalten) – steuern, wie viele Aufgaben
+        nebeneinander und untereinander stehen.</li>
+    <li><b>Größe</b> (klein / mittel / groß) und <b>Beschreib-Kästchen</b> (weiß oder grau zum Beschriften).</li>
+  </ul>
+  <p>Neue Aufgaben per <b>Würfeln 🎲</b>; im Bereich <b>Manuelle Bearbeitung</b> kannst du Zeilen direkt eintippen.
+     Lösungen sind blau, solange das Widget ausgewählt ist.</p>
+</article>
+
+<article id="w-ep-zehner-stop" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="10er Stop">
+  <h1><span class="wicon">🔟</span>10er Stop</h1>
+  <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
+  <p>Zehnerübergang mit Zerlegung: Jede Aufgabe besteht aus zwei Zeilen mit Pfeilen – oben die Gesamtaufgabe
+     (z. B. 7 + 5 =), darunter die Zerlegung des zweiten Summanden (7 + 3 + 2 =). Ideal für „Zehner-Stop"-Strategien.</p>
+  <ul>
+    <li><b>Zahlenraum:</b> 20 oder 100.</li>
+    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b> (klein / mittel / groß; Standard: groß).</li>
+    <li><b>Hilfe:</b> Bei „An" sind in den ersten Aufgaben graue Vorgaben in den Zerlegungs-Kästchen – Aufgabe 1 beide
+        Teile, Aufgabe 2 nur der erste Teil, ab Aufgabe 3 leer.</li>
+    <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen pro Aufgabe).</li>
+  </ul>
+  <p>Würfeln 🎲 erzeugt neue Paare; Lösungen blau bei Auswahl.</p>
+</article>
+
+<article id="w-ep-analogie" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Analogieaufgaben">
+  <h1><span class="wicon">↔️</span>Analogieaufgaben</h1>
+  <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
+  <p>Zwei zusammengehörige Aufgaben untereinander – erst ohne Zehner, dann mit Zehner (z. B. 4 − 3 = und darunter
+     14 − 3 =). So üben die Kinder das gleiche Rechenmuster im Zahlenraum 20.</p>
+  <ul>
+    <li><b>Rechenzeichen:</b> Plus und/oder Minus.</li>
+    <li><b>Aufgaben pro Päckchen</b>, <b>Anzahl Päckchen</b> und <b>Größe</b>.</li>
+    <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen pro Paar).</li>
+  </ul>
+  <p>Würfeln 🎲 und blaue Lösungen bei Auswahl wie bei den anderen Erste-Päckchen-Widgets.</p>
+</article>
+
+<article id="w-ep-zerlegung" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenzerlegung">
+  <h1><span class="wicon">✂️</span>Zahlenzerlegung</h1>
+  <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
+  <p>Eine Zahl in zwei Teile zerlegen: Oben steht die Zielzahl, darunter zwei Kästchen für die Teilsummanden.
+     Kompakteres Layout als 10er Stop – viele Aufgaben passen nebeneinander (Standard: 8 Spalten).</p>
+  <ul>
+    <li><b>Zahlenraum:</b> 10, 20 oder 100.</li>
+    <li><b>Immer 10:</b> Die obere Zahl ist immer 10 (für Zerlegungen im ZR 10).</li>
+    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b>.</li>
+    <li><b>Hilfe:</b> Bei „An" ist nur bei der <b>1. Aufgabe</b> der fehlende Teil als graue Vorgabe sichtbar;
+        ab der 2. Aufgabe bleiben die Lücken leer.</li>
+    <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (2 Zeilen: Zahl, dann Teile mit
+        <code>_</code> für Lücken).</li>
+  </ul>
+  <p>Würfeln 🎲 erzeugt neue Zerlegungen.</p>
+</article>
+
+<article id="w-ep-umkehr" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Umkehraufgabe">
+  <h1><span class="wicon">🔄</span>Umkehraufgabe</h1>
+  <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
+  <p>Plus- und Minus-Umkehr als Paar: Erst die Plusaufgabe (z. B. 4 + 3 =), direkt darunter die passende Minus-Umkehr
+     (7 − 3 =). Pfeile verbinden die Aufgaben optisch.</p>
+  <ul>
+    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b> (klein / mittel / groß).</li>
+    <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen: Plus, dann Minus).</li>
+  </ul>
+  <p>Würfeln 🎲 für neue Paare; Zahlenraum und Rechenarten folgen aus der Generierung (Plus/Minus im ZR 20).</p>
+</article>
+
 <article id="w-schriftlich" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Schriftliches Rechnen (+ − × ÷)">
   <h1><span class="wicon">⊞</span>Schriftliches Rechnen (+ − × ÷)</h1>
   <span class="cattag mathematik">Mathematik · Schriftl. Rechnen</span>
@@ -643,9 +727,20 @@
 <article id="w-zwanzigerfeld" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zwanzigerfeld">
   <h1><span class="wicon">⬛</span>Zwanzigerfeld</h1>
   <span class="cattag mathematik">Mathematik</span>
-  <p>Das Zwanzigerfeld als Anschauungsmittel im Zahlenraum 20 – mit Punktdarstellung zu Plus- und
-     Minusaufgaben. Rechenart, Anzahl, Größe, schwarz-weiß/farbig und Lösungsanzeige sind einstellbar; Aufgaben
-     kommen per <b>Würfeln 🎲</b>.</p>
+  <p>Das Zwanzigerfeld als Anschauungsmittel im Zahlenraum 20 – farbige oder schwarz-weiße Plättchen zu Plus- und
+     Minusaufgaben. Unter jedem Feld steht die Aufgabe in <b>Arial</b> (relativ kompakte Schriftgröße).</p>
+  <ul>
+    <li><b>Modus:</b> <i>Rechnen</i> (Aufgabe mit Ergebnis-Lücke), <i>Zahl nennen</i> (nur die gefüllte Menge
+        ablesen) oder <i>Ansicht</i> (nur das Feld, ohne Aufgabenzeile – z. B. als Anschauungshilfe).</li>
+    <li><b>Operationen</b> (bei Rechnen/Ansicht): Nur +, nur − oder beides.</li>
+    <li><b>Anzahl</b> der Felder (bis 24), <b>Größe</b> (klein / mittel / groß – mittel passt typischerweise
+        drei Felder nebeneinander auf volle Breite).</li>
+    <li><b>Ausrichtung</b> (links / mitte / rechts), wenn nicht die ganze Zeile voll ist.</li>
+    <li><b>Farbe</b> oder <b>S/W</b>; <b>Lösung</b> ein- oder ausblenden (bei Ansicht entfällt die Lösungszeile).</li>
+    <li><b>Manuelle Bearbeitung:</b> Zeilen wie <code>5 + 3</code> oder im Modus „Zahl nennen" nur die Zahl pro Zeile.</li>
+  </ul>
+  <p>Neue Aufgaben per <b>Würfeln 🎲</b>; Lösungen blau, solange das Widget ausgewählt ist. Auch im
+     <b>Multitool</b> einbettbar.</p>
 </article>
 
 <article id="w-zwanzigerrahmen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zwanzigerrahmen">

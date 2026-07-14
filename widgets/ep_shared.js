@@ -1,11 +1,13 @@
 // Gemeinsame Basis: Erste Päckchen & Rechenvorteil-Widgets (Kästchen-Layout)
 
+const EP_DEFAULT_FONT = "'Arial', sans-serif";
+
 const EP_DEFAULTS = {
-  erste_paketchen: { cols: 3, groesse: 'mittel' },
-  ep_zehner_stop:  { aufgabenProPaeckchen: 1, groesse: 'gross' },
-  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3 },
-  ep_zerlegung:    { cols: 8, groesse: 'mittel', aufgabenProPaeckchen: 1 },
-  ep_umkehr:       { cols: 6, groesse: 'mittel', aufgabenProPaeckchen: 1 },
+  erste_paketchen: { cols: 3, groesse: 'mittel', align: 'left' },
+  ep_zehner_stop:  { aufgabenProPaeckchen: 1, groesse: 'gross', align: 'left' },
+  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3, align: 'left' },
+  ep_zerlegung:    { cols: 8, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false, align: 'left' },
+  ep_umkehr:       { cols: 6, groesse: 'mittel', aufgabenProPaeckchen: 1, align: 'left' },
 };
 
 const EP_PAIR_TYPES = new Set(['ep_umkehr', 'ep_zehner_stop', 'ep_analogie', 'ep_zerlegung']);
@@ -79,8 +81,13 @@ function epBuildAnalogiePair(w) {
 }
 
 function epBuildZerlegPair(w) {
-  const zr = epGenZr(w.zahlenraum || 20);
-  const n = Math.floor(Math.random() * (zr - 1)) + 2;
+  let n;
+  if (w.immerZehn) {
+    n = 10;
+  } else {
+    const zr = epGenZr(w.zahlenraum || 20);
+    n = Math.floor(Math.random() * (zr - 1)) + 2;
+  }
   const part1 = Math.floor(Math.random() * (n - 1)) + 1;
   const part2 = n - part1;
   const line2 = Math.random() < 0.5 ? `${part1} _` : `_ ${part2}`;
@@ -175,6 +182,14 @@ function epSetErgaenzung(id, val) {
     return;
   }
   epGenerate(id);
+}
+
+function epSetImmerZehn(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  w.immerZehn = val;
+  epDoGenerate(w);
+  render(); renderProps(id);
 }
 
 function epSetLuecke(id, val) {
@@ -301,7 +316,7 @@ function epBaseData(id, type) {
     showLoesungen: false,
     grauBeschreiben: true,
     hilfe: true,
-    font: "'DidactGothic7', sans-serif",
+    font: EP_DEFAULT_FONT,
     bold: false,
     groesse: 'klein',
     aufgabenNr: 0, aufgabenText: '',
@@ -314,9 +329,9 @@ function epBuildCtx(d) {
   const px = v => Math.round(v * S);
   const FS = px(17);
   const SQ = px(32);
-  const FF = d.font || "'DidactGothic7', sans-serif";
+  const FF = d.font || EP_DEFAULT_FONT;
   const FW = d.bold ? 700 : 400;
-  const GAP = px(22);
+  const GAP = (d.type === 'ep_zehner_stop' || d.type === 'erste_paketchen') ? px(19) : px(22);
   const ROW_GAP = px(14);
   const PAIR_GAP = px(30);
   const PACK_GAP = px(44);
@@ -370,7 +385,10 @@ function epBuildCtx(d) {
     splitPair, stopRow1, stopRow2, epArrow,
     tdBase: `padding:${px(3)}px 0;font-family:${FF};font-weight:${FW};vertical-align:middle;white-space:nowrap;`,
     zerlegPairGap: px(20),
-    distGap: d.type === 'ep_zerlegung' ? px(24) : PACK_GAP,
+    distGap: d.type === 'ep_zerlegung' ? px(24)
+      : d.type === 'ep_zehner_stop'
+        ? ((d.align == null || d.align === 'justify') ? px(20) : px(30))
+      : PACK_GAP,
     distMb: d.type === 'ep_zerlegung' ? px(24) : px(44),
     packW: d.type === 'ep_zehner_stop' ? zehnerPackW
       : d.type === 'ep_zerlegung' ? zerlegPackW : normalPackW,
@@ -485,7 +503,7 @@ function epRender(d) {
     const hilfe = d.hilfe !== false;
     const partSq = (isMissing, val) => {
       if (!isMissing) return c.sqVal(val);
-      if (hilfe && pairIdx <= 1) return c.sqHint(val);
+      if (hilfe && pairIdx === 0) return c.sqHint(val);
       if (c.isActive) return c.sqVal(val, true);
       return c.sqEmpty;
     };
@@ -621,21 +639,6 @@ function epGrauBlock(d) {
     </div></div>`;
 }
 
-function epFontBlock(d) {
-  const font = d.font || "'DidactGothic7', sans-serif";
-  const bold = !!d.bold;
-  const fontOptions = GAP_FONTS.map(f =>
-    `<option value="${f.value}" ${font === f.value ? 'selected' : ''}>${f.label}</option>`
-  ).join('');
-  const tb = (label, active, onclick) => epToggleBtn(d, label, active, onclick);
-  return pr('Schrift (Test)', `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`)
-    + `<div class="prow"><label>Fett (Test)</label>
-      <div style="display:flex;gap:4px;">
-        ${tb('Normal', !bold, `upd(${d.id},'bold',false)`)}
-        ${tb('Fett', bold, `upd(${d.id},'bold',true)`)}
-      </div></div>`;
-}
-
 function epWuerfelBtn(d) {
   return `<button onclick="event.stopPropagation();epGenerate(${d.id})"
     style="margin-top:8px;width:100%;padding:6px;border:none;border-radius:5px;
@@ -713,13 +716,19 @@ function epRenderProps(d) {
   }
 
   if (d.type === 'ep_zerlegung') {
-    top = epZrSelect(d, [20, 100]);
+    const immerZehn = !!d.immerZehn;
+    top = epZrSelect(d, [10, 20, 100])
+      + `<div class="prow"><label>Immer 10</label>
+        <div style="display:flex;gap:4px;">
+          ${tb('Aus', !immerZehn, `epSetImmerZehn(${d.id},false)`)}
+          ${tb('An', immerZehn, `epSetImmerZehn(${d.id},true)`)}
+        </div></div>`;
     hilfeBlock = `<div class="prow"><label>Hilfe</label>
       <div style="display:flex;gap:4px;">
         ${tb('Aus', !hilfe, `upd(${d.id},'hilfe',false)`)}
         ${tb('An', hilfe, `upd(${d.id},'hilfe',true)`)}
       </div>
-      <div style="font-size:10px;color:#888;margin-top:3px;">1.–2. Aufgabe: fehlender Teil · ab 3.: leer</div></div>`;
+      <div style="font-size:10px;color:#888;margin-top:3px;">1. Aufgabe: fehlender Teil · ab 2.: leer</div></div>`;
     manual = ' (je 2 Zeilen: Zahl, dann Teile, z.B. 8 / 3 _)';
   }
 
@@ -727,8 +736,9 @@ function epRenderProps(d) {
     manual = ' (je 2 Zeilen: Plus, dann Minus)';
   }
 
-  return top + epAnordnungBlock(d, epAnordnungOpts(d.type)) + epGroesseBlock(d) + epGrauBlock(d) + hilfeBlock
-    + epFontBlock(d) + epWuerfelBtn(d) + epManualFold(d, manual);
+  return top + epAnordnungBlock(d, epAnordnungOpts(d.type)) + epGroesseBlock(d)
+    + alignToggle(d.id, d.align, true) + epGrauBlock(d) + hilfeBlock
+    + epWuerfelBtn(d) + epManualFold(d, manual);
 }
 
 function epMakeWidget(meta) {

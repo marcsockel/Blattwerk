@@ -436,7 +436,7 @@ function mtEmbedProps(parentId, idx, cell) {
   const nested = { ...cell.embed, type, id: parentId, _mtParent: parentId, _mtCell: idx };
   let html = WIDGET_MAP[type].renderProps(nested);
   const p = parentId;
-  const fns = ['epSetErgaenzung', 'epSetLuecke', 'epToggleOp', 'epSetLayout', 'epGenerate', 'zfSet', 'zfRoll', 'zfManual'];
+  const fns = ['epSetErgaenzung', 'epSetLuecke', 'epSetImmerZehn', 'epToggleOp', 'epSetLayout', 'epGenerate', 'zfSet', 'zfRoll', 'zfManual'];
   for (const fn of fns) {
     html = html.split(`${fn}(${p},`).join(`mtEmbedFn('${fn}',${p},${idx},`);
     html = html.split(`${fn}(${p})`).join(`mtEmbedFn('${fn}',${p},${idx})`);
@@ -492,6 +492,10 @@ function mtEmbedFn(name, parentId, idx, a, b) {
     }
     case 'epSetLuecke':
       emb.luecke = a;
+      epDoGenerate(emb);
+      break;
+    case 'epSetImmerZehn':
+      emb.immerZehn = a === true || a === 'true';
       epDoGenerate(emb);
       break;
     case 'epToggleOp': {

@@ -58,7 +58,8 @@ function buPseudoRand(seed) {
 
 function buContentW(d) {
   if (typeof geom === 'function' && typeof widthFrac === 'function') {
-    return Math.round(geom().contentW * widthFrac(d) - BU_WINNER_PAD);
+    const pad = d && d.flush ? 0 : BU_WINNER_PAD; // bündig: kein .winner-Padding
+    return Math.round(geom().contentW * widthFrac(d) - pad);
   }
   return 400;
 }

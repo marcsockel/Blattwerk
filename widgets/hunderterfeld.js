@@ -45,7 +45,8 @@ function hfFullContentW() {
 
 function hfContentW(d) {
   if (typeof geom === 'function' && typeof widthFrac === 'function') {
-    return Math.round(geom().contentW * widthFrac(d) - HF_WINNER_PAD);
+    const pad = d && d.flush ? 0 : HF_WINNER_PAD; // bündig: kein .winner-Padding
+    return Math.round(geom().contentW * widthFrac(d) - pad);
   }
   return 400;
 }
