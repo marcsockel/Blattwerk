@@ -10,7 +10,7 @@ let _imgPickerFilePending = false;
 
 // ⚠️ Nach dem Worker-Deploy hier deine eigene URL eintragen
 // (die von `npx wrangler deploy` ausgegebene …workers.dev-Adresse):
-const PIXABAY_PROXY = "https://pixabay-proxy.blattwerkstatt.workers.dev/";
+const PIXABAY_PROXY = "https://pixabay-proxy.DEIN-SUBDOMAIN.workers.dev/";
 
 const IMG_PICKER_ANLAUT_ORDER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
   .concat(["Ä", "Ö", "Ü", "ß", "Au", "Ei", "Eu", "Sch", "Sp", "St"]);
@@ -403,3 +403,24 @@ window.addEventListener("focus", () => {
   if (!_imgPickerFilePending) return;
   setTimeout(() => { _imgPickerFilePending = false; }, 400);
 });
+
+// Nur schließen, wenn der Klick AUF dem Hintergrund begonnen hat –
+// nicht, wenn eine Textmarkierung im Feld nach außen gezogen wurde.
+(function imgPickerOverlayGuard() {
+  const setup = () => {
+    const ov = document.getElementById("img-picker-overlay");
+    if (!ov) return;
+    ov.onclick = null; // Inline-Handler (closeImgPicker) entschärfen
+    let downOnOverlay = false;
+    ov.addEventListener("mousedown", e => { downOnOverlay = (e.target === ov); });
+    ov.addEventListener("click", e => {
+      if (downOnOverlay && e.target === ov) closeImgPicker();
+      downOnOverlay = false;
+    });
+  };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setup);
+  } else {
+    setup();
+  }
+})();
