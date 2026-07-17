@@ -10,7 +10,7 @@ let _imgPickerFilePending = false;
 
 // ⚠️ Nach dem Worker-Deploy hier deine eigene URL eintragen
 // (die von `npx wrangler deploy` ausgegebene …workers.dev-Adresse):
-const PIXABAY_PROXY = "https://pixabay-proxy.DEIN-SUBDOMAIN.workers.dev/";
+const PIXABAY_PROXY = "https://pixabay-proxy.blattwerkstatt.workers.dev/";
 
 const IMG_PICKER_ANLAUT_ORDER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
   .concat(["Ä", "Ö", "Ü", "ß", "Au", "Ei", "Eu", "Sch", "Sp", "St"]);
