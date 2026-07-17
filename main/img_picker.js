@@ -226,7 +226,9 @@ async function imgPickerCommonsSearch() {
   _imgPickerResults = [];
 
   results.innerHTML =
-    `<div id="img-picker-cgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;"></div>
+    `<div style="max-height:340px;overflow-y:auto;padding:2px;">
+       <div id="img-picker-cgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+     </div>
      <div id="img-picker-cfoot" style="margin-top:8px;text-align:center;">
        <div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>
      </div>`;
@@ -374,7 +376,9 @@ async function imgPickerPixabaySearch() {
   _imgPickerResults = [];
 
   results.innerHTML =
-    `<div id="img-picker-pgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;"></div>
+    `<div style="max-height:340px;overflow-y:auto;padding:2px;">
+       <div id="img-picker-pgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;"></div>
+     </div>
      <div id="img-picker-pfoot" style="margin-top:8px;text-align:center;">
        <div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>
      </div>`;
