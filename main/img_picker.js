@@ -10,7 +10,18 @@ let _imgPickerFilePending = false;
 
 // ⚠️ Nach dem Worker-Deploy hier deine eigene URL eintragen
 // (die von `npx wrangler deploy` ausgegebene …workers.dev-Adresse):
-const PIXABAY_PROXY = "https://pixabay-proxy.blattwerkstatt.workers.dev/";
+const PIXABAY_PROXY = "https://pixabay-proxy.DEIN-SUBDOMAIN.workers.dev/";
+
+// Pixabay-Paginierung („Mehr laden")
+let _imgPickerPixQuery = "";
+let _imgPickerPixPage = 1;
+let _imgPickerPixTotal = 0;
+let _imgPickerPixLoading = false;
+
+// Wikimedia-Paginierung („Mehr laden")
+let _imgPickerComQuery = "";
+let _imgPickerComContinue = null;
+let _imgPickerComLoading = false;
 
 const IMG_PICKER_ANLAUT_ORDER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
   .concat(["Ä", "Ö", "Ü", "ß", "Au", "Ei", "Eu", "Sch", "Sp", "St"]);
@@ -143,7 +154,7 @@ function imgPickerShowAnlaut() {
           title="${esc(label)}"
           style="cursor:pointer;border:1.5px solid #313244;border-radius:6px;overflow:hidden;
                  width:52px;height:52px;display:flex;align-items:center;justify-content:center;
-                 background:#11111b;transition:border-color .12s;flex-shrink:0;"
+                 background:#ffffff;transition:border-color .12s;flex-shrink:0;"
           onmouseover="this.style.borderColor='#89b4fa'"
           onmouseout="this.style.borderColor='#313244'">
           <img src="assets/anlaut/${v}.svg" alt="" style="max-width:90%;max-height:90%;object-fit:contain;" loading="lazy">
@@ -210,18 +221,43 @@ async function imgPickerCommonsSearch() {
     return;
   }
 
-  results.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>`;
+  _imgPickerComQuery = query;
+  _imgPickerComContinue = null;
+  _imgPickerResults = [];
+
+  results.innerHTML =
+    `<div id="img-picker-cgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;"></div>
+     <div id="img-picker-cfoot" style="margin-top:8px;text-align:center;">
+       <div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>
+     </div>`;
+
+  await imgPickerCommonsLoad();
+}
+
+async function imgPickerCommonsLoad() {
+  const grid = document.getElementById("img-picker-cgrid");
+  const foot = document.getElementById("img-picker-cfoot");
+  if (!grid || !foot || _imgPickerComLoading) return;
+  _imgPickerComLoading = true;
 
   try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query`
-      + `&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=24`
+    let url = `https://commons.wikimedia.org/w/api.php?action=query`
+      + `&generator=search&gsrsearch=${encodeURIComponent(_imgPickerComQuery)}&gsrnamespace=6&gsrlimit=24`
       + `&prop=imageinfo&iiprop=url&iiurlwidth=120&format=json&origin=*`;
+
+    // Fortsetzungs-Parameter der vorigen Seite anhängen
+    if (_imgPickerComContinue) {
+      for (const [k, v] of Object.entries(_imgPickerComContinue)) {
+        url += `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
+      }
+    }
 
     const res = await fetch(url);
     const data = await res.json();
-    const pages = Object.values(data.query?.pages || {});
+    _imgPickerComContinue = data.continue || null;
 
-    _imgPickerResults = pages
+    const newItems = Object.values(data.query?.pages || {})
+      .sort((a, b) => (a.index || 0) - (b.index || 0))
       .map(p => ({
         thumb: p.imageinfo?.[0]?.thumburl,
         url:   p.imageinfo?.[0]?.url,
@@ -229,15 +265,18 @@ async function imgPickerCommonsSearch() {
       }))
       .filter(p => p.thumb && p.url && /\.(png|jpg|jpeg|svg|gif|webp)/i.test(p.url));
 
-    if (!_imgPickerResults.length) {
-      results.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Keine Ergebnisse gefunden.</div>`;
+    if (!_imgPickerResults.length && !newItems.length) {
+      foot.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Keine Ergebnisse gefunden.</div>`;
       return;
     }
 
-    results.innerHTML =
-      `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;">` +
-      _imgPickerResults.map((img, i) =>
-        `<div onclick="event.stopPropagation();imgPickerSelectResult(${i})"
+    const startIndex = _imgPickerResults.length;
+    _imgPickerResults = _imgPickerResults.concat(newItems);
+
+    grid.insertAdjacentHTML("beforeend",
+      newItems.map((img, k) => {
+        const i = startIndex + k;
+        return `<div onclick="event.stopPropagation();imgPickerSelectResult(${i})"
           title="${esc(img.title)}"
           style="cursor:pointer;border:1.5px solid #313244;border-radius:6px;overflow:hidden;
                  aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
@@ -245,16 +284,41 @@ async function imgPickerCommonsSearch() {
           onmouseover="this.style.borderColor='#89b4fa'"
           onmouseout="this.style.borderColor='#313244'">
           <img src="${img.thumb}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;" loading="lazy">
-        </div>`
-      ).join("") +
-      `</div>
-      <div style="font-size:10px;color:#585b70;margin-top:8px;text-align:center;">
-        Bilder: Wikimedia Commons · Lizenzen variieren
-      </div>`;
+        </div>`;
+      }).join("")
+    );
+
+    imgPickerComRenderFoot();
   } catch (err) {
-    results.innerHTML = `<div style="color:#f38ba8;font-size:12px;padding:8px 0;">
+    foot.innerHTML = `<div style="color:#f38ba8;font-size:12px;padding:8px 0;">
       Fehler beim Laden. Bitte Internetverbindung prüfen.</div>`;
+  } finally {
+    _imgPickerComLoading = false;
   }
+}
+
+function imgPickerComRenderFoot() {
+  const foot = document.getElementById("img-picker-cfoot");
+  if (!foot) return;
+  const more = !!_imgPickerComContinue;
+  foot.innerHTML =
+    (more
+      ? `<button type="button" onclick="event.stopPropagation();imgPickerCommonsMore()"
+           style="padding:7px 16px;border:1.5px solid #45475a;border-radius:6px;background:#181825;
+                  color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+                  transition:border-color .12s;"
+           onmouseover="this.style.borderColor='#89b4fa'"
+           onmouseout="this.style.borderColor='#45475a'">Mehr laden</button>`
+      : "") +
+    `<div style="font-size:10px;color:#585b70;margin-top:8px;text-align:center;">
+       Bilder: Wikimedia Commons · Lizenzen variieren · ${_imgPickerResults.length} geladen
+     </div>`;
+}
+
+async function imgPickerCommonsMore() {
+  const foot = document.getElementById("img-picker-cfoot");
+  if (foot) foot.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Lädt…</div>`;
+  await imgPickerCommonsLoad();
 }
 
 function imgPickerSelectResult(i) {
@@ -304,16 +368,35 @@ async function imgPickerPixabaySearch() {
     return;
   }
 
-  results.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>`;
+  _imgPickerPixQuery = query;
+  _imgPickerPixPage = 1;
+  _imgPickerPixTotal = 0;
+  _imgPickerResults = [];
+
+  results.innerHTML =
+    `<div id="img-picker-pgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;"></div>
+     <div id="img-picker-pfoot" style="margin-top:8px;text-align:center;">
+       <div style="color:#6c7086;font-size:12px;padding:8px 0;">Suche läuft…</div>
+     </div>`;
+
+  await imgPickerPixabayLoad();
+}
+
+async function imgPickerPixabayLoad() {
+  const grid = document.getElementById("img-picker-pgrid");
+  const foot = document.getElementById("img-picker-pfoot");
+  if (!grid || !foot || _imgPickerPixLoading) return;
+  _imgPickerPixLoading = true;
 
   try {
-    const url = `${PIXABAY_PROXY}?q=${encodeURIComponent(query)}`
-      + `&image_type=all&per_page=24&lang=de`;
+    const url = `${PIXABAY_PROXY}?q=${encodeURIComponent(_imgPickerPixQuery)}`
+      + `&image_type=all&per_page=24&lang=de&page=${_imgPickerPixPage}`;
 
     const res = await fetch(url);
     const data = await res.json();
+    _imgPickerPixTotal = data.totalHits || 0;
 
-    _imgPickerResults = (data.hits || [])
+    const newItems = (data.hits || [])
       .map(h => ({
         thumb: h.previewURL,
         url:   h.largeImageURL || h.webformatURL,
@@ -321,15 +404,23 @@ async function imgPickerPixabaySearch() {
       }))
       .filter(x => x.thumb && x.url);
 
-    if (!_imgPickerResults.length) {
-      results.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Keine Ergebnisse gefunden.</div>`;
+    if (_imgPickerPixPage === 1 && !newItems.length) {
+      foot.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Keine Ergebnisse gefunden.</div>`;
       return;
     }
 
-    results.innerHTML =
-      `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:340px;overflow-y:auto;padding:2px;">` +
-      _imgPickerResults.map((img, i) =>
-        `<div onclick="event.stopPropagation();imgPickerSelectPixabay(${i})"
+    const startIndex = _imgPickerResults.length;
+    _imgPickerResults = _imgPickerResults.concat(newItems);
+
+    // Keine neuen Treffer mehr → Button künftig ausblenden
+    if (_imgPickerPixPage > 1 && !newItems.length) {
+      _imgPickerPixTotal = _imgPickerResults.length;
+    }
+
+    grid.insertAdjacentHTML("beforeend",
+      newItems.map((img, k) => {
+        const i = startIndex + k;
+        return `<div onclick="event.stopPropagation();imgPickerSelectPixabay(${i})"
           title="${esc(img.title)}"
           style="cursor:pointer;border:1.5px solid #313244;border-radius:6px;overflow:hidden;
                  aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
@@ -337,16 +428,43 @@ async function imgPickerPixabaySearch() {
           onmouseover="this.style.borderColor='#89b4fa'"
           onmouseout="this.style.borderColor='#313244'">
           <img src="${img.thumb}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;" loading="lazy">
-        </div>`
-      ).join("") +
-      `</div>
-      <div style="font-size:10px;color:#585b70;margin-top:8px;text-align:center;">
-        Bilder: Pixabay
-      </div>`;
+        </div>`;
+      }).join("")
+    );
+
+    imgPickerPixRenderFoot();
   } catch (err) {
-    results.innerHTML = `<div style="color:#f38ba8;font-size:12px;padding:8px 0;">
+    foot.innerHTML = `<div style="color:#f38ba8;font-size:12px;padding:8px 0;">
       Fehler beim Laden. Bitte Internetverbindung und Worker-URL prüfen.</div>`;
+  } finally {
+    _imgPickerPixLoading = false;
   }
+}
+
+function imgPickerPixRenderFoot() {
+  const foot = document.getElementById("img-picker-pfoot");
+  if (!foot) return;
+  const shown = _imgPickerResults.length;
+  const more = shown < _imgPickerPixTotal;
+  foot.innerHTML =
+    (more
+      ? `<button type="button" onclick="event.stopPropagation();imgPickerPixabayMore()"
+           style="padding:7px 16px;border:1.5px solid #45475a;border-radius:6px;background:#181825;
+                  color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;
+                  transition:border-color .12s;"
+           onmouseover="this.style.borderColor='#89b4fa'"
+           onmouseout="this.style.borderColor='#45475a'">Mehr laden</button>`
+      : "") +
+    `<div style="font-size:10px;color:#585b70;margin-top:8px;text-align:center;">
+       Bilder: Pixabay · ${shown} von ${_imgPickerPixTotal}
+     </div>`;
+}
+
+async function imgPickerPixabayMore() {
+  _imgPickerPixPage += 1;
+  const foot = document.getElementById("img-picker-pfoot");
+  if (foot) foot.innerHTML = `<div style="color:#6c7086;font-size:12px;padding:8px 0;">Lädt…</div>`;
+  await imgPickerPixabayLoad();
 }
 
 async function imgPickerSelectPixabay(i) {
