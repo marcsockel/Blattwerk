@@ -23,6 +23,8 @@ WIDGETS.push({
       choices: (d.choices && d.choices[i]) || anlautShuffleOpts(letter, null, d.schreibweise||'gross'),
     }));
     const size        = d.size  || 80;
+    const gap         = d.gap   ?? 16;
+    const align       = d.align || "left";
     const buchstabenAus = d.buchstabenAus || false;
     const schreibweise  = d.schreibweise  || "gross";
     const isActive      = d.id === selId || _solutionsMode;
@@ -43,18 +45,20 @@ WIDGETS.push({
       const choiceBox = buchstabenAus ? "" :
         `<div style="display:flex;border:1.5px solid #bbb;border-radius:5px;overflow:hidden;width:${size}px;margin-top:5px;background:#fff;">${cells}</div>`;
 
-      return `<div style="display:inline-flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
+      return `<div style="flex:0 0 auto;width:${size}px;display:flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
     });
 
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js) — wie alle anderen
-    // Item-Reihen-Widgets. Items sind gleich breit (Bild + Kästchen = size).
-    return atHtml(d) + flexDistribute(rendered, { gap: 16, marginBottom: 16, itemSize: `width:${size}px;`, itemW: size, d });
+    const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
+    const justify = justifyMap[align] || "flex-start";
+    return atHtml(d) +
+      `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:${gap}px;justify-content:${justify};">${rendered.join("")}</div>`;
   },
 
   renderProps: d => {
     const items      = d.items || [];
     const schreibweise = d.schreibweise || "gross";
     const size       = d.size || 80;
+    const gap        = d.gap  ?? 16;
 
     const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
 
@@ -130,7 +134,15 @@ WIDGETS.push({
             oninput="this.nextElementSibling.textContent=this.value+'px'"
             onchange="upd(${d.id},'size',+this.value)" style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:36px;">${size}px</span>
-        </div>`) ;
+        </div>`) +
+      pr("Abstand",
+        `<div style="display:flex;gap:6px;align-items:center;">
+          <input type="range" min="4" max="60" value="${gap}"
+            oninput="this.nextElementSibling.textContent=this.value+'px'"
+            onchange="upd(${d.id},'gap',+this.value)" style="flex:1;accent-color:#7287fd;">
+          <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
+        </div>`) +
+      alignToggle(d.id, d.align);
   },
 });
 

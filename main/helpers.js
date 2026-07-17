@@ -73,6 +73,25 @@ function atHtml(d) {
   </div>`;
 }
 
+/**
+ * ptHtml(d)
+ * Punktetext unten rechts (z.B. „___/6 Pkt."), Gegenstück zu atHtml oben links.
+ * d.punkte (0 = aus), d.punkteEinheit ('Pkt.' | 'Punkte' | '' = ohne).
+ * Wird zentral ans Winner-Ende gehängt (makeWrap/winnerInner) — Widgets, deren
+ * Daten kein punkte-Feld haben, bleiben unverändert.
+ */
+function ptHtml(d) {
+  if (d._mtCell != null) return '';
+  const pts = d.punkte || 0;
+  if (!pts) return '';
+  const einheit = d.punkteEinheit != null ? d.punkteEinheit : 'Pkt.';
+  return `<div style="display:flex;justify-content:flex-end;align-items:flex-end;gap:5px;margin-top:8px;
+      font-family:'DidactGothic7',sans-serif;font-size:13px;color:#222;line-height:1;">
+    <span style="display:inline-block;width:30px;border-bottom:1.5px solid #222;height:15px;"></span>
+    <span>/ ${pts}${einheit ? ' ' + esc(einheit) : ''}</span>
+  </div>`;
+}
+
 function widgetIsActive(d) {
   if (_solutionsMode) return true;
   if (d._mtCell != null && d._mtParent != null) {
@@ -403,7 +422,7 @@ function frameStyleSrc(w) {
 function winnerInner(w) {
   const def = typeof WIDGET_MAP !== 'undefined' ? WIDGET_MAP[w.type] : null;
   if (!def) return '';
-  return frameInkInsert(frameStyleSrc(w)) + def.render(w);
+  return frameInkInsert(frameStyleSrc(w)) + def.render(w) + ptHtml(w);
 }
 
 /**

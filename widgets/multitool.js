@@ -365,20 +365,13 @@ function mtCellEditor(d, idx, c) {
       `<div class="prow"><label>Bild</label>
         ${c.src
           ? `<div style="font-size:11px;color:#888;margin-bottom:4px;">✓ Bild geladen</div>`
-          : `<div style="font-size:11px;color:#aaa;margin-bottom:4px;">Drag &amp; Drop auf das Feld.</div>`}
+          : `<div style="font-size:11px;color:#aaa;margin-bottom:4px;">Drag &amp; Drop auf das Feld oder auswählen.</div>`}
+        <button type="button" onclick="event.stopPropagation();mtOpenImgPicker(${d.id},${idx})"
+          style="width:100%;padding:6px;border:1.5px solid #ddd;border-radius:4px;background:#f8f8f8;
+                 font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;color:#555;">
+          🖼 Bild auswählen…
+        </button>
         ${removeBtn}
-      </div>
-      <div class="prow"><label>Clipart suchen <span style="font-weight:400;color:#aaa;font-size:10px;">(Wikimedia Commons)</span></label>
-        <div style="display:flex;gap:4px;margin-top:2px;">
-          <input id="mt-img-q-${d.id}-${idx}" type="text" placeholder="z.B. Elefant, Hund…"
-            style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;outline:none;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();mtImgSearch(${d.id},${idx});}"
-            onfocus="this.style.borderColor='#89b4fa'" onblur="this.style.borderColor='#ddd'">
-          <button onclick="event.stopPropagation();mtImgSearch(${d.id},${idx})"
-            style="padding:3px 9px;border:none;border-radius:4px;background:#313244;color:#cdd6f4;
-                   font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔍</button>
-        </div>
-        <div id="mt-img-results-${d.id}-${idx}" style="margin-top:6px;"></div>
       </div>`;
     return out;
   }
@@ -561,6 +554,8 @@ function mtImgDrop(id, idx, e) {
   e.preventDefault();
   const file = e.dataTransfer.files[0];
   if (!file || !file.type.startsWith('image/')) return;
+  window._imgDropGuard = true;
+  setTimeout(() => { window._imgDropGuard = false; }, 200);
   const reader = new FileReader();
   reader.onload = ev => {
     const w = widgets.find(x => x.id === id); if (!w || !w.cells || !w.cells[idx]) return;
@@ -571,52 +566,17 @@ function mtImgDrop(id, idx, e) {
   reader.readAsDataURL(file);
 }
 
-async function mtImgSearch(id, idx) {
-  const input = document.getElementById(`mt-img-q-${id}-${idx}`);
-  if (!input) return;
-  const query = input.value.trim();
-  if (!query) return;
-  const results = document.getElementById(`mt-img-results-${id}-${idx}`);
-  results.innerHTML = `<div style="color:#aaa;font-size:11px;padding:4px 0;">Suche läuft…</div>`;
-  try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query`
-      + `&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=18`
-      + `&prop=imageinfo&iiprop=url&iiurlwidth=100&format=json&origin=*`;
-    const res  = await fetch(url);
-    const data = await res.json();
-    const pages = Object.values(data.query?.pages || {});
-    const imgs = pages.map(p => ({
-        thumb: p.imageinfo?.[0]?.thumburl,
-        url:   p.imageinfo?.[0]?.url,
-        title: p.title?.replace(/^File:/i, '').replace(/\.\w+$/, ''),
-      })).filter(p => p.thumb && p.url && /\.(png|jpg|jpeg|svg|gif|webp)/i.test(p.url));
-    if (!imgs.length) {
-      results.innerHTML = `<div style="color:#aaa;font-size:11px;padding:4px 0;">Keine Ergebnisse gefunden.</div>`;
-      return;
-    }
-    results.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
-        ${imgs.map(img => `
-          <div onclick="event.stopPropagation();mtImgPick(${id},${idx},'${img.url.replace(/'/g,"\\'")}')"
-            title="${img.title}"
-            style="cursor:pointer;border:1.5px solid #eee;border-radius:5px;overflow:hidden;
-                   aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;background:#f8f6f2;"
-            onmouseover="this.style.borderColor='#89b4fa';this.style.background='#eef4ff';"
-            onmouseout="this.style.borderColor='#eee';this.style.background='#f8f6f2';">
-            <img src="${img.thumb}" style="max-width:100%;max-height:100%;object-fit:contain;" loading="lazy">
-          </div>`).join('')}
-      </div>
-      <div style="font-size:10px;color:#bbb;margin-top:5px;text-align:center;">
-        Bilder: Wikimedia Commons · Lizenzen variieren</div>`;
-  } catch (err) {
-    results.innerHTML = `<div style="color:#f38ba8;font-size:11px;padding:4px 0;">
-      Fehler beim Laden. Bitte Internetverbindung prüfen.</div>`;
-  }
-}
-
-function mtImgPick(id, idx, url) {
-  const w = widgets.find(x => x.id === id); if (!w || !w.cells || !w.cells[idx]) return;
-  saveHistory();
-  w.cells[idx].src = url;
-  render(); renderProps(id);
+function mtOpenImgPicker(id, idx) {
+  const w = widgets.find(x => x.id === id);
+  const cell = w && w.cells && w.cells[idx];
+  openImgPicker({
+    query: cell && cell.caption ? cell.caption : "",
+    onPick: (src, meta) => {
+      const ww = widgets.find(x => x.id === id); if (!ww || !ww.cells || !ww.cells[idx]) return;
+      saveHistory();
+      ww.cells[idx].src = src;
+      if (!ww.cells[idx].caption && meta && meta.title) ww.cells[idx].caption = meta.title;
+      render(); renderProps(id);
+    },
+  });
 }

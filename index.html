@@ -134,6 +134,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wacts.wacts-left{left:3px;right:auto;}
 .wwrap:hover > .wacts,.wwrap.sel > .wacts{display:flex;}
 .wa{background:var(--acc3);border:none;border-radius:3px;color:#1e1e2e;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;font-family:inherit;}
+/* Tabellen-Zellenauswahl: reine Bildschirm-Markierung (Druck: outline aus, s. @media print) */
+.tbl-selcell{outline:2px solid #89b4fa;outline-offset:-2px;}
 .wa.del{background:var(--acc);}
 .dh{display:none;position:absolute;left:-20px;top:50%;transform:translateY(-50%);cursor:grab;color:#bbb;font-size:15px;user-select:none;}
 .wwrap:hover > .dh{display:block;}
@@ -191,7 +193,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
   img.img-sw{filter:grayscale(100%)!important;} /* Schwarz-Weiß-Bildeffekt übersteht den globalen filter:none-Reset */
-  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,.ws-warn{display:none!important;}
+  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
+  .tbl-selcell{outline:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
   .mt-cell,.mt-cell.mt-cell-sel{border:none!important;outline:none!important;padding:4px!important;}
@@ -235,6 +238,16 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   body.print-ds .page.page-back{padding-left:calc(15mm - var(--extra-w));padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
   #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
+  /* Safari-Fallback Querformat: Safari ignoriert @page size:landscape → Seiten werden um 90°
+     gedreht auf HOCHFORMAT-Blätter gedruckt (kein Umstellen im Druckmenü nötig). JS wickelt
+     jede .page in eine .rot-sheet (= Hochformat-Blatt, übernimmt die Fragmentierung); die
+     .page behält ihre Querformat-Maße und dreht sich darin. translateY(-100%) nutzt die
+     ECHTE (kalibrierte) Seitenhöhe. Blatt lesen: um 90° gegen den Uhrzeigersinn drehen. */
+  body.print-rotate .rot-sheet{width:210mm;height:var(--print-rot-sheet-h,296mm);overflow:hidden;
+    page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid;}
+  body.print-rotate .rot-sheet:last-of-type{page-break-after:auto;break-after:auto;}
+  body.print-rotate .rot-sheet > .page{transform:rotate(90deg) translateY(-100%);transform-origin:top left;
+    page-break-after:auto!important;break-after:auto!important;}
   /* Editor-UI auf leeren Seiten NICHT mitdrucken: .page-hint ist das gestrichelte,
      abgerundete Rechteck; .empty-del der ✕-Button der leeren Seite. */
   .page-hint,.empty-del{display:none!important;}
@@ -365,6 +378,29 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   </div>
 </div>
 
+<!-- Shared image picker (Wikimedia / Festplatte / …) -->
+<input type="file" id="img-picker-file" accept="image/*" style="display:none"
+  onchange="imgPickerFileChosen(this)">
+<div id="img-picker-overlay" onclick="closeImgPicker()"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;align-items:center;justify-content:center;padding:20px;">
+  <div onclick="event.stopPropagation()"
+    ondragover="event.preventDefault();event.stopPropagation();this.style.outline='2px dashed #89b4fa';"
+    ondragleave="this.style.outline='none';"
+    ondrop="event.preventDefault();event.stopPropagation();this.style.outline='none';imgPickerDrop(event);"
+    style="background:#1e1e2e;border:1.5px solid #313244;border-radius:12px;padding:0;width:100%;max-width:480px;
+           max-height:min(90vh,620px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.55);
+           font-family:'Nunito',sans-serif;overflow:hidden;outline:none;outline-offset:-4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;
+                border-bottom:1px solid #313244;flex-shrink:0;">
+      <span id="img-picker-title" style="font-size:14px;font-weight:800;color:#cdd6f4;">Bild auswählen</span>
+      <button type="button" onclick="closeImgPicker()"
+        style="background:none;border:1.5px solid #45475a;border-radius:6px;color:#cdd6f4;font-family:inherit;
+               font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer;">✕</button>
+    </div>
+    <div id="img-picker-body" style="padding:14px 16px 16px;overflow-y:auto;flex:1;min-height:0;"></div>
+  </div>
+</div>
+
 <!-- Print warning modal -->
 <div id="print-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
   <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
@@ -417,6 +453,7 @@ const WIDGETS = [];
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
 <script src="main/helpers.js"></script>
+<script src="main/img_picker.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
@@ -941,7 +978,7 @@ function makeWrap(w, idx, rowCtx) {
       <button class="wa" onclick="event.stopPropagation();dup(${idx})"   title="Duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
     </div>`)+`
-    <div class="${winnerClass(sw)}" style="${winnerStyle(sw)}">${frameInkInsert(sw)}${def.render(w)}</div>`;
+    <div class="${winnerClass(sw)}" style="${winnerStyle(sw)}">${frameInkInsert(sw)}${def.render(w)}${ptHtml(w)}</div>`;
   div.addEventListener('click',()=>sel(w.id),true); // capture: feuert vor innerem stopPropagation
   div.onclick=e=>e.stopPropagation();               // bubble: verhindert page-desel
   div.ondragstart=e=>{if(isFlowCont){e.preventDefault();return;}dragSrc=idx;e.dataTransfer.effectAllowed="move";};
@@ -1444,10 +1481,13 @@ function checkOverflow(ranges){
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
     const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
     const pageBottom=wraps.length?wrapFlowBottom(wraps[wraps.length-1]):0;
-    // Höhe des ersten Widgets der nächsten Seite messen
+    // Höhe des ersten Widgets der nächsten Seite messen. WICHTIG: offsetTop abziehen —
+    // wrapFlowBottom enthält sonst das Seiten-Padding (~49px) DOPPELT (einmal in
+    // pageBottom, einmal hier) → Bedingung zu streng, Widgets fließen nie zurück,
+    // obwohl sie passen würden.
     const nextPage=pages[pi+1];
     const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox')):[];
-    const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0]):Infinity;
+    const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0])-nextWraps[0].offsetTop:Infinity;
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
       _ovfPasses++;
@@ -1523,6 +1563,8 @@ function checkOverflow(ranges){
 function sel(id){
   const prevId=selId;
   if(prevId!==null)document.querySelector(`.wwrap[data-id="${prevId}"]`)?.classList.remove('sel');
+  // Tabellen-Zellenmarkierung löschen, wenn ein ANDERES Widget gewählt wird
+  if(typeof tblClearCellSel==='function'&&typeof _tblSel!=='undefined'&&_tblSel&&_tblSel.id!==id)tblClearCellSel();
   selId=id;
   document.querySelector(`.wwrap[data-id="${id}"]`)?.classList.add('sel');
   // Re-render widget-Inhalt für vorheriges + neues Widget, damit isActive (Lösung) korrekt aktualisiert wird
@@ -1542,6 +1584,7 @@ function sel(id){
 function desel(){
   const prevId=selId;
   if(prevId!==null)document.querySelector(`.wwrap[data-id="${prevId}"]`)?.classList.remove('sel');
+  if(typeof tblClearCellSel==='function')tblClearCellSel();
   selId=null;
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
@@ -1593,6 +1636,40 @@ function sfTaskBlock(id,w){
       onchange="upd(${id},'aufgabenText',this.value)"
       style="width:100%;padding:4px 7px;border:1.5px solid #ddd;border-radius:4px;
              font-family:inherit;font-size:12px;box-sizing:border-box;">`;
+}
+// Punktetext-Verfügbarkeit: alle Mathe-Widgets außer Diagrammen, alle Deutsch-Widgets,
+// Allgemein außer Struktur-/Deko-Widgets. Kein createData-Opt-in nötig — upd() legt
+// die Felder beim ersten Setzen an, ptHtml() blendet bei punkte=0 aus.
+// (group: eigener Rahmen-Renderer ohne ptHtml; textfluss: noFooter/erbt vom Master.)
+const PUNKTE_EXCLUDE=new Set([
+  'diagramm','kuchendiagramm',                                  // Mathe: Diagramme
+  'heading','subheading','image','platzhalter','namedate',      // Allgemein: Struktur/Deko
+  'divider','stop','infobox','floatbox','group','textfluss'
+]);
+function widgetHasPunkte(w){
+  if(PUNKTE_EXCLUDE.has(w.type))return false;
+  const def=WIDGET_MAP[w.type];
+  const cat=def&&def.meta&&def.meta.category;
+  return cat==='mathematik'||cat==='deutsch'||cat==='allgemein';
+}
+function sfPunkteBlock(id,w){
+  const pts=w.punkte||0;
+  const einheit=w.punkteEinheit!=null?w.punkteEinheit:'Pkt.';
+  const eBtn=(val,lbl)=>{const on=einheit===val;return `<button onclick="event.stopPropagation();upd(${id},'punkteEinheit','${val}')"
+    style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};
+           font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;};
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <input type="number" min="0" max="99" value="${pts}"
+        onclick="event.stopPropagation()"
+        onchange="upd(${id},'punkte',+this.value)"
+        style="width:44px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
+               font-family:inherit;font-size:12px;text-align:center;">
+      <span style="font-size:10px;color:#bbb;">0 = ausblenden</span>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:6px;">
+      ${eBtn('Pkt.','Pkt.')}${eBtn('Punkte','Punkte')}${eBtn('','ohne')}
+    </div>
+    ${pts?`<div style="font-size:11px;color:#888;">Vorschau: <span style="font-family:'DidactGothic7',sans-serif;color:#222;">___ / ${pts}${einheit?' '+einheit:''}</span> — unten rechts im Widget</div>`:''}`;
 }
 function sfBgBlock(id,w){
   const bg=w.bgColor||'';
@@ -1668,6 +1745,10 @@ function standardFooter(id,w){
   let inner='';
   if(hasTask){
     inner+=propFold('sf-aufgabe','Aufgabentext',sfTaskBlock(id,w),true);
+  }
+  // Punktetext (unten rechts) — zentrale Verfügbarkeitsregel, siehe widgetHasPunkte()
+  if(widgetHasPunkte(w)){
+    inner+=propFold('sf-punkte','Punkte',sfPunkteBlock(id,w),false);
   }
   if(!noBorder) inner+=propFold('sf-rahmen','Rahmen & Schatten',sfBorderBlock(id,w),false);
   inner+=propFold('sf-layout','Layout',sfLayoutBlock(id,w),false);
@@ -1793,6 +1874,28 @@ function mv(idx,d){
   // Manuell angelegte Seiten bleiben Barrieren; automatische (Overflow/Textfluss)
   // sind durchlässig — die Repagination ordnet sie nach dem Verschieben neu.
   if(nb&&nb.type==='pagebreak'&&!(nb.auto||nb.flow))return;
+  // Gruppengrenzen: Kinder bleiben in ihrer Gruppe (Marker = Barriere), Widgets von
+  // außen rutschen NICHT hinein, sondern überspringen die Gruppe als Block.
+  if(nb&&nb.type==='group'){
+    if(d<0)return; // erstes Kind hoch → würde die Gruppe verlassen: blockieren
+    // Widget über der Gruppe runter → hinter das zugehörige groupEnd
+    let depth=1,j=ni+1;
+    while(j<widgets.length&&depth){if(widgets[j].type==='group')depth++;if(widgets[j].type==='groupEnd')depth--;j++;}
+    saveHistory();
+    const [x]=widgets.splice(idx,1);
+    widgets.splice(j-1,0,x); // j-1: Original-Index von groupEnd; nach splice = Position dahinter
+    render();return;
+  }
+  if(nb&&nb.type==='groupEnd'){
+    if(d>0)return; // letztes Kind runter → würde die Gruppe verlassen: blockieren
+    // Widget unter der Gruppe hoch → vor den zugehörigen group-Marker
+    let depth=1,j=ni-1;
+    while(j>=0&&depth){if(widgets[j].type==='groupEnd')depth++;if(widgets[j].type==='group')depth--;if(depth)j--;}
+    saveHistory();
+    const [x]=widgets.splice(idx,1);
+    widgets.splice(Math.max(j,0),0,x);
+    render();return;
+  }
   const isFlowMaster=w&&w.type==='text'&&w.fliessen;
   const nbTransparent=nb&&((nb.type==='pagebreak'&&(nb.auto||nb.flow))||nb.type==='textfluss');
   const nbFlowMasterDown=d>0&&nb&&nb.type==='text'&&nb.fliessen;
@@ -2197,6 +2300,34 @@ let printOpts = { pageNumbers: false, doubleSided: false };
 let _printMarginBackup = null;
 
 /** mm→px des aktuellen Browsers messen — Chrome und Safari rechnen leicht unterschiedlich. */
+// ── Safari-Fallback: Querformat gedreht auf Hochformat drucken ────
+// Safari/WebKit ignoriert `@page{size:A4 landscape}` — das Druckmenü bleibt auf Hochformat.
+// Lösung: bei Querformat in Safari jede .page um 90° gedreht in ein Hochformat-Blatt
+// (.rot-sheet) zeichnen. Chrome/Edge/Firefox respektieren @page size → dort kein Drehen.
+const PRINT_ROTATE_UA = /AppleWebKit/i.test(navigator.userAgent)
+  && !/Chrome|Chromium|CriOS|Edg\//i.test(navigator.userAgent);
+function printRotateActive(){ return PRINT_ROTATE_UA && _orientation === 'landscape'; }
+
+function applyPrintRotate() {
+  if (!printRotateActive()) return;
+  document.body.classList.add('print-rotate');
+  if (document.querySelector('.rot-sheet')) return; // idempotent (beforeprint feuert erneut)
+  document.querySelectorAll('#canvas-area .page').forEach(p => {
+    const s = document.createElement('div');
+    s.className = 'rot-sheet';
+    p.parentNode.insertBefore(s, p);
+    s.appendChild(p);
+  });
+}
+
+function clearPrintRotate() {
+  document.body.classList.remove('print-rotate');
+  document.querySelectorAll('.rot-sheet').forEach(s => {
+    if (s.firstChild) s.parentNode.insertBefore(s.firstChild, s);
+    s.remove();
+  });
+}
+
 function calibratePrintPageBox() {
   const isLandscape = _orientation === 'landscape';
   const pageHmm = isLandscape ? 210 : 297;
@@ -2206,6 +2337,7 @@ function calibratePrintPageBox() {
     + 'visibility:hidden;pointer-events:none;margin:0;padding:0;border:0;';
   document.body.appendChild(probe);
   const pageHPx = probe.offsetHeight;
+  const pageWPx = probe.offsetWidth;
   document.body.removeChild(probe);
   const bleedPx = 3;
   const maxPx = Math.max(1, pageHPx - bleedPx);
@@ -2214,15 +2346,23 @@ function calibratePrintPageBox() {
   const root = document.documentElement;
   root.style.setProperty('--print-page-max-px', maxPx + 'px');
   root.style.setProperty('--print-page-min-px', minPx + 'px');
+  // Rotations-Fallback: Höhe des Hochformat-Blatts (= Querformat-BREITE 297mm, mit Bleed-Puffer).
+  if (printRotateActive()) {
+    root.style.setProperty('--print-rot-sheet-h', Math.max(1, pageWPx - bleedPx) + 'px');
+  } else {
+    root.style.removeProperty('--print-rot-sheet-h');
+  }
 }
 
 function clearPrintPageCalibration() {
   document.documentElement.style.removeProperty('--print-page-max-px');
   document.documentElement.style.removeProperty('--print-page-min-px');
+  document.documentElement.style.removeProperty('--print-rot-sheet-h');
 }
 
 /** Druck-Layout: Kalibrierung, Scroll-Reset, letztes Widget ohne Rand-Margin (wird sonst abgeschnitten). */
 function applyPrintLayoutFixes() {
+  applyPrintRotate();
   calibratePrintPageBox();
   window.scrollTo(0, 0);
   if (_printMarginBackup) return;
@@ -2242,6 +2382,7 @@ function clearPrintLayoutFixes() {
     _printMarginBackup.forEach(({ el, mb }) => { el.style.marginBottom = mb; });
     _printMarginBackup = null;
   }
+  clearPrintRotate();
   clearPrintPageCalibration();
 }
 
@@ -2252,7 +2393,8 @@ function updatePrintStyle() {
   // (CSS: body.print-ds .page.page-back{...}), nicht mehr über @page :left/:right.
   document.body.classList.toggle('print-ds', ds);
   // @page size dynamisch (Hoch-/Querformat) — überschreibt die statische Regel im <style>.
-  let css = `@page{size:A4 ${_orientation};margin:0;}`;
+  // Rotations-Fallback (Safari + Querformat): Papier bleibt HOCHFORMAT, Inhalt dreht sich.
+  let css = `@page{size:A4 ${printRotateActive() ? 'portrait' : _orientation};margin:0;}`;
   if (printOpts.pageNumbers) {
     css += `.pg-num{display:block!important;}`;
     if (ds) css += `.pg-num.pg-left{right:auto;left:10mm;}`;
@@ -2306,6 +2448,7 @@ function prepareCanvasForPrint(solutions) {
   _printLock = true;
   const prevSel = selId;
   selId = null;
+  if (typeof tblClearCellSel === 'function') tblClearCellSel(); // Zellenmarkierung nie drucken
   if (solutions) _solutionsMode = true;
   render();
   // FAB explizit per inline-style verstecken — position:sticky kann @media print überlisten

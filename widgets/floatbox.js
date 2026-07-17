@@ -72,7 +72,7 @@ function makeFloatEl(f) {
       style="position:absolute;top:-11px;left:8px;z-index:11;display:inline-flex;align-items:center;gap:4px;
              padding:1px 7px;border-radius:5px;background:#89b4fa;color:#1e1e2e;font-size:10px;font-weight:700;
              cursor:move;line-height:1.7;box-shadow:0 1px 2px rgba(0,0,0,.18);user-select:none;">⠿ Rahmen</div>
-    <div class="wacts">
+    <div class="wacts wacts-right">
       <button class="wa" onclick="event.stopPropagation();fbDup(${f.id})" title="Rahmen duplizieren">⧉</button>
       <button class="wa del" onclick="event.stopPropagation();fbDelete(${f.id})" title="Rahmen löschen">✕</button>
     </div>

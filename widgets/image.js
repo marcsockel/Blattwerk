@@ -2,11 +2,20 @@
 WIDGETS.push({
   meta: { type:"image", label:"Bild", desc:"Bildplatzhalter / Drag & Drop", icon:"🖼", category:"allgemein" },
 
-  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center", flush:false , aufgabenNr:0, aufgabenText:''}),
+  createData: id => ({ id, type:"image", caption:"", height:120, src:"", align:"center", valign:"top", flush:false , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
     const align = d.align || "center";
-    const marginH = align === "center" ? "auto" : align === "right" ? "0 0 0 auto" : "0";
+    // Vertikale Achse: wirkt, wenn das Widget in einer Reihe (½/⅓ …) auf die
+    // Zeilenhöhe gestreckt wird — Flex-Spalte verteilt den Überschuss.
+    // WICHTIG: beide Achsen NUR über justify-content/align-items — margin:auto am
+    // <img> würde in der Flex-Spalte den Freiraum beider Achsen schlucken
+    // (vertikal immer „Mitte"), und align-items:stretch (Default) streckt das Bild
+    // auf volle Breite (object-fit zentriert dann optisch → „Links" wirkungslos).
+    const valign = d.valign || "top";
+    const jc = valign === "middle" ? "center" : valign === "bottom" ? "flex-end" : "flex-start";
+    const ai = align === "center" ? "center" : align === "right" ? "flex-end" : "flex-start";
+    const boxStyle = `text-align:${align};height:100%;display:flex;flex-direction:column;justify-content:${jc};align-items:${ai};`;
     if (d.src) {
       // Bildeffekte via CSS (druckt in Chrome mit print-color-adjust:exact)
       // Klasse img-sw: der Druck-CSS-Reset (*{filter:none!important}) würde den
@@ -18,17 +27,17 @@ WIDGETS.push({
       if (d.flipH)  tfa.push('scaleX(-1)');
       if (d.flipV)  tfa.push('scaleY(-1)');
       const tf = tfa.length ? `transform:${tfa.join(' ')};` : '';
-      return `<div style="text-align:${align};">
-        <img src="${d.src}"${filCls} style="max-width:100%;height:${d.height}px;object-fit:contain;border-radius:${d.rund ? 6 : 0}px;display:block;margin:${marginH};${fil}${tf}"
+      return `<div style="${boxStyle}">
+        <img src="${d.src}"${filCls} style="max-width:100%;max-height:${d.height}px;width:auto;height:auto;object-fit:contain;border-radius:${d.rund ? 6 : 0}px;display:block;${fil}${tf}"
           ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;
     }
-    return atHtml(d) + `<div style="text-align:${align};"><div
+    return atHtml(d) + `<div style="${boxStyle}"><div
         ondragover="event.preventDefault();this.style.borderColor='#89b4fa';this.style.background='#eef4ff';"
         ondragleave="this.style.borderColor='#ccc';this.style.background='#fafaf8';"
         ondrop="event.stopPropagation();imgDrop(${d.id},event);this.style.borderColor='#ccc';this.style.background='#fafaf8';"
-        style="border:2.5px dashed #ccc;border-radius:8px;height:${d.height}px;display:flex;flex-direction:column;
+        style="border:2.5px dashed #ccc;border-radius:8px;height:${d.height}px;width:100%;display:flex;flex-direction:column;
                align-items:center;justify-content:center;color:#aaa;font-size:13px;font-weight:600;
                background:#fafaf8;gap:6px;transition:border-color .15s,background .15s;cursor:default;">
       <span style="font-size:28px;">🖼</span>
@@ -43,24 +52,45 @@ WIDGETS.push({
         style="flex:1;min-width:60px;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
                background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
-    const removeBtn = d.src
-      ? `<button onclick="event.stopPropagation();upd(${d.id},'src','')"
-           style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#fde8ec;
-                  color:#a0003c;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
-           🗑 Bild entfernen</button>`
-      : '';
+    const thumbSz = 40;
+    const thumb = d.src
+      ? `<div title="Bild auswählen / hierher ziehen"
+           style="flex-shrink:0;cursor:pointer;width:${thumbSz}px;height:${thumbSz}px;"
+           onclick="event.stopPropagation();imgOpenPicker(${d.id});"
+           ondragover="event.preventDefault();event.stopPropagation();this.style.outline='2px solid #89b4fa';"
+           ondragleave="this.style.outline='none';"
+           ondrop="event.preventDefault();event.stopPropagation();this.style.outline='none';imgDrop(${d.id},event);">
+           <img src="${d.src}" draggable="false"
+             style="width:${thumbSz}px;height:${thumbSz}px;object-fit:contain;border-radius:3px;border:1px solid #eee;display:block;pointer-events:none;">
+         </div>`
+      : `<div title="Bild auswählen / hierher ziehen"
+           onclick="event.stopPropagation();imgOpenPicker(${d.id});"
+           ondragover="event.preventDefault();event.stopPropagation();this.style.borderColor='#89b4fa';this.style.background='#eef4ff';"
+           ondragleave="this.style.borderColor='#ccc';this.style.background='#f0f0f0';"
+           ondrop="event.preventDefault();event.stopPropagation();this.style.borderColor='#ccc';this.style.background='#f0f0f0';imgDrop(${d.id},event);"
+           style="flex-shrink:0;width:${thumbSz}px;height:${thumbSz}px;background:#f0f0f0;border:1.5px dashed #ccc;border-radius:3px;
+           display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:border-color .12s,background .12s;">🖼</div>`;
 
+    const valign = d.valign || "top";
     return pr("Beschriftung", `<input value="${esc(d.caption)}" placeholder="optional" onchange="upd(${d.id},'caption',this.value)">`) +
       pr("Höhe (px)", `<input type="number" min="60" max="600" step="10" value="${d.height}" onchange="upd(${d.id},'height',+this.value)">`) +
-      pr("Ausrichtung", `<select onchange="upd(${d.id},'align',this.value)">
-        <option value="left"   ${align==="left"  ?"selected":""}>Links</option>
-        <option value="center" ${align==="center"?"selected":""}>Zentriert</option>
-        <option value="right"  ${align==="right" ?"selected":""}>Rechts</option>
-      </select>`) +
       `<div class="prow"><label>Innenabstand</label>
         <div style="display:flex;gap:4px;">
           ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!d.flush===val;return `<button onclick="event.stopPropagation();upd(${d.id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
         </div></div>` +
+      `<div class="prow"><label>Ausrichtung</label>
+        <div style="display:flex;gap:4px;">
+          ${efx('Links',  align==='left',   `upd(${d.id},'align','left')`)}
+          ${efx('Mitte',  align==='center', `upd(${d.id},'align','center')`)}
+          ${efx('Rechts', align==='right',  `upd(${d.id},'align','right')`)}
+        </div>
+        <div style="display:flex;gap:4px;margin-top:4px;">
+          ${efx('Oben',  valign==='top',    `upd(${d.id},'valign','top')`)}
+          ${efx('Mitte', valign==='middle', `upd(${d.id},'valign','middle')`)}
+          ${efx('Unten', valign==='bottom', `upd(${d.id},'valign','bottom')`)}
+        </div>
+        <div style="font-size:10px;color:#aaa;margin-top:4px;">Vertikal wirkt, wenn das Bild in einer Reihe neben höheren Widgets steht.</div>
+      </div>` +
       (d.src ? `<div class="prow"><label>Bildeffekte</label>
         <div style="display:flex;gap:4px;flex-wrap:wrap;">
           ${efx('S/W',        d.grayscale, `upd(${d.id},'grayscale',${!d.grayscale})`)}
@@ -72,23 +102,12 @@ WIDGETS.push({
         ${d.rotate ? `<div style="font-size:10px;color:#aaa;margin-top:3px;">Drehung: ${d.rotate}° — bei 90°/270° ggf. Höhe anpassen.</div>` : ''}
       </div>` : '') +
       `<div class="prow"><label>Bild</label>
-        ${d.src
-          ? `<div style="font-size:11px;color:#888;margin-bottom:4px;">✓ Bild geladen</div>`
-          : `<div style="font-size:11px;color:#aaa;margin-bottom:4px;">Drag &amp; Drop auf den Platzhalter.</div>`}
-        ${removeBtn}
-      </div>
-      <div class="prow">
-        <label>Clipart suchen <span style="font-weight:400;color:#aaa;font-size:10px;">(Wikimedia Commons)</span></label>
-        <div style="display:flex;gap:4px;margin-top:2px;">
-          <input id="img-q-${d.id}" type="text" placeholder="z.B. Elefant, Hund…"
-            style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;font-family:inherit;outline:none;"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();imgSearch(${d.id});}"
-            onfocus="this.style.borderColor='#89b4fa'" onblur="this.style.borderColor='#ddd'">
-          <button onclick="event.stopPropagation();imgSearch(${d.id})"
-            style="padding:3px 9px;border:none;border-radius:4px;background:#313244;color:#cdd6f4;
-                   font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔍</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">
+          ${thumb}
+          ${d.src ? `<button onclick="event.stopPropagation();upd(${d.id},'src','')"
+            style="padding:1px 5px;border:none;border-radius:3px;background:#fde8ec;color:#a0003c;
+                   font-size:10px;cursor:pointer;">🗑</button>` : ""}
         </div>
-        <div id="img-results-${d.id}" style="margin-top:6px;"></div>
       </div>` ;
   },
 });
@@ -101,10 +120,27 @@ function imgRotate(id) {
   render(); renderProps(id);
 }
 
+function imgOpenPicker(id) {
+  if (window._imgDropGuard) return;
+  const w = widgets.find(x => x.id === id);
+  openImgPicker({
+    query: w && w.caption ? w.caption : "",
+    onPick: (src, meta) => {
+      const ww = widgets.find(x => x.id === id); if (!ww) return;
+      saveHistory();
+      ww.src = src;
+      if (!ww.caption && meta && meta.title) ww.caption = meta.title;
+      render(); renderProps(id);
+    },
+  });
+}
+
 function imgDrop(id, e) {
   e.preventDefault();
   const file = e.dataTransfer.files[0];
   if (!file || !file.type.startsWith('image/')) return;
+  window._imgDropGuard = true;
+  setTimeout(() => { window._imgDropGuard = false; }, 200);
   const reader = new FileReader();
   reader.onload = ev => {
     const w = widgets.find(x => x.id === id); if (!w) return;
@@ -113,66 +149,4 @@ function imgDrop(id, e) {
     render(); renderProps(id);
   };
   reader.readAsDataURL(file);
-}
-
-async function imgSearch(id) {
-  const input = document.getElementById(`img-q-${id}`);
-  if (!input) return;
-  const query = input.value.trim();
-  if (!query) return;
-
-  const results = document.getElementById(`img-results-${id}`);
-  results.innerHTML = `<div style="color:#aaa;font-size:11px;padding:4px 0;">Suche läuft…</div>`;
-
-  try {
-    const url = `https://commons.wikimedia.org/w/api.php?action=query`
-      + `&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=18`
-      + `&prop=imageinfo&iiprop=url&iiurlwidth=100&format=json&origin=*`;
-
-    const res  = await fetch(url);
-    const data = await res.json();
-    const pages = Object.values(data.query?.pages || {});
-
-    // Filter to image types, extract thumb + full url
-    const imgs = pages
-      .map(p => ({
-        thumb: p.imageinfo?.[0]?.thumburl,
-        url:   p.imageinfo?.[0]?.url,
-        title: p.title?.replace(/^File:/i, '').replace(/\.\w+$/, ''),
-      }))
-      .filter(p => p.thumb && p.url && /\.(png|jpg|jpeg|svg|gif|webp)/i.test(p.url));
-
-    if (!imgs.length) {
-      results.innerHTML = `<div style="color:#aaa;font-size:11px;padding:4px 0;">Keine Ergebnisse gefunden.</div>`;
-      return;
-    }
-
-    results.innerHTML = `
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;">
-        ${imgs.map(img => `
-          <div onclick="event.stopPropagation();imgPick(${id},'${img.url.replace(/'/g,"\\'")}','${img.title.replace(/'/g,"\\'").substring(0,40)}')"
-            title="${img.title}"
-            style="cursor:pointer;border:1.5px solid #eee;border-radius:5px;overflow:hidden;
-                   aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;
-                   background:#f8f6f2;transition:border-color .12s;"
-            onmouseover="this.style.borderColor='#89b4fa';this.style.background='#eef4ff';"
-            onmouseout="this.style.borderColor='#eee';this.style.background='#f8f6f2';">
-            <img src="${img.thumb}" style="max-width:100%;max-height:100%;object-fit:contain;" loading="lazy">
-          </div>`).join('')}
-      </div>
-      <div style="font-size:10px;color:#bbb;margin-top:5px;text-align:center;">
-        Bilder: Wikimedia Commons · Lizenzen variieren
-      </div>`;
-  } catch(err) {
-    results.innerHTML = `<div style="color:#f38ba8;font-size:11px;padding:4px 0;">
-      Fehler beim Laden. Bitte Internetverbindung prüfen.</div>`;
-  }
-}
-
-function imgPick(id, url, title) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  saveHistory();
-  w.src = url;
-  if (!w.caption) w.caption = title;
-  render(); renderProps(id);
 }

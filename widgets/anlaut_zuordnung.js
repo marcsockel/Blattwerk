@@ -95,33 +95,35 @@ WIDGETS.push({
 
     const writeLine = (answer, color = '#222') => {
       const show = answer !== undefined;
+      let inner;
       if (lineatur === 1) {
         const rowH = (11 + 11 + 11 + 3) * lMul;
-        return `<div style="padding:2px 6px;">` +
-          `<div style="position:relative;height:${rowH}px;border-left:1px solid #bbb;border-right:1px solid #bbb;background:#fff;">` +
+        inner = `<div style="position:relative;height:${rowH}px;border-left:1px solid #bbb;border-right:1px solid #bbb;background:#fff;">` +
             `<div style="height:${11*lMul}px;border-top:1px solid #bbb;"></div>` +
             `<div style="height:${11*lMul}px;border-top:1px solid #bbb;background:#dff0f8;"></div>` +
             `<div style="height:${11*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${3*lMul}px;border-top:1px solid #bbb;border-bottom:1px solid #bbb;"></div>` +
             textOverlay(answer, 14*lMul - Math.round(answerFs * 0.2), color, show) +
-          `</div></div>`;
-      }
-      if (lineatur === 2) {
+          `</div>`;
+      } else if (lineatur === 2) {
         const rowH = (16 + 5 + 4) * lMul;
-        return `<div style="padding:2px 6px;">` +
-          `<div style="position:relative;height:${rowH}px;background:#fff;">` +
+        inner = `<div style="position:relative;height:${rowH}px;background:#fff;">` +
             `<div style="height:${16*lMul}px;border-top:1px dashed #bbb;"></div>` +
             `<div style="height:${5*lMul}px;border-top:2px solid #777;"></div>` +
             `<div style="height:${4*lMul}px;border-top:1px solid #bbb;"></div>` +
             textOverlay(answer, 9*lMul - Math.round(answerFs * 0.2), color, show) +
-          `</div></div>`;
-      }
-      const off0 = Math.round(answerFs * 0.1);
-      const h = answerFs + 10;
-      return `<div style="padding:2px 6px;">` +
-        `<div style="position:relative;height:${h}px;border-bottom:1.5px solid #999;">` +
+          `</div>`;
+      } else {
+        const off0 = Math.round(answerFs * 0.1);
+        const h = answerFs + 10;
+        inner = `<div style="position:relative;height:${h}px;border-bottom:1.5px solid #999;">` +
           textOverlay(answer, off0, color, show) +
-        `</div></div>`;
+        `</div>`;
+      }
+      // Gleiche Höhe wie Bildzelle, Inhalt mittig — wie bei den Wortkarten.
+      // width:100% nötig, sonst schrumpft die Flex-Box die Lineatur auf 0.
+      return `<div style="padding:2px 6px;box-sizing:border-box;width:100%;height:${imgColH}px;display:flex;align-items:center;align-self:start;">`
+        + `<div style="width:100%;">${inner}</div></div>`;
     };
 
     const lineaturAus = d.lineaturAus || false;
@@ -155,7 +157,9 @@ WIDGETS.push({
       const cardImg = order[i];
       const midId   = (!buchstabenAus && drawSet.has(cardImg)) ? `azm-${d.id}-${cardImg}` : null;
       let answer, answerColor = '#222';
-      if (isActive)                     { answer = item.wort;    answerColor = '#2563eb'; }
+      // Lösung/Beispiel immer in der Zeile der Wortkarte (right[i]), nicht der Bilder —
+      // außer wenn Wortkarten aus sind, dann steht die Schreiblinie neben dem Bild.
+      if (isActive)                     { answer = buchstabenAus ? item.wort : right[i]; answerColor = '#2563eb'; }
       else if (beispiel && i === exPos) { answer = beispielText; answerColor = '#222'; }
       else                              { answer = undefined; }
       // Fallback ohne Wortkarten UND ohne Schreiblinie: Lösungswort in Blau unter das Bild

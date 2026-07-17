@@ -2,12 +2,14 @@
 
 const EP_DEFAULT_FONT = "'Arial', sans-serif";
 
+// Defaults: Größe Mittel, Ausrichtung Block; cols = volle Zeile bei Portrait/Mittel
+// (flexDistribute-Schätzung: contentW 640 − 18 Pad, packW+gap bei S=1.2).
 const EP_DEFAULTS = {
-  erste_paketchen: { cols: 3, groesse: 'mittel', align: 'left' },
-  ep_zehner_stop:  { aufgabenProPaeckchen: 1, groesse: 'gross', align: 'left' },
-  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3, align: 'left' },
-  ep_zerlegung:    { cols: 8, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false, align: 'left' },
-  ep_umkehr:       { cols: 6, groesse: 'mittel', aufgabenProPaeckchen: 1, align: 'left' },
+  erste_paketchen: { cols: 3, groesse: 'mittel', align: 'justify' },
+  ep_zehner_stop:  { cols: 2, aufgabenProPaeckchen: 1, groesse: 'mittel', align: 'justify' },
+  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3, align: 'justify' },
+  ep_zerlegung:    { cols: 4, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false, align: 'justify' },
+  ep_umkehr:       { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 1, align: 'justify' },
 };
 
 const EP_PAIR_TYPES = new Set(['ep_umkehr', 'ep_zehner_stop', 'ep_analogie', 'ep_zerlegung']);
@@ -318,8 +320,10 @@ function epBaseData(id, type) {
     hilfe: true,
     font: EP_DEFAULT_FONT,
     bold: false,
-    groesse: 'klein',
+    groesse: 'mittel',
+    align: 'justify',
     aufgabenNr: 0, aufgabenText: '',
+    punkte: 0, punkteEinheit: 'Pkt.', // Punktetext unten rechts (ptHtml), 0 = aus
   };
 }
 
