@@ -18,10 +18,12 @@ WIDGETS.push({
     };
     return {
       id, type: "bildwort2",
-      imageSize: 70,
-      gross: false,
-      zeilenabstand: 10,
-      itemAbstand: 20,
+      imageSize: 80,
+      groesse: "klein",
+      _bwG3: true,
+      proZeile: 2,
+      trennlinien: false,
+      trennStil: "thin",
       aufgaben: [
         mkAufgabe("A",  ["Birne","Haus"]),
         mkAufgabe("B",  ["Apfel","Auto"]),
@@ -32,59 +34,45 @@ WIDGETS.push({
   },
 
   render: d => {
-    const gross         = !!d.gross;
-    const baseSize      = d.imageSize    || 70;
-    const size          = gross ? Math.round(baseSize * 1.4) : baseSize;
-    const fontSize      = Math.round(size * 0.18) + 2;     // Text skaliert mit Bildgröße
-    const cb            = Math.max(12, Math.round(fontSize * 0.95));
-    const zeilenabstand = d.zeilenabstand ?? 10;
-    const itemAbstand   = d.itemAbstand   ?? 20;
-    const checkbox = `<span style="display:inline-block;width:${cb}px;height:${cb}px;border:1.5px solid #555;
-                        border-radius:2px;flex-shrink:0;background:#fff;"></span>`;
+    const { size, fontSize, cb } = bwSizeMetrics(d);
+    const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
+    const trenn = !!d.trennlinien;
+    const isActive = d.id === selId || _solutionsMode;
+    const checkbox = on => {
+      const bCol = on ? '#2563eb' : '#555';
+      const bg = on ? '#2563eb' : 'transparent';
+      return `<span style="display:inline-block;width:${cb}px;height:${cb}px;border:1.5px solid ${bCol};`
+        + `border-radius:2px;flex-shrink:0;background:${bg};"></span>`;
+    };
 
-    const items = (d.aufgaben || []).map(a => {
+    const inners = (d.aufgaben || []).map(a => {
       const src      = a.src || anlautDefaultSrc(a.anlaut);
       const allWords = [a.word, ...(a.distractors || ["",""])];
       const order    = a.order || [0,1,2];
       const words    = order.map(i => allWords[i] || "");
+      const correctPos = order.indexOf(0);
 
       const wordList =
-        `<div style="display:flex;flex-direction:column;gap:${zeilenabstand}px;min-width:0;flex:1;">` +
-        words.map(w =>
-          `<div style="display:flex;align-items:center;gap:7px;min-width:0;">${checkbox}
-            <span style="font-size:${fontSize}px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;">${esc(w)}</span>
+        `<div style="display:flex;flex-direction:column;justify-content:space-between;height:${Math.round(size * 0.88)}px;min-width:0;flex:1;">` +
+        words.map((w, wi) =>
+          `<div style="display:flex;align-items:center;gap:7px;min-width:0;">${checkbox(isActive && wi === correctPos)}
+            <span style="font-size:${fontSize}px;font-family:'DidactGothic7',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(w)}</span>
           </div>`
         ).join("") +
         `</div>`;
 
-      return `<div style="display:flex;align-items:center;gap:16px;min-width:0;">
+      const fullWidth = proZeile > 1 || trenn;
+      return `<div style="display:flex;align-items:center;gap:16px;${fullWidth ? 'width:100%;' : 'width:max-content;'}min-width:0;box-sizing:border-box;">
         <div style="flex-shrink:0;">${anlautImg(src, size)}</div>
         ${wordList}
       </div>`;
     });
 
-    // Spalten: klein → 3 / groß → 2 Items pro Zeile (voll Breite), schmalere Layouts entsprechend weniger
-    const frac = d.widthFraction || (d.halfWidth ? '1/2' : 'full');
-    const colMap = gross
-      ? { 'full':2, '3/4':2, '2/3':1, '1/2':1, '1/3':1, '1/4':1 }
-      : { 'full':3, '3/4':3, '2/3':2, '1/2':2, '1/3':1, '1/4':1 };
-    const cols = colMap[frac] || (gross ? 2 : 3);
-    return atHtml(d) +
-      `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:${itemAbstand}px 24px;">${items.join("")}</div>`;
+    return atHtml(d) + bwItemsGrid(d, inners);
   },
 
   renderProps: d => {
-    const size          = d.imageSize    || 70;
-    const gross         = !!d.gross;
-    const zeilenabstand = d.zeilenabstand ?? 10;
-    const itemAbstand   = d.itemAbstand   ?? 20;
     const aufgaben = d.aufgaben || [];
-
-    const grBtn = (label, active, val) =>
-      `<button onclick="event.stopPropagation();upd(${d.id},'gross',${val})"
-        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
-               background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
-               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
 
@@ -136,30 +124,7 @@ WIDGETS.push({
       </div>`;
     }).join("");
 
-    return `<div class="prow"><label>Größe</label>
-        <div style="display:flex;gap:4px;">
-          ${grBtn("Klein (3)", !gross, false)}${grBtn("Groß (2)", gross, true)}
-        </div>
-      </div>` +
-      pr("Bildgröße (Basis, px)",
-        `<input type="number" min="40" max="200" step="10" value="${size}"
-           onchange="upd(${d.id},'imageSize',+this.value)">`) +
-      pr("Zeilenabstand Wort",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="4" max="40" value="${zeilenabstand}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'zeilenabstand',+this.value)"
-            style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:34px;">${zeilenabstand}px</span>
-        </div>`) +
-      pr("Zeilenabstand",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="0" max="80" value="${itemAbstand}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'itemAbstand',+this.value)"
-            style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:34px;">${itemAbstand}px</span>
-        </div>`) +
+    return bwSharedLayoutProps(d) +
       `<div class="prow">
         <label>Buchstaben</label>
         <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;">${letterBtns}</div>

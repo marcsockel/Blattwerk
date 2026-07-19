@@ -9,6 +9,148 @@ function bwShuffle(n) {
   return arr;
 }
 
+/** Klein / Mittel / Groß — mit Migration alter Werte. */
+function bwGroesse(d) {
+  if (d && d._bwG3) {
+    const g = d.groesse || "klein";
+    return (g === "mittel" || g === "gross") ? g : "klein";
+  }
+  // Alte BWZ2: gross:true ≈ neues Groß (*1.4)
+  if (d && d.type === "bildwort2") {
+    if (d.groesse === "mittel" || d.groesse === "gross" || d.groesse === "klein") return d.groesse;
+    return d.gross ? "gross" : "klein";
+  }
+  // Alte BWZ1: groesse:'gross' war *1.2 / 18px → jetzt Mittel
+  if (d && d.groesse === "gross") return "mittel";
+  if (d && d.groesse === "mittel") return "mittel";
+  return "klein";
+}
+
+function bwSetGroesse(id, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  w.groesse = val;
+  w._bwG3 = true;
+  if ("gross" in w) delete w.gross;
+  render(); renderProps(id);
+}
+
+/** Bild- & Schriftmaße für beide Bild-Wort-Widgets. */
+function bwSizeMetrics(d) {
+  const baseSize = d.imageSize || 80;
+  const g = bwGroesse(d);
+  const mult = g === "gross" ? 1.4 : g === "mittel" ? 1.2 : 1;
+  const fontSize = g === "gross" ? 22 : g === "mittel" ? 18 : 14;
+  const cb = g === "gross" ? 17 : g === "mittel" ? 15 : 13;
+  return { baseSize, size: Math.round(baseSize * mult), fontSize, cb, groesse: g };
+}
+
+function bwTrenlinienCss(d) {
+  const b = d.trennStil || "thin";
+  return ({
+    dashed: "1.5px dashed #555",
+    thin:   "1px solid #333",
+    medium: "2px solid #333",
+    thick:  "3px solid #333",
+    ink:    "1.35px solid #2a2a2a",
+  })[b] || "1px solid #333";
+}
+
+/** Gemeinsame Props: Bildgröße, Schriftgröße, Pro Zeile, Trennlinien. */
+function bwSharedLayoutProps(d) {
+  const size = d.imageSize || 80;
+  const g = bwGroesse(d);
+  const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
+  const trenn = !!d.trennlinien;
+  const trennStil = d.trennStil || "thin";
+  const toggleBtn = (label, active, onclick) =>
+    `<button onclick="event.stopPropagation();${onclick}"
+      style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
+             background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
+  const stilOpt = (val, label) =>
+    `<option value="${val}" ${trennStil===val?'selected':''}>${label}</option>`;
+  const trennStilSelect = trenn
+    ? `<select onchange="upd(${d.id},'trennStil',this.value)"
+        style="width:100%;margin-top:6px;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
+        ${stilOpt("dashed","- - - Gestrichelt")}
+        ${stilOpt("thin","──── Leicht (1px)")}
+        ${stilOpt("medium","──── Mittel (2px)")}
+        ${stilOpt("thick","──── Dick (3px)")}
+        ${stilOpt("ink","✒ Tusche")}
+      </select>`
+    : "";
+
+  return pr("Bildgröße (px)",
+      `<input type="number" min="40" max="200" step="10" value="${size}" onchange="upd(${d.id},'imageSize',+this.value)">`) +
+    `<div class="prow"><label>Schriftgröße</label>
+      <div style="display:flex;gap:4px;">
+        ${toggleBtn("Klein", g === "klein", `bwSetGroesse(${d.id},'klein')`)}
+        ${toggleBtn("Mittel", g === "mittel", `bwSetGroesse(${d.id},'mittel')`)}
+        ${toggleBtn("Groß", g === "gross", `bwSetGroesse(${d.id},'gross')`)}
+      </div>
+    </div>` +
+    `<div class="prow"><label>Pro Zeile</label>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input type="range" min="1" max="3" step="1" value="${proZeile}"
+          oninput="this.nextElementSibling.textContent=this.value"
+          onchange="upd(${d.id},'proZeile',+this.value)" style="flex:1;accent-color:#7287fd;">
+        <span style="font-size:11px;color:#666;min-width:14px;font-weight:700;">${proZeile}</span>
+      </div>
+    </div>` +
+    `<div class="prow"><label>Trennlinien</label>
+      <div style="display:flex;gap:4px;">
+        ${toggleBtn("Aus", !trenn, `upd(${d.id},'trennlinien',false)`)}
+        ${toggleBtn("An", trenn, `upd(${d.id},'trennlinien',true)`)}
+      </div>
+      ${trennStilSelect}
+    </div>`;
+}
+
+/** Gemeinsames Item-Raster (Pro Zeile + optionale Trennlinien). */
+function bwItemsGrid(d, cellHtmls) {
+  const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
+  const trenn = !!d.trennlinien;
+  const colGap = trenn ? 0 : 24;
+  const rowMb = trenn ? 0 : 32;
+  const cellPad = trenn ? "22px 14px" : "0";
+  const lineCss = bwTrenlinienCss(d);
+  const n = cellHtmls.length;
+  const rows = Math.max(1, Math.ceil(n / proZeile));
+  const itemBasis = proZeile === 1
+    ? null
+    : `calc(${100 / proZeile}% - ${colGap * (proZeile - 1) / proZeile}px)`;
+
+  const wrap = (inner, i) => {
+    if (trenn) {
+      const col = i % proZeile;
+      const row = Math.floor(i / proZeile);
+      const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
+      const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
+      return `<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}">${inner}</div>`;
+    }
+    // 1 pro Zeile: volle Breite, damit wirklich nur ein Item nebeneinander passt
+    if (proZeile === 1) {
+      return `<div style="flex:0 0 100%;width:100%;box-sizing:border-box;margin-bottom:${rowMb}px;">${inner}</div>`;
+    }
+    return `<div style="flex:0 0 ${itemBasis};max-width:${itemBasis};box-sizing:border-box;margin-bottom:${rowMb}px;">${inner}</div>`;
+  };
+
+  const cells = cellHtmls.map((html, i) => wrap(html, i));
+  if (trenn) {
+    while (cells.length < rows * proZeile) {
+      const i = cells.length;
+      const col = i % proZeile;
+      const row = Math.floor(i / proZeile);
+      const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
+      const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
+      cells.push(`<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}"></div>`);
+    }
+    return `<div style="display:grid;grid-template-columns:repeat(${proZeile},1fr);">${cells.join("")}</div>`;
+  }
+  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${colGap}px;row-gap:0;justify-content:flex-start;margin-bottom:-${rowMb}px;">${cells.join("")}</div>`;
+}
+
 WIDGETS.push({
   meta: { type:"bildwort", label:"Bild-Wort-Zuordnung", desc:"Bild mit Wort verbinden", icon:"🖼↔", category:"deutsch" },
 
@@ -16,6 +158,7 @@ WIDGETS.push({
     id, type:"bildwort",
     imageSize: 80,
     groesse: "klein",
+    _bwG3: true,
     proZeile: 2,
     trennlinien: false,
     trennStil: "thin",
@@ -27,11 +170,7 @@ WIDGETS.push({
   }),
 
   render: d => {
-    const baseSize = d.imageSize || 80;
-    const gross = (d.groesse || "klein") === "gross";
-    const size = gross ? Math.round(baseSize * 1.2) : baseSize;
-    const fontSize = gross ? 18 : 14;
-    const cb = gross ? 15 : 13;
+    const { size, fontSize, cb } = bwSizeMetrics(d);
     const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
     const trenn = !!d.trennlinien;
     const isActive = d.id === selId || _solutionsMode;
@@ -42,38 +181,20 @@ WIDGETS.push({
         + `border-radius:2px;flex-shrink:0;background:${bg};"></span>`;
     };
 
-    const colGap = trenn ? 0 : 24;
-    const rowMb = trenn ? 0 : 32;
-    const cellPad = trenn ? '22px 14px' : '0';
-    // Eigener Linienstil (unabhängig vom Widget-Rahmen).
-    const b = d.trennStil || "thin";
-    const lineCss = ({
-      dashed: '1.5px dashed #555',
-      thin:   '1px solid #333',
-      medium: '2px solid #333',
-      thick:  '3px solid #333',
-      ink:    '1.35px solid #2a2a2a',
-    })[b] || '1px solid #333';
-    const itemBasis = proZeile === 1
-      ? null
-      : `calc(${100 / proZeile}% - ${colGap * (proZeile - 1) / proZeile}px)`;
-
     const aufgaben = d.aufgaben || [];
-    const n = aufgaben.length;
-    const rows = Math.max(1, Math.ceil(n / proZeile));
-
-    const renderItem = (a, i) => {
+    const inners = aufgaben.map((a, i) => {
       const allWords = [a.word, ...(a.distractors || ["", ""])];
       const order    = a.order || [0,1,2];
       const words    = order.map(j => allWords[j] || "");
       const correctPos = order.indexOf(0);
 
+      const fit = a.fill ? "cover" : "contain";
       const imgEl = a.src
         ? `<div style="flex-shrink:0;"
              ondragover="event.preventDefault();event.stopPropagation();this.style.outline='2px solid #89b4fa';"
              ondragleave="this.style.outline='none';"
              ondrop="event.preventDefault();event.stopPropagation();this.style.outline='none';bwDrop(${d.id},${i},event);">
-             <img src="${a.src}" draggable="false" style="width:${size}px;height:${size}px;object-fit:contain;display:block;border-radius:4px;pointer-events:none;">
+             <img src="${a.src}" draggable="false" style="width:${size}px;height:${size}px;object-fit:${fit};display:block;border-radius:4px;pointer-events:none;">
            </div>`
         : `<div style="width:${size}px;height:${size}px;flex-shrink:0;background:#f5f5f5;border:1.5px dashed #ccc;
              border-radius:4px;display:flex;align-items:center;justify-content:center;
@@ -91,73 +212,21 @@ WIDGETS.push({
         `</div>`;
 
       const fullWidth = proZeile > 1 || trenn;
-      const inner =
-        `<div style="display:flex;align-items:center;gap:16px;${fullWidth ? 'width:100%;' : 'width:max-content;'}min-width:0;box-sizing:border-box;">
+      return `<div style="display:flex;align-items:center;gap:16px;${fullWidth ? 'width:100%;' : 'width:max-content;'}min-width:0;box-sizing:border-box;">
           ${imgEl}
           ${wordList}
         </div>`;
+    });
 
-      if (trenn) {
-        const col = i % proZeile;
-        const row = Math.floor(i / proZeile);
-        const br = col < proZeile - 1 ? `border-right:${lineCss};` : '';
-        const bb = row < rows - 1 ? `border-bottom:${lineCss};` : '';
-        return `<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}">${inner}</div>`;
-      }
-
-      if (proZeile === 1) {
-        return `<div style="flex:0 0 auto;margin-bottom:${rowMb}px;">${inner}</div>`;
-      }
-      return `<div style="flex:0 0 ${itemBasis};max-width:${itemBasis};box-sizing:border-box;margin-bottom:${rowMb}px;">${inner}</div>`;
-    };
-
-    const cells = aufgaben.map((a, i) => renderItem(a, i));
-    // Leere Zellen füllen die letzte Zeile, damit Trennlinien durchlaufen.
-    if (trenn) {
-      while (cells.length < rows * proZeile) {
-        const i = cells.length;
-        const col = i % proZeile;
-        const row = Math.floor(i / proZeile);
-        const br = col < proZeile - 1 ? `border-right:${lineCss};` : '';
-        const bb = row < rows - 1 ? `border-bottom:${lineCss};` : '';
-        cells.push(`<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}"></div>`);
-      }
-      return atHtml(d) +
-        `<div style="display:grid;grid-template-columns:repeat(${proZeile},1fr);">${cells.join("")}</div>`;
-    }
-
-    return atHtml(d) +
-      `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${colGap}px;row-gap:0;justify-content:flex-start;margin-bottom:-${rowMb}px;">${cells.join("")}</div>`;
+    return atHtml(d) + bwItemsGrid(d, inners);
   },
 
   renderProps: d => {
-    const size = d.imageSize || 80;
-    const g = d.groesse || "klein";
-    const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
-    const trenn = !!d.trennlinien;
-    const trennStil = d.trennStil || "thin";
     const aufgaben = d.aufgaben || [];
-    const toggleBtn = (label, active, onclick) =>
-      `<button onclick="event.stopPropagation();${onclick}"
-        style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#a6e3a1':'#ddd'};
-               background:${active?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;
-               font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
-
-    const stilOpt = (val, label) =>
-      `<option value="${val}" ${trennStil===val?'selected':''}>${label}</option>`;
-    const trennStilSelect = trenn
-      ? `<select onchange="upd(${d.id},'trennStil',this.value)"
-          style="width:100%;margin-top:6px;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
-          ${stilOpt("dashed","- - - Gestrichelt")}
-          ${stilOpt("thin","──── Leicht (1px)")}
-          ${stilOpt("medium","──── Mittel (2px)")}
-          ${stilOpt("thick","──── Dick (3px)")}
-          ${stilOpt("ink","✒ Tusche")}
-        </select>`
-      : "";
-
     const thumbSz = 40;
     const aufgabeCards = aufgaben.map((a, idx) => {
+      const fill = !!a.fill;
+      const thumbFit = fill ? "cover" : "contain";
       const thumb = a.src
         ? `<div title="Bild auswählen / hierher ziehen"
              style="flex-shrink:0;cursor:pointer;width:${thumbSz}px;height:${thumbSz}px;"
@@ -166,7 +235,7 @@ WIDGETS.push({
              ondragleave="this.style.outline='none';"
              ondrop="event.preventDefault();event.stopPropagation();this.style.outline='none';bwDrop(${d.id},${idx},event);">
              <img src="${a.src}" draggable="false"
-               style="width:${thumbSz}px;height:${thumbSz}px;object-fit:contain;border-radius:3px;border:1px solid #eee;display:block;pointer-events:none;">
+               style="width:${thumbSz}px;height:${thumbSz}px;object-fit:${thumbFit};border-radius:3px;border:1px solid #eee;display:block;pointer-events:none;">
            </div>`
         : `<div title="Bild auswählen / hierher ziehen"
              onclick="event.stopPropagation();bwOpenImgPicker(${d.id},${idx});"
@@ -180,9 +249,16 @@ WIDGETS.push({
         <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;">
           <div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;">
             ${thumb}
-            ${a.src ? `<button onclick="event.stopPropagation();bwUpdAufgabe(${d.id},${idx},'src','')"
-              style="padding:1px 5px;border:none;border-radius:3px;background:#fde8ec;color:#a0003c;
-                     font-size:10px;cursor:pointer;">🗑</button>` : ""}
+            ${a.src ? `<div style="display:flex;gap:2px;">
+              <button title="${fill ? 'Zuschneiden aus' : 'Platzhalter füllen (zuschneiden)'}"
+                onclick="event.stopPropagation();bwUpdAufgabe(${d.id},${idx},'fill',${!fill})"
+                style="padding:1px 4px;border:1px solid ${fill?'#89b4fa':'#ddd'};border-radius:3px;
+                       background:${fill?'#e8f0ff':'#f8f8f8'};color:${fill?'#1e1e2e':'#888'};
+                       font-size:10px;cursor:pointer;line-height:1.2;">⛶</button>
+              <button onclick="event.stopPropagation();bwUpdAufgabe(${d.id},${idx},'src','')"
+                style="padding:1px 5px;border:none;border-radius:3px;background:#fde8ec;color:#a0003c;
+                       font-size:10px;cursor:pointer;">🗑</button>
+            </div>` : ""}
           </div>
           <div style="flex:1;">
             <div style="font-size:10px;color:#aaa;font-weight:700;margin-bottom:3px;">Richtiges Wort</div>
@@ -209,29 +285,7 @@ WIDGETS.push({
       </div>`;
     }).join("");
 
-    return pr("Bildgröße (px)",
-        `<input type="number" min="40" max="200" step="10" value="${size}" onchange="upd(${d.id},'imageSize',+this.value)">`) +
-      `<div class="prow"><label>Schriftgröße</label>
-        <div style="display:flex;gap:4px;">
-          ${toggleBtn("Klein", g !== "gross", `upd(${d.id},'groesse','klein')`)}
-          ${toggleBtn("Groß", g === "gross", `upd(${d.id},'groesse','gross')`)}
-        </div>
-      </div>` +
-      `<div class="prow"><label>Pro Zeile</label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="1" max="3" step="1" value="${proZeile}"
-            oninput="this.nextElementSibling.textContent=this.value"
-            onchange="upd(${d.id},'proZeile',+this.value)" style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:14px;font-weight:700;">${proZeile}</span>
-        </div>
-      </div>` +
-      `<div class="prow"><label>Trennlinien</label>
-        <div style="display:flex;gap:4px;">
-          ${toggleBtn("Aus", !trenn, `upd(${d.id},'trennlinien',false)`)}
-          ${toggleBtn("An", trenn, `upd(${d.id},'trennlinien',true)`)}
-        </div>
-        ${trennStilSelect}
-      </div>` +
+    return bwSharedLayoutProps(d) +
       `<div style="margin:6px 0 4px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.5px;">Aufgaben</div>` +
       aufgabeCards +
       `<button onclick="event.stopPropagation();bwAddAufgabe(${d.id})"
