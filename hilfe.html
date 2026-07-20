@@ -97,7 +97,9 @@
   <p>Am Ende druckst du das Blatt direkt aus oder speicherst es als PDF – seitengenau im A4-Format, wahlweise
      hoch oder quer.</p>
   <div class="tip"><b>Kurz gesagt:</b> Bausteine auswählen → anordnen → Eigenschaften einstellen → drucken. Mehr
-     musst du nicht wissen, um loszulegen. Der Rest dieser Hilfe erklärt die Details.</div>
+     musst du nicht wissen, um loszulegen. Der Rest dieser Hilfe erklärt die Details – besonders praktisch
+     sind die Abschnitte <a href="#standardoptionen">Optionen, die jedes Widget hat</a> (u.&nbsp;a.
+     <b>Verteilung</b>, Punkte, Tusche-Rahmen).</div>
 </article>
 
 <article id="prinzipien" data-group="Einführung" data-title="Grundprinzipien">
@@ -142,24 +144,50 @@
 
 <article id="standardoptionen" data-group="Einführung" data-title="Optionen, die jedes Widget hat">
   <h1>Optionen, die (fast) jedes Widget hat</h1>
-  <p>Unter den widget-eigenen Einstellungen findest du im Eigenschaften-Panel drei aufklappbare Bereiche, die für
-     fast alle Widgets gleich funktionieren:</p>
+  <p>Unter den widget-eigenen Einstellungen findest du im Eigenschaften-Panel aufklappbare Bereiche, die für
+     viele Widgets gleich funktionieren. Die Abschnitte lassen sich zu- und aufklappen – so bleibt die rechte
+     Leiste übersichtlich.</p>
+
   <h2>Aufgabentext</h2>
   <p>Eine Aufgabennummer und ein Anweisungstext, die über dem Widget erscheinen – z. B.
      <i>„3. Rechne im Kopf."</i> So bekommt jede Aufgabe auf dem Blatt eine einheitliche Überschrift, ohne dass du
-     extra Text-Widgets brauchst.</p>
+     extra Text-Widgets brauchst. Form und Füllung der Nummer (Kreis, Quadrat …) stellst du dort ebenfalls ein.</p>
+  <p>Beim Widget <a href="#w-arithmetic">Rechenaufgaben</a> gibt es oben im Aufgabentext zusätzlich die
+     <b>Päckchen-Nummerierung</b>: optional erscheint vor jedem Päckchen <code>a)</code>, <code>b)</code>,
+     <code>c)</code> …</p>
+
+  <h2>Punkte</h2>
+  <p>Bei den meisten Deutsch- und Mathe-Widgets (sowie vielen Allgemein-Bausteinen) kannst du unten rechts im
+     Widget eine Punktezeile einblenden, z.&nbsp;B. <code>___ / 5 Pkt.</code> – Anzahl und Bezeichnung
+     (<i>Pkt.</i> / <i>Punkte</i> / ohne Text) sind einstellbar. <code>0</code> blendet die Zeile aus.</p>
+
   <h2>Rahmen &amp; Schatten</h2>
-  <p>Rahmen um das Widget (dünn, mittel, dick oder gestrichelt), Ecken rund oder eckig, ein dezenter
-     Schlagschatten und eine Hintergrundfarbe. Damit hebst du einzelne Aufgaben optisch hervor.</p>
+  <p>Rahmen um das Widget (dünn, mittel, dick, gestrichelt oder <b>✒ Tusche</b> – eine handgezeichnet wirkende
+     Linie), Ecken rund oder eckig, ein dezenter Schlagschatten und eine Hintergrundfarbe. Damit hebst du
+     einzelne Aufgaben optisch hervor.</p>
+
+  <h2>Verteilung</h2>
+  <p>Viele Widgets mit mehreren gleichartigen Elementen (Rechenpäckchen, Uhren, Anlautbilder, Zahlenmauern,
+     schriftliches Rechnen, Erste Päckchen …) haben den Bereich <b>Verteilung</b>. Dort steuerst du, wie die
+     Elemente auf dem Blatt angeordnet werden – einheitlich für alle diese Widgets:</p>
+  <ul>
+    <li><b>Pro Zeile:</b> <i>Auto</i> (so viele wie passen) oder fest 1–6 Elemente pro Zeile.</li>
+    <li><b>Ausrichtung:</b> Auto, Links, Mitte, Rechts oder <b>Block</b> (erstes Element links, letztes rechts;
+        bei Blocksatz entfällt der Spaltenabstand).</li>
+    <li><b>Spaltenabstand</b> und <b>Zeilenabstand:</b> Eng / Mittel / Weit – getrennt einstellbar.</li>
+  </ul>
+  <p>Standard bei neuen Widgets: <b>Pro Zeile Auto</b>, <b>Ausrichtung Auto</b>, beide Abstände <b>Mittel</b>.</p>
+  <div class="tip"><b>Tipp:</b> „Anzahl Päckchen" oder „Anzahl Aufgaben" in den Widget-Einstellungen bestimmt
+     oft, <i>wie viele</i> Elemente erzeugt werden. Die <b>Verteilung</b> bestimmt, <i>wie</i> sie auf dem Blatt
+     nebeneinander und untereinander stehen.</div>
+
   <h2>Layout (Breite)</h2>
   <p>Jedes Widget kann die volle Blattbreite einnehmen oder nur einen Teil: ¼, ⅓, ½, ⅔ oder ¾. Widgets mit
      Teilbreite rücken automatisch nebeneinander in eine Zeile – zwei halbe Widgets ergeben also eine
-     zweispaltige Zeile. Viele Widgets passen ihre Inhalte (z. B. Spaltenzahl) an die schmalere Breite an.
-     Steht bei schmaler Breite nur ein Element in der Zeile, wird es je nach Widget zentriert (z. B. Zwanzigerfeld
-     mit eigener <b>Ausrichtung</b>).</p>
+     zweispaltige Zeile. Viele Widgets passen ihre Inhalte an die schmalere Breite an.</p>
   <p>Die fünf Widgets unter <b>Erste Päckchen</b> teilen sich ein gemeinsames Kästchen-Layout; jedes hat eigene
-     Aufgabenlogik (Rechenaufgaben, 10er Stop, Analogie, Zerlegung, Umkehr). Details in den jeweiligen
-     Hilfe-Artikeln.</p>
+     Aufgabenlogik. Details in den jeweiligen Hilfe-Artikeln. Anordnung mehrerer Päckchen steuerst du über
+     <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <!-- ══════════ DIE APP ══════════ -->
@@ -177,7 +205,8 @@
         „Diagramme", „Zeit"). Ein Klick auf einen Baustein fügt ihn unten auf dem Blatt ein.</li>
     <li><b>Arbeitsfläche (Mitte):</b> deine A4-Seiten, so wie sie später gedruckt werden. Hier wählst du Widgets
         aus, verschiebst sie und bearbeitest Texte direkt.</li>
-    <li><b>Eigenschaften (rechts):</b> die Einstellungen des gerade ausgewählten Widgets.</li>
+    <li><b>Eigenschaften (rechts):</b> die Einstellungen des gerade ausgewählten Widgets – oft in
+        aufklappbaren Abschnitten (z.&nbsp;B. Aufgabentext, Verteilung, Layout).</li>
   </ul>
   <div class="tip"><b>Tipp:</b> Mit <kbd>Strg</kbd>+<kbd>Mausrad</kbd> (oder den −/+-Knöpfen oben) zoomst du die
      Ansicht – die Druckgröße ändert sich dadurch nicht.</div>
@@ -285,7 +314,8 @@
   <span class="cattag allgemein">Allgemein</span>
   <p>Formatierter Fließtext – für Lesetexte, Erklärungen oder Geschichten. Der Text wird direkt auf dem Blatt
      geschrieben und formatiert; Schriftart (u. a. Grundschul-Schriften), Größe und Ausrichtung stellst du
-     rechts ein.</p>
+     rechts ein. Mit dem Regler <b>Innenabstand</b> bestimmst du den Abstand vom Text zum Widget-Rand
+     (Standard = bisheriges Verhalten).</p>
   <p>Mit der Option <b>„Über Seiten fließen"</b> teilt Blattwerk zu lange Texte automatisch und lässt sie auf
      der nächsten Seite weiterfließen – die Fortsetzung gehört weiter zum selben Text und wird mit ihm
      bearbeitet. Ist die Option aus, bleibt der Text ein Block und wandert als Ganzes auf die nächste Seite.
@@ -327,7 +357,8 @@
   <span class="cattag allgemein">Allgemein</span>
   <p>Fragen mit Antwortmöglichkeiten zum Ankreuzen. Die Eingabe ist einfach: erste Zeile die Frage, darunter
      die Antworten, eine Leerzeile trennt die nächste Frage. Optional werden die Antworten gemischt und die
-     Fragen in mehreren Spalten angeordnet.</p>
+     Fragen in mehreren Spalten angeordnet – die Spalten werden möglichst gleichmäßig gefüllt
+     (z.&nbsp;B. 4 Fragen in 3 Spalten → 2 + 1 + 1).</p>
 </article>
 
 <article id="w-numbering" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Nummerierung">
@@ -413,7 +444,8 @@
      der Text Wort für Wort, und jedes angeklickte Wort wird zur Lücke (nochmal klicken macht es wieder
      sichtbar). Alternativ setzt du Wörter direkt im Text in eckige Klammern:
      <code>Der [Elefant] heißt Elmar.</code> Die Lösungswörter lassen sich als Wortspeicher einblenden;
-     Schriftart (inkl. Grundschul-Schriften) und Größe sind wählbar.</p>
+     Schriftart (inkl. Grundschul-Schriften) und Größe sind wählbar. Wie beim Text-Widget gibt es einen
+     Regler für den <b>Innenabstand</b>.</p>
 </article>
 
 <article id="w-linebox" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Schreiblinien">
@@ -431,7 +463,7 @@
   <p>Einzelne Wörter mit Silbenbögen darunter – zum silbenweisen Lesen und Mitschwingen. Du tippst nur die
      Wörter, die Silbentrennung passiert größtenteils automatisch; die Bögen zeichnet Blattwerk. Da der
      Algorithmus einzelne Wörter falsch trennt (häufige Fälle sind schon eingebaut), kannst du eigene
-     Trenn-Ausnahmen ergänzen.</p>
+     Trenn-Ausnahmen ergänzen. Mehrere Wörter legst du über <a href="#standardoptionen">Verteilung</a> an.</p>
 </article>
 
 <article id="w-silbentext" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Silbentext">
@@ -439,7 +471,8 @@
   <span class="cattag deutsch">Deutsch</span>
   <p>Ein Fließtext, dessen Silben abwechselnd zweifarbig eingefärbt werden (bekannt aus Silben-Lesebüchern).
      Du schreibst ganz normalen Text – die Silbentrennung und Färbung passieren größtenteils automatisch.
-     Falsch getrennte Wörter korrigierst du über eigene Trenn-Ausnahmen; häufige Fälle sind schon eingebaut.</p>
+     Falsch getrennte Wörter korrigierst du über eigene Trenn-Ausnahmen; häufige Fälle sind schon eingebaut.
+     Wie beim Text-Widget gibt es einen Regler für den <b>Innenabstand</b>.</p>
 </article>
 
 <article id="w-scramble" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Buchstabensalat">
@@ -478,7 +511,8 @@
   <span class="cattag deutsch">Deutsch</span>
   <p>Zu jedem Bild stehen mehrere Wörter zur Auswahl – das richtige wird angekreuzt oder verbunden. Je Aufgabe
      legst du Bild, Lösungswort und Ablenker-Wörter fest; die Reihenfolge wird gemischt und die Bildgröße ist
-     einstellbar.</p>
+     einstellbar. Wie die Aufgaben nebeneinander stehen, regelst du unter
+     <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <article id="w-aeue" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="äu / ä">
@@ -502,7 +536,7 @@
   <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
   <p>Für den Schriftspracherwerb: Zu jedem Bild stehen mehrere Buchstaben zur Auswahl – der richtige Anlaut
      wird angekreuzt. Die Bilder kommen aus dem eingebauten Anlautbild-Satz, Buchstabenauswahl und Groß-/
-     Kleinschreibung sind einstellbar.</p>
+     Kleinschreibung sind einstellbar. Anordnung mehrerer Karten: <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <article id="w-anlautschreiben" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Anlaut-Schreiben">
@@ -523,14 +557,15 @@
   <h1><span class="wicon">🖼↔</span>Bild-Wort-Zuordnung 2</h1>
   <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
   <p>Die Anfangsunterricht-Variante der Bild-Wort-Zuordnung: Anlautbilder aus dem eingebauten Satz werden mit
-     den passenden Wörtern verbunden.</p>
+     den passenden Wörtern verbunden. Anordnung: <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <article id="w-buchstabensalat2" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Buchstabensalat 2">
   <h1><span class="wicon">🔀✏</span>Buchstabensalat 2</h1>
   <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
   <p>Die Buchstaben eines Wortes liegen verstreut in einer Fläche, daneben das passende Bild und eine
-     Schreiblinie: Buchstaben ordnen und das Wort schreiben.</p>
+     Schreiblinie: Buchstaben ordnen und das Wort schreiben. Mehrere Karten legst du über
+     <a href="#standardoptionen">Verteilung</a> an.</p>
 </article>
 
 <article id="w-geheimschrift" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Geheimschrift">
@@ -538,7 +573,15 @@
   <span class="cattag deutsch">Deutsch · Anfangsunterricht</span>
   <p>Ein Wort wird als Folge von Anlautbildern „verschlüsselt": Die Kinder erkennen zu jedem Bild den
      Anfangsbuchstaben und schreiben ihn ins Kästchen darunter – Buchstabe für Buchstabe erscheint das
-     Lösungswort.</p>
+     Lösungswort. Abstand und Anordnung mehrerer Wörter: <a href="#standardoptionen">Verteilung</a>.</p>
+</article>
+
+<article id="w-wortchips" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Wortchips">
+  <h1><span class="wicon">🏷️</span>Wortchips</h1>
+  <span class="cattag deutsch">Deutsch</span>
+  <p>Wörter als einzelne Chips in Reihen – z.&nbsp;B. als Wortspeicher, Lesekarten oder Sortieraufgabe.
+     Wortliste und Darstellung stellst du im Eigenschaften-Panel ein; Anordnung und Abstände über
+     <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <article id="w-wortschreiben" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Wort-Schreiben">
@@ -555,8 +598,13 @@
   <span class="cattag mathematik">Mathematik</span>
   <p>Das Arbeitspferd für Kopfrechen-Päckchen: Plus, Minus, Mal, Geteilt – einzeln oder gemischt. Du stellst
      Zahlenraum, Zehnerübergang (ohne / gemischt / nur mit), Aufgabenformat (Ergebnis frei oder Lückenaufgabe)
-     sowie Anzahl und Spalten ein und lässt <b>würfeln 🎲</b>. Aufgaben lassen sich auch von Hand eintippen oder
-     einzeln nachbearbeiten; Lösungen erscheinen blau, solange das Widget ausgewählt ist.</p>
+     sowie Aufgaben pro Päckchen und Anzahl Päckchen ein und lässt <b>würfeln 🎲</b>. Aufgaben lassen sich auch
+     von Hand eintippen oder einzeln nachbearbeiten; Lösungen erscheinen blau, solange das Widget ausgewählt ist.</p>
+  <ul>
+    <li><b>Päckchen-Nummerierung:</b> Im Bereich Aufgabentext optional <code>a) b) c)</code> vor jedem Päckchen.</li>
+    <li><b>Verteilung:</b> Wie die Päckchen auf dem Blatt stehen (Pro Zeile, Ausrichtung, Abstände) – siehe
+        <a href="#standardoptionen">Verteilung</a>.</li>
+  </ul>
 </article>
 
 <article id="w-erste-paketchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Erste Päckchen">
@@ -570,9 +618,10 @@
         wählst du, ob die Lücke in der 1. Zahl, der 2. Zahl oder zufällig sitzt.</li>
     <li><b>Rechenzeichen:</b> Plus und/oder Minus (einzeln oder kombiniert).</li>
     <li><b>Zahlenraum:</b> 10, 20 oder 100; optional <b>Zehnerübergang</b> (ohne / gemischt / nur mit).</li>
-    <li><b>Aufgaben pro Päckchen</b> und <b>Anzahl Päckchen</b> (Spalten) – steuern, wie viele Aufgaben
-        nebeneinander und untereinander stehen.</li>
+    <li><b>Aufgaben pro Päckchen</b> und <b>Anzahl Päckchen</b> – steuern, wie viele Aufgaben erzeugt werden.</li>
     <li><b>Größe</b> (klein / mittel / groß) und <b>Beschreib-Kästchen</b> (weiß oder grau zum Beschriften).</li>
+    <li><b>Verteilung:</b> Anordnung und Abstände der Päckchen auf dem Blatt
+        (<a href="#standardoptionen">Verteilung</a>).</li>
   </ul>
   <p>Neue Aufgaben per <b>Würfeln 🎲</b>; im Bereich <b>Manuelle Bearbeitung</b> kannst du Zeilen direkt eintippen.
      Lösungen sind blau, solange das Widget ausgewählt ist.</p>
@@ -585,10 +634,10 @@
      (z. B. 7 + 5 =), darunter die Zerlegung des zweiten Summanden (7 + 3 + 2 =). Ideal für „Zehner-Stop"-Strategien.</p>
   <ul>
     <li><b>Zahlenraum:</b> 20 oder 100.</li>
-    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b> (klein / mittel / groß; Standard: groß).</li>
+    <li><b>Anzahl Aufgaben</b> und <b>Größe</b> (klein / mittel / groß; Standard: groß).</li>
     <li><b>Hilfe:</b> Bei „An" sind in den ersten Aufgaben graue Vorgaben in den Zerlegungs-Kästchen – Aufgabe 1 beide
         Teile, Aufgabe 2 nur der erste Teil, ab Aufgabe 3 leer.</li>
-    <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen pro Aufgabe).</li>
+    <li><b>Beschreib-Kästchen</b>, <b>Manuelle Bearbeitung</b> und <a href="#standardoptionen">Verteilung</a>.</li>
   </ul>
   <p>Würfeln 🎲 erzeugt neue Paare; Lösungen blau bei Auswahl.</p>
 </article>
@@ -600,7 +649,8 @@
      14 − 3 =). So üben die Kinder das gleiche Rechenmuster im Zahlenraum 20.</p>
   <ul>
     <li><b>Rechenzeichen:</b> Plus und/oder Minus.</li>
-    <li><b>Aufgaben pro Päckchen</b>, <b>Anzahl Päckchen</b> und <b>Größe</b>.</li>
+    <li><b>Aufgaben pro Päckchen</b>, <b>Anzahl Päckchen</b>, <b>Größe</b> und
+        <a href="#standardoptionen">Verteilung</a>.</li>
     <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen pro Paar).</li>
   </ul>
   <p>Würfeln 🎲 und blaue Lösungen bei Auswahl wie bei den anderen Erste-Päckchen-Widgets.</p>
@@ -610,11 +660,11 @@
   <h1><span class="wicon">✂️</span>Zahlenzerlegung</h1>
   <span class="cattag mathematik">Mathematik · Erste Päckchen</span>
   <p>Eine Zahl in zwei Teile zerlegen: Oben steht die Zielzahl, darunter zwei Kästchen für die Teilsummanden.
-     Kompakteres Layout als 10er Stop – viele Aufgaben passen nebeneinander (Standard: 8 Spalten).</p>
+     Kompakteres Layout als 10er Stop – viele Aufgaben passen nebeneinander.</p>
   <ul>
     <li><b>Zahlenraum:</b> 10, 20 oder 100.</li>
     <li><b>Immer 10:</b> Die obere Zahl ist immer 10 (für Zerlegungen im ZR 10).</li>
-    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b>.</li>
+    <li><b>Anzahl Aufgaben</b>, <b>Größe</b> und <a href="#standardoptionen">Verteilung</a>.</li>
     <li><b>Hilfe:</b> Bei „An" ist nur bei der <b>1. Aufgabe</b> der fehlende Teil als graue Vorgabe sichtbar;
         ab der 2. Aufgabe bleiben die Lücken leer.</li>
     <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (2 Zeilen: Zahl, dann Teile mit
@@ -629,7 +679,8 @@
   <p>Plus- und Minus-Umkehr als Paar: Erst die Plusaufgabe (z. B. 4 + 3 =), direkt darunter die passende Minus-Umkehr
      (7 − 3 =). Pfeile verbinden die Aufgaben optisch.</p>
   <ul>
-    <li><b>Anzahl Aufgaben</b> (Spalten) und <b>Größe</b> (klein / mittel / groß).</li>
+    <li><b>Anzahl Aufgaben</b>, <b>Größe</b> (klein / mittel / groß) und
+        <a href="#standardoptionen">Verteilung</a>.</li>
     <li><b>Beschreib-Kästchen</b> und <b>Manuelle Bearbeitung</b> (je 2 Zeilen: Plus, dann Minus).</li>
   </ul>
   <p>Würfeln 🎲 für neue Paare; Zahlenraum und Rechenarten folgen aus der Generierung (Plus/Minus im ZR 20).</p>
@@ -645,6 +696,9 @@
     <li><b>Subtraktion:</b> Zahlenraum, mit/ohne Übertrag, optional Lückenaufgaben.</li>
     <li><b>Multiplikation:</b> ein- oder mehrstelliger Faktor, Zahlenraum, mit/ohne Übertrag.</li>
     <li><b>Division:</b> schrittweise schriftliche Division mit passenden Einstellungen.</li>
+    <li><b>Größe:</b> Klein / Mittel / Groß – skaliert Kästchen und Schrift einheitlich.</li>
+    <li><b>Verteilung:</b> mehrere Aufgaben nebeneinander bzw. untereinander
+        (<a href="#standardoptionen">Verteilung</a>).</li>
   </ul>
   <p>Alle vier würfeln 🎲 neue Aufgaben und können die Lösung einblenden bzw. blau im Lösungsmodus zeigen.</p>
 </article>
@@ -654,7 +708,8 @@
   <span class="cattag mathematik">Mathematik · Halbschriftl. Rechnen</span>
   <p>Vier Widgets für halbschriftliche Strategien in allen vier Rechenarten. Einstellbar sind die Methode
      (z. B. schrittweises Rechnen), Zahlenraum, Zehnerübergang, Aufgabenanzahl und Größe; optional werden
-     Hilfslinien bzw. Zwischenschritt-Felder angezeigt. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
+     Hilfen bzw. Zwischenschritt-Felder angezeigt. Mehrere Aufgaben ordnest du über
+     <a href="#standardoptionen">Verteilung</a> an. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
 </article>
 
 <article id="w-kaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Kästchenfeld">
@@ -680,31 +735,35 @@
   <h1><span class="wicon">🧱</span>Zahlenmauer</h1>
   <span class="cattag mathematik">Mathematik · Rechenformate</span>
   <p>Die klassische Zahlenmauer: Jeder Stein ist die Summe der beiden Steine darunter. Einstellbar sind die
-     Reihenanzahl, der Zahlenraum, wie viele Mauern nebeneinander stehen und welche Steine vorgegeben sind
-     (z. B. nur die Basis). Neue Mauern per <b>Würfeln 🎲</b>, Lösungen blau im Lösungsmodus.</p>
+     Reihenanzahl, der Zahlenraum und welche Steine vorgegeben sind (z. B. nur die Basis). Mehrere Mauern
+     nebeneinander regelst du über <a href="#standardoptionen">Verteilung</a>. Neue Mauern per
+     <b>Würfeln 🎲</b>, Lösungen blau im Lösungsmodus.</p>
 </article>
 
 <article id="w-zahlenhaus" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenhaus">
   <h1><span class="wicon">🏠</span>Zahlenhaus</h1>
   <span class="cattag mathematik">Mathematik · Rechenformate</span>
   <p>Zahlzerlegungen im Häuschen: Im Dach steht die Zielzahl, in den Stockwerken die Zerlegungen. Einstellbar
-     sind Zahlenraum, Anzahl der Häuser und Stockwerke sowie die Seite des Leerfelds (links/rechts); wahlweise
-     schwarz-weiß oder farbig. Würfeln 🎲 erzeugt neue Häuser.</p>
+     sind Zahlenraum, Stockwerke sowie die Seite des Leerfelds (links/rechts); wahlweise schwarz-weiß oder
+     farbig. Anzahl und Anordnung der Häuser: <a href="#standardoptionen">Verteilung</a>. Würfeln 🎲 erzeugt
+     neue Häuser.</p>
 </article>
 
 <article id="w-rechendreiecke" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Rechendreiecke">
   <h1><span class="wicon">🔺</span>Rechendreiecke</h1>
   <span class="cattag mathematik">Mathematik · Rechenformate</span>
   <p>Das Rechendreieck: Jede Seite ist die Summe der beiden angrenzenden Ecken. Du wählst Zahlenraum, Anzahl
-     und ob die Ecken oder die Seiten leer bleiben. Neue Dreiecke per <b>Würfeln 🎲</b>.</p>
+     und ob die Ecken oder die Seiten leer bleiben. Anordnung: <a href="#standardoptionen">Verteilung</a>.
+     Neue Dreiecke per <b>Würfeln 🎲</b>.</p>
 </article>
 
 <article id="w-rechentabelle" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Rechentabelle">
   <h1><span class="wicon">▦</span>Rechentabelle</h1>
   <span class="cattag mathematik">Mathematik · Rechenformate</span>
   <p>Eine Funktionstabelle: In der Ecke steht die Rechenart, am Rand die Zahlen – innen wird Zeile ⊙ Spalte
-     gerechnet. Einstellbar sind Rechenart, Zahlenraum, Zehnerübergang, Spalten- und Zeilenzahl, Größe und wie
-     viele Tabellen nebeneinander stehen. Würfeln 🎲 erzeugt garantiert lösbare Tabellen.</p>
+     gerechnet. Einstellbar sind Rechenart, Zahlenraum, Zehnerübergang, Spalten- und Zeilenzahl und Größe.
+     Mehrere Tabellen: <a href="#standardoptionen">Verteilung</a>. Würfeln 🎲 erzeugt garantiert lösbare
+     Tabellen.</p>
 </article>
 
 <article id="w-zahlenrad" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenrad">
@@ -713,8 +772,9 @@
   <p>Ein Rad mit Innen- und Außenring: Außen ⊙ Innen ergibt immer die Zahl in der Mitte. Wahlweise bleibt der
      Innen- oder der Außenring leer; zusätzlich gibt es den Modus <b>„Gemischt“</b> (abwechselnd innen/außen
      leer je Segment). Neben den vier Rechenarten gibt es einen <b>1×1-Modus</b>, bei dem die
-     Mittelzahlen die Einmaleins-Reihen sind (z. B. 2, 5, 10 – ein Rad pro Reihe). Segmente, Zahlenraum, Größe
-     und Anzahl sind einstellbar; die Mittelzahlen kannst du auch fest vorgeben.</p>
+     Mittelzahlen die Einmaleins-Reihen sind (z. B. 2, 5, 10 – ein Rad pro Reihe). Segmente, Zahlenraum und Größe
+     sind einstellbar; die Mittelzahlen kannst du auch fest vorgeben. Mehrere Räder:
+     <a href="#standardoptionen">Verteilung</a>.</p>
 </article>
 
 <article id="w-zahlenkette" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenkette">
@@ -735,7 +795,8 @@
     <li><b>Operationen</b> (bei Rechnen/Ansicht): Nur +, nur − oder beides.</li>
     <li><b>Anzahl</b> der Felder (bis 24), <b>Größe</b> (klein / mittel / groß – mittel passt typischerweise
         drei Felder nebeneinander auf volle Breite).</li>
-    <li><b>Ausrichtung</b> (links / mitte / rechts), wenn nicht die ganze Zeile voll ist.</li>
+    <li><b>Verteilung:</b> Pro Zeile, Ausrichtung und Abstände
+        (<a href="#standardoptionen">Verteilung</a>).</li>
     <li><b>Farbe</b> oder <b>S/W</b>; <b>Lösung</b> ein- oder ausblenden (bei Ansicht entfällt die Lösungszeile).</li>
     <li><b>Manuelle Bearbeitung:</b> Zeilen wie <code>5 + 3</code> oder im Modus „Zahl nennen" nur die Zahl pro Zeile.</li>
   </ul>
@@ -747,8 +808,8 @@
   <h1><span class="wicon">⬭</span>Zwanzigerrahmen</h1>
   <span class="cattag mathematik">Mathematik</span>
   <p>Zahlen im Zwanzigerrahmen ablesen: Gefüllte Plättchen zeigen eine Menge, die Kinder schreiben die Zahl
-     daneben. Anzahl, Zahlenraum, Größe und Farbdarstellung sind einstellbar; neue Mengen per
-     <b>Würfeln 🎲</b>.</p>
+     daneben. Anzahl, Zahlenraum, Größe und Farbdarstellung sind einstellbar; Anordnung über
+     <a href="#standardoptionen">Verteilung</a>; neue Mengen per <b>Würfeln 🎲</b>.</p>
 </article>
 
 <article id="w-hunderterfeld" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Hunderterfeld">
@@ -757,7 +818,8 @@
   <p>Das 10×10-Feld bis 100 als Punkte- oder Kästchendarstellung. Mehrere Modi: Menge ablesen, Zahl darstellen
      oder Plus-/Minusaufgaben mit dargestelltem Aufgabenteil (bei Plus optional als „Stapel"-Ansicht).
      Einstellbar sind außerdem Aufgabenformat (Ergebnis/Lücke/alles frei), Zehnerübergang, 5er-Struktur,
-     Farbe, Größe und Anzahl. Aufgaben lassen sich würfeln 🎲 oder als Liste von Hand eingeben.</p>
+     Farbe, Größe und Anzahl. Anordnung: <a href="#standardoptionen">Verteilung</a>. Aufgaben lassen sich
+     würfeln 🎲 oder als Liste von Hand eingeben.</p>
 </article>
 
 <article id="w-zahlentafel" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlentafel (Hundertertafel)">
@@ -771,15 +833,32 @@
         die Nachbarfelder werden logisch ergänzt. Optional mit gezeichnetem Schatten.</li>
     <li><b>Voll:</b> die komplette Tafel zum Anschauen.</li>
   </ul>
-  <p>Größe und Ausrichtung sind einstellbar, neue Aufgaben per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+  <p>Größe ist einstellbar; Anordnung und Ausrichtung mehrerer Tafeln über
+     <a href="#standardoptionen">Verteilung</a>. Neue Aufgaben per <b>Würfeln 🎲</b>, Lösungen blau.</p>
 </article>
 
 <article id="w-stellenwert" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Stellenwerttafel">
   <h1><span class="wicon">⠿</span>Stellenwerttafel</h1>
   <span class="cattag mathematik">Mathematik</span>
   <p>Zahlen in der Stellenwerttafel: Punkte in den Spalten (H/Z/E) zeigen eine Zahl, die abgelesen wird – oder
-     umgekehrt. Zahlenraum, Anzahl und Modus sind einstellbar; optional stehen die Punkte ungeordnet. Neue
-     Zahlen per <b>Würfeln 🎲</b>.</p>
+     umgekehrt. Zahlenraum, Anzahl und Modus sind einstellbar; optional stehen die Punkte ungeordnet.
+     Anordnung: <a href="#standardoptionen">Verteilung</a>. Neue Zahlen per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-nachbarzahlen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Nachbarzahlen">
+  <h1><span class="wicon">«»</span>Nachbarzahlen</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Zu einer Zahl den Vorgänger und/oder Nachfolger finden – als einzelne Zahl, Zehner oder Hunderter.
+     Zahlenraum, Aufgabenmodus und Größe sind einstellbar; Anordnung der Päckchen über
+     <a href="#standardoptionen">Verteilung</a>. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
+</article>
+
+<article id="w-nachbarzahlen-tabelle" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Nachbarzahlen-Tabelle">
+  <h1><span class="wicon">⊞</span>Nachbarzahlen-Tabelle</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Tabellenzeilen mit Nachbarhunderter, Nachbarzehner, Vorgänger, Zahl und Nachfolger – Spalten wählbar.
+     Ideal zum systematischen Üben im ZR 100/1000. Anordnung: <a href="#standardoptionen">Verteilung</a>;
+     neue Zeilen per <b>Würfeln 🎲</b>.</p>
 </article>
 
 <article id="w-numberline" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenstrahl">
@@ -794,7 +873,7 @@
   <span class="cattag mathematik">Mathematik</span>
   <p>Rechnen mit Geld: Abgebildete Scheine und Münzen werden gezählt und der Betrag notiert. Einstellbar sind
      Anzahl der Aufgaben, Maximalbetrag, mit/ohne Cent, Modus und farbige oder schwarz-weiße Darstellung.
-     Neue Beträge per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+     Anordnung: <a href="#standardoptionen">Verteilung</a>. Neue Beträge per <b>Würfeln 🎲</b>, Lösungen blau.</p>
 </article>
 
 <article id="w-groessen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Größen umrechnen">
@@ -802,8 +881,9 @@
   <span class="cattag mathematik">Mathematik · Größen</span>
   <p>Umrechnungsaufgaben für Längen, Gewichte, Hohlmaße und Zeit. Drei Formate: <b>einfach</b>
      (3 m = ▢ cm), <b>gemischt</b> (250 cm = ▢ m ▢ cm) und <b>Vergleich</b> (3 m ▢ 250 cm mit &lt;, &gt;, =).
-     Schwierigkeitsstufe, aktive Einheiten je Bereich, Päckchengröße und Spaltenzahl sind einstellbar;
-     gewürfelt 🎲 werden nur „glatte", ganzzahlige Aufgaben.</p>
+     Schwierigkeitsstufe, aktive Einheiten je Bereich und Päckchengröße sind einstellbar; die Anordnung der
+     Päckchen regelst du unter <a href="#standardoptionen">Verteilung</a>. Gewürfelt 🎲 werden nur „glatte",
+     ganzzahlige Aufgaben.</p>
 </article>
 
 <article id="w-groessentafel" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Größen-Stellenwerttafel">
@@ -820,15 +900,17 @@
   <span class="cattag mathematik">Mathematik · Zeit</span>
   <p>Analoge Uhren lesen: Ziffernblätter zeigen Uhrzeiten, die abgelesen und notiert werden. Einstellbar sind
      die Schwierigkeitsstufe (volle Stunden bis Minuten), der Stundenbereich, Antwortfelder unter den Uhren,
-     Größe, farbige Zeiger sowie Varianten ohne Zeiger (Zeit einzeichnen) oder ohne Ziffern. Neue Zeiten per
-     <b>Würfeln 🎲</b>, Lösungen blau.</p>
+     Größe, farbige Zeiger sowie Varianten ohne Zeiger (Zeit einzeichnen) oder ohne Ziffern. Mehrere Uhren
+     ordnest du über <a href="#standardoptionen">Verteilung</a> an. Neue Zeiten per <b>Würfeln 🎲</b>,
+     Lösungen blau.</p>
 </article>
 
 <article id="w-zeitspanne" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zeitspanne">
   <h1><span class="wicon">⏱</span>Zeitspanne</h1>
   <span class="cattag mathematik">Mathematik · Zeit</span>
   <p>Zwei Uhren pro Aufgabe – von … bis: Die Kinder bestimmen die vergangene Zeitspanne. Schwierigkeitsstufe,
-     Stundenbereich, Antwortfelder und farbige Zeiger sind einstellbar; neue Aufgaben per <b>Würfeln 🎲</b>.</p>
+     Stundenbereich, Antwortfelder und farbige Zeiger sind einstellbar; mehrere Aufgaben ordnest du über
+     <a href="#standardoptionen">Verteilung</a> an. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
 </article>
 
 <article id="w-diagramm" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Säulen-/Balkendiagramm">

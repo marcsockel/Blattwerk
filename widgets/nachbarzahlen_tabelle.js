@@ -141,6 +141,7 @@ WIDGETS.push({
     desc: 'Tabelle mit Nachbarzahlen',
     icon: '⊞',
     category: 'mathematik',
+    itemsLayout: true,
   },
 
   createData: id => {
@@ -154,7 +155,11 @@ WIDGETS.push({
       showVorgNach: true,
       vorgabe: 'zahl',
       groesse: 'klein',
-      align: 'center',
+      itemsPerRow: 'auto',
+      align: 'auto',
+      itemGapH: 'normal',
+      itemGapV: 'normal',
+      itemGap: 'normal',
       aufgabenNr: 0, aufgabenText: '',
     };
     nztRegen(w);
@@ -253,7 +258,7 @@ WIDGETS.push({
 
     return atHtml(d) + flexDistribute(
       groups.map(renderTable),
-      { gap: 40, marginBottom: 32, sample, itemW, d, estimate: true }
+      { sample, itemW, d, estimate: true }
     );
   },
 
@@ -309,7 +314,6 @@ WIDGETS.push({
           ${toggleBtn('Mittel', groesse === 'mittel', `upd(${d.id},'groesse','mittel')`)}
           ${toggleBtn('Groß', groesse === 'gross', `upd(${d.id},'groesse','gross')`)}
         </div></div>`
-      + alignToggle(d.id, d.align)
       + `<button onclick="event.stopPropagation();nztWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

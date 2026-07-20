@@ -79,7 +79,7 @@ function uhrZeitText(size, bh=24, fs=12) {
 }
 
 WIDGETS.push({
-  meta: { type:"uhr", group:"zeit", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik" },
+  meta: { type:"uhr", group:"zeit", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", gross:false, zeigerAus:false, zeigerFarbe:false, zahlenAus:false, size:120 , aufgabenNr:0, aufgabenText:''};
@@ -135,7 +135,7 @@ WIDGETS.push({
     });
 
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
-    return atHtml(d) + flexDistribute(items, { gap: 20, marginBottom: 16, itemSize: `width:${size}px;`, itemW: size, d });
+    return atHtml(d) + flexDistribute(items, { itemSize: `width:${size}px;`, itemW: size, d });
   },
 
   renderProps: d => {

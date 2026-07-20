@@ -51,8 +51,7 @@ function ssGenGaps(zahlen, cols, anzahlGaps) {
   return gaps;
 }
 
-function ssSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
-  const cs = 20;
+function ssSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[], cs=20, fs=14) {
   const [a, b] = zahlen;
   const diff = a - b;
   // rowIdx mapping: 0=minuend, 1=subtrahend, 2=result (SVG row 3)
@@ -75,7 +74,7 @@ function ssSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
 
   const place = (digit, col, row, color="#222") =>
     `<text x="${col*cs+cs/2}" y="${row*cs+cs*0.67}" text-anchor="middle"
-      font-family="'DidactGothic7',sans-serif" font-size="14" font-weight="700" fill="${color}">${digit}</text>`;
+      font-family="'DidactGothic7',sans-serif" font-size="${fs}" font-weight="700" fill="${color}">${digit}</text>`;
   const gapRect = (col, row) =>
     `<rect x="${col*cs+0.5}" y="${row*cs+0.5}" width="${cs-1}" height="${cs-1}" fill="#e8e8e8"/>`;
 
@@ -137,10 +136,10 @@ function ssSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
 }
 
 WIDGETS.push({
-  meta: { type:"schriftlich_subtraktion", group:"rechnen", label:"Schriftl. Subtraktion", desc:"Schriftliche Subtraktion", icon:"⊟−", category:"mathematik" },
+  meta: { type:"schriftlich_subtraktion", group:"rechnen", label:"Schriftl. Subtraktion", desc:"Schriftliche Subtraktion", icon:"⊟−", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false , aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false, groesse:'klein', aufgabenNr:0, aufgabenText:''};
     return { id, type:"schriftlich_subtraktion", ...cfg,
       aufgaben: ssGen(cfg.anzahl, cfg.zahlenraum, cfg.uebertrag), aufgabenGaps: [] };
   },
@@ -148,6 +147,7 @@ WIDGETS.push({
   render: d => {
     const aufgaben = d.aufgaben || ssGen(d.anzahl||4, d.zahlenraum||100, d.uebertrag||false);
     const cols = ssCalcCols(aufgaben);
+    const { cs, fs } = schriftlichSize(d);
     const isActive = d.id === selId || _solutionsMode;
     const luecken = d.luecken || false;
     const gaps = luecken ? (d.aufgabenGaps || []) : [];
@@ -155,10 +155,10 @@ WIDGETS.push({
       const g       = luecken ? (gaps[i] || []) : [];
       const showRes = luecken ? true : isActive;
       const blue    = isActive;
-      return `<div style="display:inline-block;margin:0 4px 8px 0;">${ssSvg([a, b], showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
+      return ssSvg([a, b], showRes, `${d.id}_${i}`, cols, blue, g, cs, fs);
     });
-    const itemW  = cols * 20;
-    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW  = cols * cs;
+    const tasksHtml = atHtml(d) + flexDistribute(svgs, { itemW, d });
     if (!d.loesung || luecken) return tasksHtml;
     const answers = aufgaben.map(([a, b]) => String(a - b));
     const shuffled = mcShuffled(answers, d.id);
@@ -185,6 +185,7 @@ WIDGETS.push({
         `<select onchange="ssUpdProp(${d.id},'zahlenraum',+this.value)">
           ${[100,1000,10000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
         </select>`) +
+      schriftlichGroesseBlock(d.id, d) +
       `<div class="prow"><label>Zehnerübergang</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ohne", !ue, `ssUpdProp(${d.id},'uebertrag',false)`)}

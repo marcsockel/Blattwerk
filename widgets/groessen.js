@@ -286,7 +286,7 @@ function guGroupTable(group, d, active, m, sc) {
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
   meta: { type: 'groessen', group: 'groessen', label: 'Größen umrechnen',
-          desc: 'Längen, Gewichte, Hohlmaße, Zeit', icon: '📏', category: 'mathematik' },
+          desc: 'Längen, Gewichte, Hohlmaße, Zeit', icon: '📏', category: 'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -322,7 +322,7 @@ WIDGETS.push({
     const itemW = Math.round(est * sc.S);
     return atHtml(d) + flexDistribute(
       groups.map(g => guGroupTable(g, d, active, m, sc)),
-      { gap: 24, marginBottom: 16, sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
+      { sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
         itemW, d, estimate: true }
     );
   },

@@ -24,7 +24,7 @@ WIDGETS.push({
       if (part.startsWith('[') && part.endsWith(']')) {
         const word = part.slice(1, -1).replace(/<[^>]+>/g, ''); // strip tags inside brackets
         if (isActive) {
-          return `<span style="color:#2563eb;font-weight:700;">${esc(word)}</span>`;
+          return `<span style="font-family:${font};color:#2563eb;font-weight:700;">${esc(word)}</span>`;
         }
         const width = Math.max(66, word.length * 14);
         return `<span style="display:inline-block;border-bottom:1.5px solid #555;min-width:${width}px;height:1.3em;margin:0 2px;vertical-align:baseline;"></span>`;

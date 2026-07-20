@@ -8,6 +8,7 @@ WIDGETS.push({
     desc: "Anlautbild + Wort zuordnen",
     icon: "🖼↔",
     category: "deutsch",
+    itemsLayout: true,
   },
 
   createData: id => {
@@ -21,7 +22,11 @@ WIDGETS.push({
       imageSize: 80,
       groesse: "klein",
       _bwG3: true,
-      proZeile: 2,
+      itemsPerRow: 'auto',
+      align: 'auto',
+      itemGapH: 'normal',
+      itemGapV: 'normal',
+      itemGap: 'normal',
       trennlinien: false,
       trennStil: "thin",
       aufgaben: [
@@ -35,7 +40,6 @@ WIDGETS.push({
 
   render: d => {
     const { size, fontSize, cb } = bwSizeMetrics(d);
-    const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
     const trenn = !!d.trennlinien;
     const isActive = d.id === selId || _solutionsMode;
     const checkbox = on => {
@@ -61,7 +65,8 @@ WIDGETS.push({
         ).join("") +
         `</div>`;
 
-      const fullWidth = proZeile > 1 || trenn;
+      const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
+      const fullWidth = trenn || (L && L.itemsPerRow !== 'auto');
       return `<div style="display:flex;align-items:center;gap:16px;${fullWidth ? 'width:100%;' : 'width:max-content;'}min-width:0;box-sizing:border-box;">
         <div style="flex-shrink:0;">${anlautImg(src, size)}</div>
         ${wordList}

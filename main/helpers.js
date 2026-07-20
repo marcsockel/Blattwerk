@@ -179,17 +179,125 @@ function seededShuffle(arr, seed) {
   return a;
 }
 
+/** Schriftliches Rechnen: Kästchengröße (aktuell = klein). */
+const SCHRIFTLICH_SIZE = {
+  klein:  { cs: 20, fs: 14 },
+  mittel: { cs: 28, fs: 18 },
+  gross:  { cs: 36, fs: 24 },
+};
+function schriftlichSize(d) {
+  const g = (d && d.groesse) || 'klein';
+  return SCHRIFTLICH_SIZE[g] || SCHRIFTLICH_SIZE.klein;
+}
+function schriftlichGroesseBlock(id, d) {
+  const g = (d && d.groesse) || 'klein';
+  const btn = (val, label) => {
+    const on = g === val;
+    return `<button onclick="event.stopPropagation();upd(${id},'groesse','${val}')"
+      style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on ? '#a6e3a1' : '#ddd'};
+             background:${on ? '#e8fdf0' : '#fff'};font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;color:${on ? '#1e1e2e' : '#999'};">${label}</button>`;
+  };
+  return `<div class="prow"><label>Größe</label>
+    <div style="display:flex;gap:4px;">
+      ${btn('klein', 'Klein')}${btn('mittel', 'Mittel')}${btn('gross', 'Groß')}
+    </div></div>`;
+}
+
+/** Einheitliche Item-Verteilung: Pro Zeile / Ausrichtung / Abstände (Footer „Verteilung"). */
+const ITEM_GAP_MAP = {
+  eng:    { h: 29, v: 19 },  // früher „Mittel/Normal“
+  normal: { h: 43, v: 29 },  // früher „Weit“ — UI-Label „Mittel“
+  weit:   { h: 64, v: 44 },  // ~ gleiche Stufe weiter
+};
+
+/** Standardwerte für neue Widgets mit itemsLayout (Pro Zeile / Ausrichtung / Abstände). */
+const ITEMS_LAYOUT_DEFAULTS = {
+  itemsPerRow: 'auto',
+  align: 'auto',
+  itemGapH: 'normal',
+  itemGapV: 'normal',
+  itemGap: 'normal',
+};
+
+function normItemGapKey(v) {
+  return ITEM_GAP_MAP[v] ? v : 'normal';
+}
+
+/**
+ * Normalisiert itemsPerRow / align / itemGapH / itemGapV aus Widget-Daten.
+ * Migration: proZeile → itemsPerRow; itemGap → beide Abstände; fehlend → normal.
+ */
+function itemsLayoutProps(d) {
+  d = d || {};
+  let per = d.itemsPerRow;
+  if (per == null && d.proZeile != null) per = d.proZeile;
+  if (per === 'auto' || per == null || per === '' || per === 0) per = 'auto';
+  else {
+    per = Math.max(1, Math.min(6, Math.round(+per) || 1));
+  }
+  let align = d.align;
+  if (align == null || align === '') align = 'auto';
+  if (!['auto', 'left', 'center', 'right', 'justify'].includes(align)) align = 'auto';
+  let gapHKey = d.itemGapH;
+  let gapVKey = d.itemGapV;
+  if (gapHKey == null && gapVKey == null && d.itemGap != null) {
+    gapHKey = gapVKey = d.itemGap;
+  }
+  gapHKey = normItemGapKey(gapHKey || 'normal');
+  gapVKey = normItemGapKey(gapVKey || 'normal');
+  const gapH = align === 'justify' ? 0 : ITEM_GAP_MAP[gapHKey].h;
+  const gapV = ITEM_GAP_MAP[gapVKey].v;
+  return {
+    itemsPerRow: per, align,
+    itemGapH: gapHKey, itemGapV: gapVKey,
+    itemGap: gapHKey,
+    gap: gapH, mb: gapV,
+  };
+}
+
+/** Props-UI: Pro Zeile / Ausrichtung / Abstand (Eigenschaften → Verteilung). */
+function itemsLayoutPropsBlock(id, w) {
+  const L = itemsLayoutProps(w);
+  const btn = (key, val, label) => {
+    const cur = L[key];
+    const on = cur === val;
+    const v = typeof val === 'string' ? `'${val}'` : val;
+    return `<button onclick="event.stopPropagation();upd(${id},'${key}',${v})"
+      style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${on ? '#89b4fa' : '#ddd'};
+             background:${on ? '#e8f0ff' : '#fff'};font-family:inherit;font-size:11px;font-weight:700;
+             cursor:pointer;color:${on ? '#1e1e2e' : '#999'};">${label}</button>`;
+  };
+  const perRowBtns = ['auto', 1, 2, 3, 4, 5, 6].map(v => btn('itemsPerRow', v, v === 'auto' ? 'Auto' : String(v))).join('');
+  const alignBtns = [
+    ['auto', 'Auto'], ['left', 'Links'], ['center', 'Mitte'], ['right', 'Rechts'], ['justify', 'Block']
+  ].map(([v, l]) => btn('align', v, l)).join('');
+  const gapBtns = (key) => [
+    ['eng', 'Eng'], ['normal', 'Mittel'], ['weit', 'Weit']
+  ].map(([v, l]) => btn(key, v, l)).join('');
+  const colSection = L.align === 'justify' ? '' :
+    `<div class="sf-h">Spaltenabstand</div>
+    <div style="display:flex;gap:3px;margin-bottom:9px;">${gapBtns('itemGapH')}</div>`;
+  return `<div class="sf-h">Pro Zeile</div>
+    <div style="display:flex;gap:3px;margin-bottom:9px;">${perRowBtns}</div>
+    <div class="sf-h">Ausrichtung</div>
+    <div style="display:flex;gap:3px;margin-bottom:9px;">${alignBtns}</div>
+    ${colSection}
+    <div class="sf-h">Zeilenabstand</div>
+    <div style="display:flex;gap:3px;">${gapBtns('itemGapV')}</div>`;
+}
+
 /**
  * Einheitliches Reihen-Verteilungs-Layout für gleich breite Items
  * (Rechenpäckchen, Karten, SVG-Felder, Räder, Tabellen, Stücke …).
  *
- * EIN Modus für alle: flex-wrap. Der Browser bricht an der ECHTEN Breite um.
- *  - Volle Zeile + Blocksatz (d.align === 'justify') → über die Breite verteilt (space-between).
- *  - Volle Zeile + links/mitte/rechts → eng gruppiert wie bei wenigen Items.
- *  - Wenige Items / Zeile nicht voll → eng gruppiert, Ausrichtung über d.align (left/center/right).
- *  - Nur eine Spalte passt (z. B. Layout ⅓) → ebenfalls Ausrichtungsmodus (nicht space-between).
- * Die Voll/Nicht-voll-Entscheidung nutzt eine perRow-Schätzung aus opts.itemW + opts.d
- * (geom().contentW×widthFrac(d) MINUS .winner-Padding). Die echte Spaltenzahl macht der Browser.
+ * Steuerung über d.itemsPerRow / d.align / d.itemGapH / d.itemGapV (Props „Verteilung"):
+ *  - Pro Zeile Auto → flex-wrap nach echter Itembreite (opts.itemW-Schätzung für Voll-Zeile).
+ *  - Pro Zeile 1–6 + Block/Auto → wie Auto-Blocksatz: erstes Item links, letztes rechts
+ *    (space-between), feste Spaltenzahl; unvollständige letzte Zeile mit Füllern.
+ *  - Pro Zeile 1–6 + Links/Mitte/Rechts → auto-Spalten, Items eng gruppiert.
+ *  - Spaltenabstand Eng/Normal/Weit → column-gap (bei Blocksatz ausgeblendet/0).
+ *  - Zeilenabstand Eng/Normal/Weit → row-gap / margin-bottom zwischen Zeilen.
  *
  * @param {string[]} innerHtmls  Item-Inhalte (je 1 Item).
  * @param {object} [opts] gap, itemSize, marginBottom, sample, itemW (px), d (Widget-Daten).
@@ -197,19 +305,66 @@ function seededShuffle(arr, seed) {
  */
 function flexDistribute(innerHtmls, opts) {
   opts = opts || {};
-  const gap = opts.gap != null ? opts.gap : 24;
+  const d = opts.d || {};
+  const layout = itemsLayoutProps(d);
+  const blockMode = layout.align === 'justify';
+  const gap = blockMode ? 0 : (opts.gap != null ? opts.gap : layout.gap);
   const sz  = opts.itemSize || '';
-  const mb  = opts.marginBottom != null ? opts.marginBottom : 16;
+  const mb  = opts.marginBottom != null ? opts.marginBottom : layout.mb;
   const samp = opts.sample != null ? opts.sample : (innerHtmls[0] || '');
   const n = innerHtmls.length;
+  const align = layout.align;
+  const isAutoAlign = align === 'auto';
+  // Auto: volle Zeile verteilen; justify: immer Block wenn voll; left/center/right: nie space-between.
+  const spreadWanted = align === 'justify' || isAutoAlign;
+  // margin-bottom der LETZTEN Zeile am Container kompensieren.
+  const comp = mb ? `margin-bottom:-${mb}px;` : '';
+
+  // ── Feste Spaltenzahl (1–6) ───────────────────────────────────────
+  if (layout.itemsPerRow !== 'auto') {
+    const N = layout.itemsPerRow;
+
+    if (spreadWanted) {
+      // Block / Ausrichtung Auto: wie Pro-Zeile-Auto — space-between,
+      // erstes Item am linken Innenrand, letztes am rechten; feste N pro Zeile.
+      // Zeilenweise, damit jede Zeile unabhängig verteilt (nicht ein globales 1fr-Raster).
+      const rows = [];
+      for (let i = 0; i < n; i += N) {
+        const slice = innerHtmls.slice(i, i + N);
+        let rowItems = slice.map(h =>
+          `<div style="flex:0 0 auto;${sz}">${h}</div>`
+        );
+        // Unvollständige Zeile: unsichtbare Füller gleicher Breite → Spalten bündig.
+        while (rowItems.length < N && n > 0) {
+          rowItems.push(
+            `<div aria-hidden="true" style="flex:0 0 auto;margin:0;${sz}height:0;overflow:hidden;">${samp}</div>`
+          );
+        }
+        const isLast = i + N >= n;
+        rows.push(
+          `<div style="display:flex;flex-wrap:nowrap;align-items:flex-start;` +
+          `justify-content:space-between;column-gap:${gap}px;` +
+          `margin-bottom:${isLast ? 0 : mb}px;">${rowItems.join('')}</div>`
+        );
+      }
+        return `<div>${rows.join('')}</div>`;
+      }
+
+    // Links / Mitte / Rechts: Items eng gruppiert, Spaltenbreite nach Inhalt.
+    const jc = align === 'center' ? 'center' : align === 'right' ? 'end' : 'start';
+    const cells = innerHtmls.map(h => {
+      const inner = sz ? `<div style="${sz}">${h}</div>` : h;
+      return `<div style="min-width:0;box-sizing:border-box;">${inner}</div>`;
+    });
+    return `<div style="display:grid;grid-template-columns:repeat(${N},auto);` +
+      `column-gap:${gap}px;row-gap:${mb}px;justify-content:${jc};">${cells.join('')}</div>`;
+  }
+
+  // ── Auto: flex-wrap nach echter Breite ─────────────────────────────
   const items = innerHtmls.map(h => `<div style="flex:0 0 auto;${sz}margin-bottom:${mb}px;">${h}</div>`).join('');
 
-  // Voll/Nicht-voll-Entscheidung: passt noch ein Item in die Zeile → eng linksbündig, sonst
-  // verteilen (volle Zeile). perRow aus bekannter Itembreite + verfügbarer Breite.
-  // WICHTIG: vom Blatt-Inhaltsmaß (geom().contentW) das .winner-Padding (~18px links+rechts)
-  // ABZIEHEN — sonst zählt die Schätzung eine Spalte zu viel (Bug: „nur 4 passen, aber bei 4
-  // wird nicht verteilt"). Die echte Spaltenzahl macht weiterhin der Browser (flex-wrap).
-  // Bei bündigen Widgets (d.flush → winnerStyle padding:0) entfällt das Padding.
+  // Voll/Nicht-voll-Entscheidung: perRow aus itemW + verfügbarer Breite.
+  // WICHTIG: .winner-Padding (~18px) abziehen — außer bei flush.
   const WINNER_PAD = 18;
   let perRow = Infinity;
   if (opts.itemW && opts.d && typeof geom === 'function' && typeof widthFrac === 'function') {
@@ -217,17 +372,11 @@ function flexDistribute(innerHtmls, opts) {
     const avail = geom().contentW * widthFrac(opts.d) - pad;
     perRow = Math.max(1, Math.floor((avail + gap) / (opts.itemW + gap)));
   }
-  // margin-bottom der LETZTEN Zeile am Container kompensieren — sonst hängt der
-  // Zeilenabstand als Leerraum unter dem Widget (Abstand unten > oben, z.B. Uhren).
-  const comp = mb ? `margin-bottom:-${mb}px;` : '';
-  const align = opts.d && opts.d.align;
-  const hasAlign = align != null && align !== '';
-  // Ohne gesetztes align: bisheriges Verhalten (volle Zeile verteilen). Mit align: nur bei justify.
-  const spreadRow = align === 'justify' || !hasAlign;
-  if (n < perRow || perRow === 1 || !spreadRow) {
+
+  const rowFull = n >= perRow && perRow > 1;
+  if (!rowFull || !spreadWanted) {
     const jcAlign = align === 'justify' ? 'left'
-      : hasAlign ? align
-      : (perRow === 1 ? 'center' : 'left');
+      : (!isAutoAlign ? align : (perRow === 1 ? 'center' : 'left'));
     const jc = jcAlign === 'center' ? 'center' : jcAlign === 'right' ? 'flex-end' : 'flex-start';
     return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:${jc};${comp}">${items}</div>`;
   }

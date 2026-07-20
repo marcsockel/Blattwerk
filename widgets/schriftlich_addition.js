@@ -55,8 +55,7 @@ function saCalcCols(aufgaben) {
   return 1 + Math.max(...allNums.map(n => String(n).length));
 }
 
-function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
-  const cs = 20;
+function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[], cs=20, fs=14) {
   const sum = zahlen.reduce((a, b) => a + b, 0);
   const resultRowIdx = zahlen.length; // row index in allRows for result
   const rows = zahlen.length + 2;    // addends + carry row + result row
@@ -80,7 +79,7 @@ function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
 
   const place = (digit, col, row, color="#222") =>
     `<text x="${col*cs+cs/2}" y="${row*cs+cs*0.67}" text-anchor="middle"
-      font-family="'DidactGothic7',sans-serif" font-size="14" font-weight="700" fill="${color}">${digit}</text>`;
+      font-family="'DidactGothic7',sans-serif" font-size="${fs}" font-weight="700" fill="${color}">${digit}</text>`;
 
   let texts = "";
   const gapRect = (col, row) =>
@@ -134,10 +133,11 @@ function saSvg(zahlen, showResult, uid, cols, blueResult=false, gaps=[]) {
 }
 
 WIDGETS.push({
-  meta: { type:"schriftlich_addition", group:"rechnen", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik" },
+  meta: { type:"schriftlich_addition", group:"rechnen", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false, aufgabenNr:0, aufgabenText:'' };
+    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false,
+      groesse:'klein', itemsPerRow:'auto', align:'auto', itemGap:'normal', aufgabenNr:0, aufgabenText:'' };
     return { id, type:"schriftlich_addition", ...cfg,
       aufgaben: saGen(cfg.anzahl, cfg.summanden, cfg.zahlenraum, cfg.uebertrag),
       aufgabenGaps: [] };
@@ -146,6 +146,7 @@ WIDGETS.push({
   render: d => {
     const aufgaben = d.aufgaben || saGen(d.anzahl||4, d.summanden||2, d.zahlenraum||100, d.uebertrag||false);
     const cols = saCalcCols(aufgaben);
+    const { cs, fs } = schriftlichSize(d);
     const isActive = d.id === selId || _solutionsMode;
     const luecken = d.luecken || false;
     const gaps = luecken ? (d.aufgabenGaps || []) : [];
@@ -153,10 +154,10 @@ WIDGETS.push({
       const g       = luecken ? (gaps[i] || []) : [];
       const showRes = luecken ? true : isActive;
       const blue    = isActive;
-      return `<div style="display:inline-block;margin:0 4px 8px 0;">${saSvg(zahlen, showRes, `${d.id}_${i}`, cols, blue, g)}</div>`;
+      return saSvg(zahlen, showRes, `${d.id}_${i}`, cols, blue, g, cs, fs);
     });
-    const itemW    = cols * 20;
-    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW    = cols * cs;
+    const tasksHtml = atHtml(d) + flexDistribute(svgs, { itemW, d });
     if (!d.loesung || luecken) return tasksHtml;
     const answers = aufgaben.map(z => String(z.reduce((a, b) => a + b, 0)));
     const shuffled = mcShuffled(answers, d.id);
@@ -189,6 +190,7 @@ WIDGETS.push({
         `<select onchange="saUpdProp(${d.id},'zahlenraum',+this.value)">
           ${[100,1000,10000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
         </select>`) +
+      schriftlichGroesseBlock(d.id, d) +
       `<div class="prow"><label>Zehnerübergang</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ohne", !ue, `saUpdProp(${d.id},'uebertrag',false)`)}

@@ -66,9 +66,9 @@ WIDGETS.push({
       </div>`;
     });
 
-    const perCol = Math.ceil(qBlocks.length / cols);
-    const colDivs = Array.from({length: cols}, (_, i) =>
-      `<div style="flex:1;min-width:0;">${qBlocks.slice(i*perCol,(i+1)*perCol).join('')}</div>`
+    const colChunks = mcColumnChunks(qBlocks, cols);
+    const colDivs = colChunks.map(chunk =>
+      `<div style="flex:1;min-width:0;">${chunk.join('')}</div>`
     ).join('');
 
     return atHtml(d) + `<div style="display:flex;gap:24px;align-items:flex-start;">${colDivs}</div>`;
@@ -124,6 +124,22 @@ WIDGETS.push({
 });
 
 // ── Helper ────────────────────────────────────────────────────────
+/** Fragen möglichst gleichmäßig auf Spalten verteilen (z. B. 4→3: 2+1+1, nicht 2+2+0). */
+function mcColumnChunks(items, cols) {
+  const n = items.length;
+  const c = Math.max(1, cols || 1);
+  const base = Math.floor(n / c);
+  const rem = n % c;
+  const chunks = [];
+  let idx = 0;
+  for (let i = 0; i < c; i++) {
+    const size = base + (i < rem ? 1 : 0);
+    chunks.push(items.slice(idx, idx + size));
+    idx += size;
+  }
+  return chunks;
+}
+
 function mcShuffled(arr, seed) {
   const a = [...arr];
   let s = seed >>> 0;

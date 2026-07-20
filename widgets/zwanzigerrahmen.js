@@ -63,7 +63,7 @@ function zrahSvg(n, bw=false, small=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"zwanzigerrahmen", label:"Zwanzigerrahmen", desc:"Zahl ablesen ZR 20", icon:"⬭", category:"mathematik" },
+  meta: { type:"zwanzigerrahmen", label:"Zwanzigerrahmen", desc:"Zahl ablesen ZR 20", icon:"⬭", category:"mathematik", itemsLayout: true },
 
   createData: id => ({
     id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, gross:true,
@@ -91,12 +91,7 @@ WIDGETS.push({
     });
 
     const svgW    = small ? Math.round(174 * 0.9) : 258;
-    const colGap  = 10;
-    const rowGap  = small ? 36 : 48;
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Breite svgW,
-    // Inhalt zentriert.
     return atHtml(d) + flexDistribute(items, {
-      gap: colGap, marginBottom: rowGap,
       itemSize: `width:${svgW}px;display:flex;justify-content:center;`, itemW: svgW, d
     });
   },

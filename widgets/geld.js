@@ -262,7 +262,7 @@ function geldGen(anzahl, maxEuroCents, mitCent) {
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:"geld", label:"Geld", desc:"Scheine und Münzen zählen", icon:"€", category:"mathematik" },
+  meta: { type:"geld", label:"Geld", desc:"Scheine und Münzen zählen", icon:"€", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld', farbe:false , aufgabenNr:0, aufgabenText:''};
@@ -281,7 +281,7 @@ WIDGETS.push({
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
     return atHtml(d) + flexDistribute(
       aufgaben.map(a => geldSvg(a, mitCent, modus, isActive, gross, farbe)),
-      { gap: 20, marginBottom: 16, itemSize: `width:${itemW}px;`, itemW, d }
+      { itemSize: `width:${itemW}px;`, itemW, d }
     );
   },
 

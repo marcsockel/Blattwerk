@@ -50,8 +50,7 @@ function smGrid(cols, rows, thickLines, cs) {
 //  Row 0: [factor1 digits][×][factor2 digit]   ← Aufgabenzeile
 //  ━━━ thick line ━━━
 //  Row 1: Ergebnis
-function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
-  const cs = 20;
+function smSvgEinstellig(a, b, showResult, cols, blueResult=false, cs=20, fs=14) {
   const aCols = cols + 1;
   const aStr = String(a), bStr = String(b), pStr = String(a * b);
   const rows = 2;
@@ -59,12 +58,12 @@ function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
   const grid = smGrid(aCols, rows, [1], cs);
   let texts = "";
   const xCol = aCols - 1 - bStr.length;
-  aStr.split("").forEach((d, j) => texts += smPlace(d, xCol - aStr.length + j, 0, cs));
-  texts += smPlace("·", xCol, 0, cs, "#555");
-  bStr.split("").forEach((d, j) => texts += smPlace(d, xCol + 1 + j, 0, cs));
+  aStr.split("").forEach((d, j) => texts += smPlace(d, xCol - aStr.length + j, 0, cs, "#222", fs));
+  texts += smPlace("·", xCol, 0, cs, "#555", fs);
+  bStr.split("").forEach((d, j) => texts += smPlace(d, xCol + 1 + j, 0, cs, "#222", fs));
   if (showResult)
     pStr.split("").forEach((d, j) =>
-      texts += smPlace(d, aCols - pStr.length + j, 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
+      texts += smPlace(d, aCols - pStr.length + j, 1, cs, blueResult ? "#2563eb" : "#1a7f3c", fs));
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;flex-shrink:0;"><rect width="${W}" height="${H}" fill="#fff"/>${grid}${texts}</svg>`;
 }
@@ -75,8 +74,7 @@ function smSvgEinstellig(a, b, showResult, cols, blueResult=false) {
 //  ━━━ oberer Strich ━━━
 //  Rows 1-4: leer (Schüler füllt Teilprodukte + Ergebnis selbst ein)
 //            (kein unterer Strich – wird selbst gezeichnet)
-function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
-  const cs = 20;
+function smSvgZweistellig(a, b, showResult, cols, blueResult=false, cs=20, fs=14) {
   const aCols = cols + 1; // extra Spalte links
   const aStr = String(a), bStr = String(b), pStr = String(a * b);
 
@@ -91,17 +89,17 @@ function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
   // Row 0: factor1 × factor2
   const xCol = aCols - 1 - bStr.length;
   aStr.split("").forEach((d, j) =>
-    texts += smPlace(d, xCol - aStr.length + j, 0, cs));
-  texts += smPlace("·", xCol, 0, cs, "#555");
+    texts += smPlace(d, xCol - aStr.length + j, 0, cs, "#222", fs));
+  texts += smPlace("·", xCol, 0, cs, "#555", fs);
   bStr.split("").forEach((d, j) =>
-    texts += smPlace(d, xCol + 1 + j, 0, cs));
+    texts += smPlace(d, xCol + 1 + j, 0, cs, "#222", fs));
 
   // Rows 1-4: leer – kein Inhalt (Schüler trägt ein)
 
   // Optional: Gesamtergebnis in letzter Zeile anzeigen
   if (showResult)
     pStr.split("").forEach((d, j) =>
-      texts += smPlace(d, aCols - pStr.length + j, rows - 1, cs, blueResult ? "#2563eb" : "#1a7f3c"));
+      texts += smPlace(d, aCols - pStr.length + j, rows - 1, cs, blueResult ? "#2563eb" : "#1a7f3c", fs));
 
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;flex-shrink:0;"><rect width="${W}" height="${H}" fill="#fff"/>${grid}${texts}</svg>`;
@@ -109,10 +107,10 @@ function smSvgZweistellig(a, b, showResult, cols, blueResult=false) {
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:"schriftlich_multiplikation", group:"rechnen", label:"Schriftl. Multiplikation", desc:"Schriftliche Multiplikation", icon:"⊠×", category:"mathematik" },
+  meta: { type:"schriftlich_multiplikation", group:"rechnen", label:"Schriftl. Multiplikation", desc:"Schriftliche Multiplikation", icon:"⊠×", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { zahlenraum:100, modus:"einstellig", uebertrag:false, loesung:false, anzahl:4 , aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum:100, modus:"einstellig", uebertrag:false, loesung:false, anzahl:4, groesse:'klein', aufgabenNr:0, aufgabenText:''};
     return { id, type:"schriftlich_multiplikation", ...cfg,
       aufgaben: smGen(cfg.anzahl, cfg.zahlenraum, cfg.modus, cfg.uebertrag) };
   },
@@ -120,6 +118,7 @@ WIDGETS.push({
   render: d => {
     const modus   = d.modus || "einstellig";
     const aufgaben = d.aufgaben || smGen(d.anzahl||4, d.zahlenraum||100, modus, d.uebertrag||false);
+    const { cs, fs } = schriftlichSize(d);
 
     // Einheitliche Spaltenbreite: problem row AND result must fit
     const cols = Math.max(
@@ -130,12 +129,12 @@ WIDGETS.push({
     const isActive = d.id === selId || _solutionsMode;
     const svgs = aufgaben.map(([a, b], i) => {
       const svg = modus === 'zweistellig'
-        ? smSvgZweistellig(a, b, isActive, cols, isActive)
-        : smSvgEinstellig(a, b, isActive, cols, isActive);
-      return `<div style="display:inline-block;margin:0 4px 8px 0;">${svg}</div>`;
+        ? smSvgZweistellig(a, b, isActive, cols, isActive, cs, fs)
+        : smSvgEinstellig(a, b, isActive, cols, isActive, cs, fs);
+      return svg;
     });
-    const itemW  = (cols + 1) * 20;
-    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join("")}</div>`;
+    const itemW  = (cols + 1) * cs;
+    const tasksHtml = atHtml(d) + flexDistribute(svgs, { itemW, d });
     if (!d.loesung) return tasksHtml;
     const answers = aufgaben.map(([a, b]) => String(a * b));
     const shuffled = mcShuffled(answers, d.id);
@@ -167,6 +166,7 @@ WIDGETS.push({
         `<select onchange="smUpdProp(${d.id},'zahlenraum',+this.value)">
           ${[100,1000,10000].map(n=>`<option value="${n}" ${zr===n?"selected":""}>${n}</option>`).join("")}
         </select>`) +
+      schriftlichGroesseBlock(d.id, d) +
       (mo === 'einstellig' ? `<div class="prow"><label>Übertrag</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Ohne", !ue, `smUpdProp(${d.id},'uebertrag',false)`)}

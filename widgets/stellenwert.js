@@ -128,7 +128,7 @@ function svwGen(anzahl, zahlenraum) {
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:"stellenwert", label:"Stellenwerttafel", desc:"Zahlen aus Punkten ablesen", icon:"⠿", category:"mathematik" },
+  meta: { type:"stellenwert", label:"Stellenwerttafel", desc:"Zahlen aus Punkten ablesen", icon:"⠿", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { anzahl:4, zahlenraum:100, modus:'zahl', ungeordnet:false , aufgabenNr:0, aufgabenText:''};
@@ -146,11 +146,9 @@ WIDGETS.push({
     const sc         = gross ? 1.5 : 1;
     const colW       = Math.round(42 * sc);
     const itemW      = svwCols(zahlenraum).length * colW + 2;
-    const colGap  = gross ? 10 : 20;
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
     return atHtml(d) + flexDistribute(
       zahlen.map(n => svwSvg(n, zahlenraum, modus, isActive, ungeordnet, gross)),
-      { gap: colGap, marginBottom: 16, itemSize: `width:${itemW}px;`, itemW, d }
+      { itemSize: `width:${itemW}px;`, itemW, d }
     );
   },
 

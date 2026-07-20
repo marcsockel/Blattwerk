@@ -85,7 +85,7 @@ function zhSvg(house, summands, isActive=false, farbig=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"zahlenhaus", group:"rechenformate", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik" },
+  meta: { type:"zahlenhaus", group:"rechenformate", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};
@@ -102,7 +102,7 @@ WIDGETS.push({
 
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Hausbreite itemW.
     const itemW = (s === 3 ? 38 : 48) * s + 4;
-    return atHtml(d) + flexDistribute(svgs, { gap: 10, marginBottom: 14, itemSize: `width:${itemW}px;`, itemW, d });
+    return atHtml(d) + flexDistribute(svgs, { itemSize: `width:${itemW}px;`, itemW, d });
   },
 
   renderProps: d => {

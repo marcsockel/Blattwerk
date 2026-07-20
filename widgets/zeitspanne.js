@@ -36,7 +36,7 @@ function zeitspanneGen(count, stufe, stundenbereich) {
 }
 
 WIDGETS.push({
-  meta: { type:"zeitspanne", group:"zeit", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik" },
+  meta: { type:"zeitspanne", group:"zeit", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", zeigerFarbe:false, aufgabenNr:0, aufgabenText:'' };
@@ -102,14 +102,11 @@ WIDGETS.push({
           ${uhrSvg(u.h2, u.m2, SIZE, true, farbe)}
           ${mkClockLabel(u.h2, u.m2)}
         </div>
-      </div>`).join("");
+      </div>`);
 
-    const _fracMap = {'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75};
-    const _frac  = _fracMap[d.widthFraction] || (d.halfWidth ? 0.5 : 1);
-    const _avail = Math.round(geom().contentW * _frac);
-    // Immer 2 Spalten → 1 Item nimmt nie die volle Breite; bei halber Widget-Breite nur 1 Spalte
-    const cols = _avail < 400 ? 1 : 2;
-    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 40px;justify-content:start;">${rendered}</div>`;
+    // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
+    const itemW = SIZE * 2 + 100;
+    return atHtml(d) + flexDistribute(rendered, { itemW, d });
   },
 
   renderProps: d => {

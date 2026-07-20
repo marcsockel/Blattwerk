@@ -221,7 +221,7 @@ function haRender(d, op) {
 
   // Echte Itembreite: 3 Slots ((n·CW)+4) + 2 Zeichen (Glyphe ~8·S + 2·4·S Margin)
   const itemW = (lw + rw + resw) * CW + 12 + 2 * (px(8) + 2 * px(4));
-  return atHtml(d) + flexDistribute(items, { gap: 24, marginBottom: 24, itemW, d });
+  return atHtml(d) + flexDistribute(items, { itemW, d });
 }
 
 // Division: Karofeld. Oben die Aufgabe (eine Ziffer/Zeichen pro Kästchen), Strich
@@ -269,7 +269,7 @@ function haDivRender(d) {
   });
   // gap 16 statt 24: 4 Felder im 100er = 4×141 + 3×16 = 612 ≤ 622px (bei vollen
   // Reihen verteilt space-between ohnehin — gap ist nur Minimum/Umbruchschwelle).
-  return atHtml(d) + flexDistribute(items, { gap: 16, marginBottom: 24, itemW: maxCols * CS + 1, d });
+  return atHtml(d) + flexDistribute(items, { itemW: maxCols * CS + 1, d });
 }
 
 function haProps(d, op) {
@@ -334,7 +334,7 @@ function haProps(d, op) {
 }
 
 WIDGETS.push({
-  meta: { type:"halbadd", group:"halbschriftlich", label:"Halbschriftlich +", desc:"Halbschriftliche Addition", icon:"🪜", category:"mathematik" },
+  meta: { type:"halbadd", group:"halbschriftlich", label:"Halbschriftlich +", desc:"Halbschriftliche Addition", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbadd", anzahl:4, methode:"schritte", zahlenraum:100,
                 uebergang:"gemischt", hilfe:false, groesse:"klein", stellen:true,
@@ -347,7 +347,7 @@ WIDGETS.push({
 });
 
 WIDGETS.push({
-  meta: { type:"halbmul", group:"halbschriftlich", label:"Halbschriftlich ·", desc:"Halbschriftliche Multiplikation", icon:"🪜", category:"mathematik" },
+  meta: { type:"halbmul", group:"halbschriftlich", label:"Halbschriftlich ·", desc:"Halbschriftliche Multiplikation", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbmul", anzahl:4, zahlenraum:1000,
                 hilfe:false, groesse:"klein", stellen:true,
@@ -360,7 +360,7 @@ WIDGETS.push({
 });
 
 WIDGETS.push({
-  meta: { type:"halbdiv", group:"halbschriftlich", label:"Halbschriftlich :", desc:"Halbschriftliche Division (Karofeld)", icon:"🪜", category:"mathematik" },
+  meta: { type:"halbdiv", group:"halbschriftlich", label:"Halbschriftlich :", desc:"Halbschriftliche Division (Karofeld)", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbdiv", anzahl:3, zahlenraum:100, zeilen:4,
                 groesse:"klein", aufgabenNr:0, aufgabenText:"Rechne halbschriftlich in Schritten." };
@@ -372,7 +372,7 @@ WIDGETS.push({
 });
 
 WIDGETS.push({
-  meta: { type:"halbsub", group:"halbschriftlich", label:"Halbschriftlich −", desc:"Halbschriftliche Subtraktion", icon:"🪜", category:"mathematik" },
+  meta: { type:"halbsub", group:"halbschriftlich", label:"Halbschriftlich −", desc:"Halbschriftliche Subtraktion", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbsub", anzahl:4, zahlenraum:100,
                 uebergang:"gemischt", hilfe:false, groesse:"klein", stellen:true,

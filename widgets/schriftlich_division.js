@@ -43,9 +43,9 @@ function sdGen(count, zahlenraum, teiler, mitRest) {
 }
 
 // ── SVG ───────────────────────────────────────────────────────────
-function sdPlace(ch, col, row, cs, color = '#222') {
+function sdPlace(ch, col, row, cs, color = '#222', fs = 14) {
   return `<text x="${col * cs + cs / 2}" y="${row * cs + cs * 0.67}" text-anchor="middle"
-    font-family="'DidactGothic7',sans-serif" font-size="14" font-weight="700" fill="${color}">${ch}</text>`;
+    font-family="'DidactGothic7',sans-serif" font-size="${fs}" font-weight="700" fill="${color}">${ch}</text>`;
 }
 
 /**
@@ -53,8 +53,7 @@ function sdPlace(ch, col, row, cs, color = '#222') {
  * forceSteps: Mindestanzahl Schritte (für einheitliche Höhe aller Aufgaben im Widget).
  * forceCols:  Mindestanzahl Spalten (für einheitliche Breite).
  */
-function sdSvg(a, b, showResult, blueResult, forceCols, forceSteps, showLinien) {
-  const cs     = 20;
+function sdSvg(a, b, showResult, blueResult, forceCols, forceSteps, showLinien, cs = 20, fs = 14) {
   const aStr   = String(a);
   const bStr   = String(b);
   const q      = Math.floor(a / b);
@@ -88,19 +87,19 @@ function sdSvg(a, b, showResult, blueResult, forceCols, forceSteps, showLinien) 
   let thickLines = '';
 
   // ── Kopfzeile ─────────────────────────────────────────────────
-  aStr.split('').forEach((d, i) => { texts += sdPlace(d, i, 0, cs); });
-  texts += sdPlace(':', aLen, 0, cs, '#555');
-  bStr.split('').forEach((d, i) => { texts += sdPlace(d, aLen + 1 + i, 0, cs); });
-  texts += sdPlace('=', aLen + 1 + bLen, 0, cs, '#555');
+  aStr.split('').forEach((d, i) => { texts += sdPlace(d, i, 0, cs, '#222', fs); });
+  texts += sdPlace(':', aLen, 0, cs, '#555', fs);
+  bStr.split('').forEach((d, i) => { texts += sdPlace(d, aLen + 1 + i, 0, cs, '#222', fs); });
+  texts += sdPlace('=', aLen + 1 + bLen, 0, cs, '#555', fs);
 
   const qStartCol = aLen + bLen + 2;
   if (showResult) {
     const qColor = blueResult ? '#2563eb' : '#1a7f3c';
-    qStr.split('').forEach((d, i) => { texts += sdPlace(d, qStartCol + i, 0, cs, qColor); });
+    qStr.split('').forEach((d, i) => { texts += sdPlace(d, qStartCol + i, 0, cs, qColor, fs); });
     if (hasMitRest) {
       const rColor = blueResult ? '#2563eb' : '#d97706';
-      texts += sdPlace('R', qStartCol + qLen + 1, 0, cs, rColor);
-      rStr.split('').forEach((d, i) => { texts += sdPlace(d, qStartCol + qLen + 2 + i, 0, cs, rColor); });
+      texts += sdPlace('R', qStartCol + qLen + 1, 0, cs, rColor, fs);
+      rStr.split('').forEach((d, i) => { texts += sdPlace(d, qStartCol + qLen + 2 + i, 0, cs, rColor, fs); });
     }
   }
 
@@ -121,19 +120,19 @@ function sdSvg(a, b, showResult, blueResult, forceCols, forceSteps, showLinien) 
 
     const prodStr = String(step.prod);
     prodStr.split('').forEach((d, j) => {
-      texts += sdPlace(d, step.rightCol - prodStr.length + 1 + j, rowProd, cs, showColor);
+      texts += sdPlace(d, step.rightCol - prodStr.length + 1 + j, rowProd, cs, showColor, fs);
     });
 
     if (si < n - 1) {
       const nextStep = steps[si + 1];
       const currStr  = String(nextStep.current);
       currStr.split('').forEach((d, j) => {
-        texts += sdPlace(d, nextStep.rightCol - currStr.length + 1 + j, rowNext, cs);
+        texts += sdPlace(d, nextStep.rightCol - currStr.length + 1 + j, rowNext, cs, '#222', fs);
       });
     } else {
       const remColor = rFinal > 0 ? '#d97706' : '#888';
       rStr.split('').forEach((d, j) => {
-        texts += sdPlace(d, step.rightCol - rStr.length + 1 + j, rowNext, cs, remColor);
+        texts += sdPlace(d, step.rightCol - rStr.length + 1 + j, rowNext, cs, remColor, fs);
       });
     }
   });
@@ -152,10 +151,11 @@ WIDGETS.push({
     desc: 'Schriftliche Division',
     icon: '⊟÷',
     category: 'mathematik',
+    itemsLayout: true,
   },
 
   createData: id => {
-    const cfg = { zahlenraum: 1000, teiler: 0, mitRest: false, loesung: false, anzahl: 4, linien: true , aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum: 1000, teiler: 0, mitRest: false, loesung: false, anzahl: 4, linien: true, groesse: 'klein', aufgabenNr:0, aufgabenText:''};
     return {
       id, type: 'schriftlich_division', ...cfg,
       aufgaben: sdGen(cfg.anzahl, cfg.zahlenraum, cfg.teiler, cfg.mitRest),
@@ -171,6 +171,7 @@ WIDGETS.push({
     const isActive   = d.id === selId || _solutionsMode;
     const showResult = isActive;
     const blueResult = isActive;
+    const { cs, fs } = schriftlichSize(d);
 
     // Einheitliche Größe: max Spalten + max Schritte über alle Aufgaben
     const maxCols = Math.max(...aufgaben.map(([a, b]) => {
@@ -182,13 +183,11 @@ WIDGETS.push({
     const maxSteps = Math.max(...aufgaben.map(([a, b]) => sdCalcSteps(a, b).length));
 
     const svgs = aufgaben.map(([a, b]) =>
-      `<div style="display:inline-block;margin:0 8px 16px 0;">
-        ${sdSvg(a, b, showResult, blueResult, maxCols, maxSteps, showLinien)}
-      </div>`
+      sdSvg(a, b, showResult, blueResult, maxCols, maxSteps, showLinien, cs, fs)
     );
 
-    const itemW     = maxCols * 20;
-    const tasksHtml = atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(auto-fill,${itemW}px);gap:4px 12px;justify-content:space-between;">${svgs.join('')}</div>`;
+    const itemW     = maxCols * cs;
+    const tasksHtml = atHtml(d) + flexDistribute(svgs, { itemW, d });
     if (!d.loesung) return tasksHtml;
     const answers = aufgaben.map(([a, b]) => {
       const q = Math.floor(a / b), r = a % b;
@@ -226,6 +225,7 @@ WIDGETS.push({
             `<option value="${n}" ${zr === n ? 'selected' : ''}>${n}</option>`
           ).join('')}
         </select>`) +
+      schriftlichGroesseBlock(d.id, d) +
       `<div class="prow"><label>Teiler – einstellig</label>
         <div style="display:flex;flex-wrap:wrap;gap:3px;">${einBtns}</div></div>` +
       `<div class="prow"><label>Teiler – zweistellig</label>

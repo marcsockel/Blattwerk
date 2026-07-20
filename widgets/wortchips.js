@@ -14,6 +14,7 @@ WIDGETS.push({
     desc: "Wörter als Chips mit Zeilenumbruch",
     icon: "🏷️",
     category: "deutsch",
+    itemsLayout: true,
   },
 
   createData: id => ({
@@ -22,11 +23,10 @@ WIDGETS.push({
     wordsText: "Hund\nKatze\nMaus\nVogel\nFisch\nPferd\nApfel\nBirne\nKirsche",
     font: "'DidactGothic7', sans-serif",
     fontSize: 16,
-    gapX: 10,
-    gapY: 8,
     chipPadX: 12,
     chipPadY: 5,
-    align: "left",
+    align: "auto",
+    itemGap: "normal",
     aufgabenNr: 0,
     aufgabenText: "",
   }),
@@ -35,8 +35,6 @@ WIDGETS.push({
     const words = wcParseWords(d.wordsText);
     const font = d.font || "'DidactGothic7', sans-serif";
     const fs = d.fontSize || 16;
-    const gapX = d.gapX ?? 10;
-    const gapY = (d.gapY ?? 8) * 2; // gewünschter doppelter Zeilenabstand
     const padX = d.chipPadX ?? 12;
     const padY = d.chipPadY ?? 5;
 
@@ -45,23 +43,22 @@ WIDGETS.push({
       + `padding:${padY}px ${padX}px;border:1.5px solid #bbb;border-radius:5px;`
       + `background:#fff;font-family:${font};font-size:${fs}px;line-height:1.2;`
       + `white-space:nowrap;color:#222;">${esc(w)}</span>`
-    ).join("");
+    );
 
-    const wrap = `<div style="display:flex;flex-wrap:wrap;gap:${gapY}px ${gapX}px;">`
-      + `${chips || `<span style="color:#999;font-size:12px;">Keine Wörter.</span>`}</div>`;
+    // Chipbreite grob schätzen (für Auto-Umbruch)
+    const avgLen = chips.length
+      ? words.reduce((s, w) => s + w.length, 0) / words.length
+      : 6;
+    const itemW = Math.ceil(avgLen * fs * 0.55 + padX * 2 + 8);
 
-    return atHtml(d) + (d.align === "center"
-      ? `<div style="display:flex;justify-content:center;">${wrap}</div>`
-      : d.align === "right"
-        ? `<div style="display:flex;justify-content:flex-end;">${wrap}</div>`
-        : wrap);
+    return atHtml(d) + (chips.length
+      ? flexDistribute(chips, { itemW, d })
+      : `<span style="color:#999;font-size:12px;">Keine Wörter.</span>`);
   },
 
   renderProps: d => {
     const font = d.font || "'DidactGothic7', sans-serif";
     const fs = d.fontSize || 16;
-    const gapX = d.gapX ?? 10;
-    const gapY = d.gapY ?? 8;
     const padX = d.chipPadX ?? 12;
     const padY = d.chipPadY ?? 5;
 
@@ -99,19 +96,11 @@ WIDGETS.push({
         Eine Zeile pro Wort oder mit <code>,</code> / <code>;</code> trennen
       </div>
       ${editorBox}` +
-      pr("Abstand horizontal",
-        `<input type="number" min="0" max="40" value="${gapX}" onclick="event.stopPropagation()"
-          onchange="upd(${d.id},'gapX',+this.value)">`) +
-      pr("Abstand vertikal",
-        `<input type="number" min="0" max="40" value="${gapY}" onclick="event.stopPropagation()"
-          onchange="upd(${d.id},'gapY',+this.value)">`) +
       pr("Chip-Innenabstand X",
         `<input type="number" min="2" max="30" value="${padX}" onclick="event.stopPropagation()"
           onchange="upd(${d.id},'chipPadX',+this.value)">`) +
       pr("Chip-Innenabstand Y",
         `<input type="number" min="1" max="20" value="${padY}" onclick="event.stopPropagation()"
-          onchange="upd(${d.id},'chipPadY',+this.value)">`) +
-      alignToggle(d.id, d.align);
+          onchange="upd(${d.id},'chipPadY',+this.value)">`);
   },
 });
-

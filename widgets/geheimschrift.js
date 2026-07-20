@@ -8,6 +8,7 @@ WIDGETS.push({
     desc: "Wort als Anlautbilder + Kästchen",
     icon: "🔐",
     category: "deutsch",
+    itemsLayout: true,
   },
 
   createData: id => {
@@ -21,7 +22,8 @@ WIDGETS.push({
       modus: "klein",
       font: "'Grundschrift', sans-serif", fontSize: 16,
       imgSize: 52,
-      gap: 8,
+      itemGap: "normal",
+      align: "auto",
       lineatur: 1, lineaturGross: false,
       schreibfeld: true,
       wordsText: defaultWords,
@@ -36,7 +38,11 @@ WIDGETS.push({
     const lineatur      = d.lineatur      ?? 1;
     const lineaturGross = d.lineaturGross || false;
     const lMul          = lineaturGross ? 1.5 : 1;
-    const gap        = d.gap        ?? 8;
+    // Legacy numeric gap → itemGap
+    if (d.gap != null && d.itemGap == null) {
+      const g = +d.gap;
+      d.itemGap = g <= 10 ? 'eng' : g >= 24 ? 'weit' : 'normal';
+    }
     const schreibfeld = d.schreibfeld || false;
     const items      = d.items      || [];
 
@@ -102,10 +108,12 @@ WIDGETS.push({
         `<div style="display:flex;">${boxRow}</div>` +
         (schreibfeld ? `<div style="width:${sfWidth}px;">${schreibfeldHtml()}</div>` : '') +
       `</div>`;
-    }).join("");
+    });
 
-    return atHtml(d) +
-      `<div style="display:flex;flex-wrap:wrap;gap:${gap}px;">${groupHtml}</div>`;
+    const maxLetters = Math.max(...groups.map(g => g.length), 1);
+    const itemW = maxLetters * imgSize + (maxLetters - 1) * innerGap;
+
+    return atHtml(d) + flexDistribute(groupHtml, { itemW, d });
   },
 
   renderProps: d => {
@@ -115,7 +123,6 @@ WIDGETS.push({
     const lineatur    = d.lineatur    ?? 1;
     const schreibfeld  = d.schreibfeld  || false;
     const items       = d.items       || [];
-    const gap         = d.gap         ?? 8;
 
     const fontOptions = GAP_FONTS.map(f =>
       `<option value="${f.value}" ${font === f.value ? "selected" : ""}>${f.label}</option>`
@@ -206,14 +213,6 @@ WIDGETS.push({
             onchange="upd(${d.id},'imgSize',+this.value)"
             style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:36px;">${imgSize}px</span>
-        </div>`) +
-      pr("Abstand",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="2" max="40" value="${gap}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'gap',+this.value)"
-            style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
         </div>`) +
       pr("Lineatur",
         `<select onchange="upd(${d.id},'lineatur',+this.value)"

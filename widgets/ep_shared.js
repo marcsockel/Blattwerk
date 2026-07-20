@@ -5,11 +5,11 @@ const EP_DEFAULT_FONT = "'Arial', sans-serif";
 // Defaults: Größe Mittel, Ausrichtung Block; cols = volle Zeile bei Portrait/Mittel
 // (flexDistribute-Schätzung: contentW 640 − 18 Pad, packW+gap bei S=1.2).
 const EP_DEFAULTS = {
-  erste_paketchen: { cols: 3, groesse: 'mittel', align: 'justify' },
-  ep_zehner_stop:  { cols: 2, aufgabenProPaeckchen: 1, groesse: 'mittel', align: 'justify' },
-  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3, align: 'justify' },
-  ep_zerlegung:    { cols: 4, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false, align: 'justify' },
-  ep_umkehr:       { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 1, align: 'justify' },
+  erste_paketchen: { cols: 3, groesse: 'mittel' },
+  ep_zehner_stop:  { cols: 2, aufgabenProPaeckchen: 1, groesse: 'mittel' },
+  ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3 },
+  ep_zerlegung:    { cols: 4, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false },
+  ep_umkehr:       { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 1 },
 };
 
 const EP_PAIR_TYPES = new Set(['ep_umkehr', 'ep_zehner_stop', 'ep_analogie', 'ep_zerlegung']);
@@ -321,7 +321,11 @@ function epBaseData(id, type) {
     font: EP_DEFAULT_FONT,
     bold: false,
     groesse: 'mittel',
-    align: 'justify',
+    itemsPerRow: 'auto',
+    align: 'auto',
+    itemGapH: 'normal',
+    itemGapV: 'normal',
+    itemGap: 'normal',
     aufgabenNr: 0, aufgabenText: '',
     punkte: 0, punkteEinheit: 'Pkt.', // Punktetext unten rechts (ptHtml), 0 = aus
   };
@@ -338,7 +342,6 @@ function epBuildCtx(d) {
   const GAP = (d.type === 'ep_zehner_stop' || d.type === 'erste_paketchen') ? px(19) : px(22);
   const ROW_GAP = px(14);
   const PAIR_GAP = px(30);
-  const PACK_GAP = px(44);
   const SPLIT_W = SQ * 2 + GAP;
   const zehnerPackW = SQ * 4 + GAP * 3;
   const normalPackW = SQ * 3 + GAP * 2;
@@ -383,17 +386,12 @@ function epBuildCtx(d) {
     + `</svg>`;
 
   return {
-    isActive, px, FS, SQ, FF, FW, GAP, ROW_GAP, PAIR_GAP, PACK_GAP, SPLIT_W,
+    isActive, px, FS, SQ, FF, FW, GAP, ROW_GAP, PAIR_GAP, SPLIT_W,
     zehnerPackW, normalPackW, zerlegPackW, writeBg,
     sqEmpty, sqVal, sqHint, sqGap, midSlot, taskRow, centerSlot, wideSlot,
     splitPair, stopRow1, stopRow2, epArrow,
     tdBase: `padding:${px(3)}px 0;font-family:${FF};font-weight:${FW};vertical-align:middle;white-space:nowrap;`,
     zerlegPairGap: px(20),
-    distGap: d.type === 'ep_zerlegung' ? px(24)
-      : d.type === 'ep_zehner_stop'
-        ? ((d.align == null || d.align === 'justify') ? px(20) : px(30))
-      : PACK_GAP,
-    distMb: d.type === 'ep_zerlegung' ? px(24) : px(44),
     packW: d.type === 'ep_zehner_stop' ? zehnerPackW
       : d.type === 'ep_zerlegung' ? zerlegPackW : normalPackW,
   };
@@ -577,7 +575,7 @@ function epRender(d) {
     : (parsed.length ? renderGroup([parsed[0]]) : '');
   const tasksHtml = atHtml(d) + flexDistribute(
     groups.map((g, gi) => renderGroup(g, gi)),
-    { gap: c.distGap, marginBottom: c.distMb, sample, itemW: c.packW, d }
+    { sample, itemW: c.packW, d }
   );
 
   if (!d.showLoesungen || shuffled.length === 0) return tasksHtml;
@@ -741,7 +739,7 @@ function epRenderProps(d) {
   }
 
   return top + epAnordnungBlock(d, epAnordnungOpts(d.type)) + epGroesseBlock(d)
-    + alignToggle(d.id, d.align, true) + epGrauBlock(d) + hilfeBlock
+    + epGrauBlock(d) + hilfeBlock
     + epWuerfelBtn(d) + epManualFold(d, manual);
 }
 
@@ -761,22 +759,22 @@ function epMakeWidget(meta) {
 const EP_GROUP = 'ep_kaestchen';
 
 WIDGETS.push(epMakeWidget({
-  type: 'erste_paketchen', group: EP_GROUP,
+  type: 'erste_paketchen', group: EP_GROUP, itemsLayout: true,
   label: 'Erste Päckchen', desc: 'Plus & Minus in Kästchen, als Päckchen', icon: '📦', category: 'mathematik',
 }));
 WIDGETS.push(epMakeWidget({
-  type: 'ep_zehner_stop', group: EP_GROUP,
+  type: 'ep_zehner_stop', group: EP_GROUP, itemsLayout: true,
   label: '10er Stop', desc: 'Zehnerübergang mit Zerlegung', icon: '🔟', category: 'mathematik',
 }));
 WIDGETS.push(epMakeWidget({
-  type: 'ep_analogie', group: EP_GROUP,
+  type: 'ep_analogie', group: EP_GROUP, itemsLayout: true,
   label: 'Analogieaufgaben', desc: 'Ohne und mit Zehner', icon: '↔️', category: 'mathematik',
 }));
 WIDGETS.push(epMakeWidget({
-  type: 'ep_zerlegung', group: EP_GROUP,
+  type: 'ep_zerlegung', group: EP_GROUP, itemsLayout: true,
   label: 'Zahlenzerlegung', desc: 'Zahl in zwei Teile zerlegen', icon: '✂️', category: 'mathematik',
 }));
 WIDGETS.push(epMakeWidget({
-  type: 'ep_umkehr', group: EP_GROUP,
+  type: 'ep_umkehr', group: EP_GROUP, itemsLayout: true,
   label: 'Umkehraufgabe', desc: 'Plus- und Minus-Umkehr', icon: '🔄', category: 'mathematik',
 }));
