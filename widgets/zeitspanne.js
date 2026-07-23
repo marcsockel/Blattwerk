@@ -116,12 +116,7 @@ WIDGETS.push({
         </div>
       </div>`);
 
-    // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
     const itemW = SIZE * 2 + midMin + 12;
-=======
-    // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
-    const itemW = SIZE * 2 + 100;
->>>>>>> 9cfd0029f41f816dc99070fa582c28ee65d78082
     return atHtml(d) + flexDistribute(rendered, { itemW, d });
   },
 
