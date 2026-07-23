@@ -9,7 +9,7 @@
 <link rel="stylesheet" href="fonts/vendor/fonts.css">
 <!-- Schriften vorladen: verhindert, dass Safari beim ersten Layout die ch-Einheit
      gegen die Ersatzschrift auflöst (Zahlen-Slots zu breit → Päckchen-Umbruch kippt) -->
-<link rel="preload" href="fonts/Didact Gothic Regular 7mod.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="fonts/DidactGothic7.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="fonts/Grundschrift-Regular.otf" as="font" type="font/otf" crossorigin>
 <style>
 @font-face {
@@ -24,7 +24,7 @@
 }
 @font-face {
   font-family: 'DidactGothic7';
-  src: url('fonts/Didact Gothic Regular 7mod.ttf') format('truetype');
+  src: url('fonts/DidactGothic7.ttf') format('truetype');
   font-weight: 400;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -452,7 +452,7 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js"></script>
+<script src="main/helpers.js?v=16"></script>
 <script src="main/img_picker.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
@@ -1615,7 +1615,24 @@ function sfTaskBlock(id,w){
              font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;color:${fill?'#fff':'#222'};line-height:1;">1</span>
     </button>`;
   };
-  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+  const tgl=(label,on,onclick)=>`<button onclick="event.stopPropagation();${onclick}"
+    style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};
+           background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
+           cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;
+<<<<<<< HEAD
+  // Päckchen a) b) c) — Rechenaufgaben & Größen umrechnen
+  const abcTop = (w.type === 'arithmetic' || w.type === 'groessen')
+=======
+  // Rechenaufgaben: a) b) c) vor jedem Päckchen — ganz oben im Aufgabentext-Block
+  const abcTop = w.type === 'arithmetic'
+>>>>>>> 9cfd0029f41f816dc99070fa582c28ee65d78082
+    ? `<div class="sf-h">Päckchen-Nummerierung</div>
+      <div style="display:flex;gap:4px;margin-bottom:9px;">
+        ${tgl('Aus', !w.paeckchenAbc, `upd(${id},'paeckchenAbc',false)`)}
+        ${tgl('a) b) c)', !!w.paeckchenAbc, `upd(${id},'paeckchenAbc',true)`)}
+      </div>`
+    : '';
+  return `${abcTop}<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <span style="display:inline-flex;align-items:center;justify-content:center;
           width:16px;height:16px;border-radius:${stil.startsWith('quadrat')?'3px':'50%'};
           border:1.5px solid ${nr>0?'#222':'#ddd'};background:${nr>0&&stil.endsWith('-fill')?'#222':'transparent'};
@@ -1751,6 +1768,9 @@ function standardFooter(id,w){
     inner+=propFold('sf-punkte','Punkte',sfPunkteBlock(id,w),false);
   }
   if(!noBorder) inner+=propFold('sf-rahmen','Rahmen & Schatten',sfBorderBlock(id,w),false);
+  if(def&&def.meta&&def.meta.itemsLayout&&typeof itemsLayoutPropsBlock==='function'){
+    inner+=propFold('sf-verteilung','Verteilung',itemsLayoutPropsBlock(id,w),false);
+  }
   inner+=propFold('sf-layout','Layout',sfLayoutBlock(id,w),false);
   return `<div class="std-footer">${inner}</div>`;
 }
@@ -2640,6 +2660,7 @@ buildList();
 // das nach dem Schriftladen NICHT — Zahlen-Slots (min-width:Nch) werden zu breit,
 // der Päckchen-Umbruch kippt (4→3 bzw. 2→1). Einmal neu rendern, sobald alle
 // Schriften da sind: frisch erzeugte Elemente bekommen das korrekte ch.
+// Explizit Regular laden (nicht nur Bold) — sonst bleibt Fließtext auf Arial.
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => { try { render(); } catch(e){} });
 }

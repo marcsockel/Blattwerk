@@ -1,7 +1,7 @@
 // Widget: Größen umrechnen
 // Längen-, Gewichts-, Hohlmaß- und Zeitumrechnungen. Drei Aufgabenformate:
 //  - einfach:   3 m  =  ___ cm
-//  - gemischt:  250 cm = ___ m ___ cm   (bzw. 2 m 50 cm = ___ cm)
+//  - gemischt (UI: „Zus. Größen"):  250 cm = ___ m ___ cm   (bzw. 2 m 50 cm = ___ cm)
 //  - vergleich: 3 m  ___  250 cm   (<, >, =)
 // Lösungen erscheinen blau im Auswahl-/Lösungsmodus (selId / _solutionsMode).
 
@@ -19,7 +19,7 @@ const GU_BEREICHE = [
   ['laenge', 'Länge'], ['gewicht', 'Gewicht'], ['volumen', 'Hohlmaße'], ['zeit', 'Zeit'],
 ];
 const GU_FORMATE = [
-  ['einfach', 'Umrechnen'], ['gemischt', 'Gemischt'], ['vergleich', 'Vergleichen'],
+  ['einfach', 'Umrechnen'], ['gemischt', 'Zus. Größen'], ['vergleich', 'Vergleichen'],
 ];
 const GU_STUFEN = [['leicht', 'Leicht'], ['mittel', 'Mittel'], ['schwer', 'Schwer']];
 
@@ -83,7 +83,7 @@ function guEinfach(d) {
   }
 }
 
-function guGemischt(d) {
+function guGemischt(d, mode) {
   const units = guActiveUnits(d);
   const step = d.stufe === 'schwer' ? guStep(d.bereich, d.stufe) : 1;
   const { hiU, loU } = guPickPair(units, Math.min(2, step));
@@ -94,7 +94,9 @@ function guGemischt(d) {
   const b = guRand(1, R - 1);
   const total = a * R + b;
   if (total > GU_MAX) return null;
-  if (Math.random() < 0.5)
+  // mode: 'split' (1→2) oder 'join' (2→1); fehlt → zufällig
+  const useSplit = mode === 'split' ? true : mode === 'join' ? false : Math.random() < 0.5;
+  if (useSplit)
     return { f: 'gemischt', mode: 'split', total, loU: loU.u, hiU: hiU.u, a, b };
   return { f: 'gemischt', mode: 'join', a, hiU: hiU.u, b, loU: loU.u, total };
 }
@@ -121,11 +123,11 @@ function guVergleich(d) {
   return { f: 'vergleich', leftVal: left.val, leftU: left.u, rightVal: right.val, rightU: right.u, rel };
 }
 
-function guGenOne(d) {
+function guGenOne(d, gemischtMode) {
   for (let t = 0; t < 60; t++) {
     let it = null;
     if (d.format === 'einfach') it = guEinfach(d);
-    else if (d.format === 'gemischt') it = guGemischt(d);
+    else if (d.format === 'gemischt') it = guGemischt(d, gemischtMode);
     else it = guVergleich(d);
     if (it) return it;
   }
@@ -146,18 +148,44 @@ function guTotal(d) {
   return app * cols;
 }
 
+function guAppCols(d) {
+  return {
+    app: Math.max(1, Math.min(20, d.aufgabenProPaeckchen || 5)),
+    cols: Math.max(1, Math.min(36, d.cols || 2)),
+  };
+}
+
 // Alle Aufgaben neu würfeln.
+// Bei „Gemischt": pro Päckchen ein fester Modus (split 1→2 oder join 2→1) —
+// nie gemischt innerhalb eines Päckchens (sonst unterschiedlich breite Zeilen).
 function guGenerate(d) {
-  const n = guTotal(d);
-  d.items = Array.from({ length: n }, () => guGenOne(d));
+  const { app, cols } = guAppCols(d);
+  const items = [];
+  for (let c = 0; c < cols; c++) {
+    const mode = d.format === 'gemischt'
+      ? (Math.random() < 0.5 ? 'split' : 'join')
+      : null;
+    for (let i = 0; i < app; i++) items.push(guGenOne(d, mode));
+  }
+  d.items = items;
 }
 
 // Nur die Anzahl anpassen: vorhandene Aufgaben behalten, fehlende ergänzen bzw.
 // überzählige abschneiden (z.B. beim Hinzufügen eines Päckchens).
 function guResize(d) {
-  const n = guTotal(d);
+  const { app, cols } = guAppCols(d);
+  const n = app * cols;
   const items = (d.items || []).slice(0, n);
-  while (items.length < n) items.push(guGenOne(d));
+  while (items.length < n) {
+    const idx = items.length;
+    const packet = Math.floor(idx / app);
+    // Modus des Päckchens aus vorhandener Aufgabe ableiten (falls vorhanden)
+    const peer = items[packet * app];
+    const mode = d.format === 'gemischt'
+      ? (peer && peer.mode) || (Math.random() < 0.5 ? 'split' : 'join')
+      : null;
+    items.push(guGenOne(d, mode));
+  }
   d.items = items;
 }
 
@@ -173,7 +201,8 @@ function guScale(d) {
 
 // Ziffern-Zellenbreite in ch. Etwas breiter als 1ch, sonst berühren sich benachbarte
 // Ziffern (v.a. Nullen, deren Glyphe ≈ 1ch breit ist). Auch bei Rechenaufgaben so.
-const GU_DW = 1.2;
+const GU_DW = 1.0;
+const GU_FF = "Arial, sans-serif";
 
 // Ziffern-Zellen wie Rechenaufgaben: jede Ziffer in eigener Zelle (zentriert), die
 // Schrift hat keine Tabellenziffern → so stehen Einer unter Einern, mit etwas Luft.
@@ -189,19 +218,19 @@ function guDigitCells(v) {
 function guNumSpan(v, digits, FS, LH) {
   const w = (digits * GU_DW).toFixed(2);
   return `<span style="display:inline-block;width:${w}ch;min-height:${LH}px;line-height:${LH}px;`
-       + `text-align:right;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${guDigitCells(v)}</span>`;
+       + `text-align:right;font-family:${GU_FF};font-size:${FS}px;">${guDigitCells(v)}</span>`;
 }
 // Lösungsstrich fester Breite (digits Slots) → jeder Strich gleich lang, Ergebnis blau bei active.
 function guBlankSpan(v, active, digits, FS, LH) {
   const w = (digits * GU_DW).toFixed(2);
   return `<span style="display:inline-block;width:${w}ch;min-height:${LH}px;line-height:${LH}px;`
        + `text-align:right;border-bottom:1.6px solid #333;color:#2563eb;font-weight:700;`
-       + `font-family:'DidactGothic7',sans-serif;font-size:${FS}px;">${active ? guDigitCells(v) : '&nbsp;'}</span>`;
+       + `font-family:${GU_FF};font-size:${FS}px;">${active ? guDigitCells(v) : '&nbsp;'}</span>`;
 }
 function guRelBox(rel, active, px, FS) {
   return `<span style="display:inline-flex;align-items:center;justify-content:center;`
        + `width:${px(26)}px;height:${px(23)}px;border:1.6px solid #333;border-radius:3px;`
-       + `color:#2563eb;font-weight:700;font-size:${FS}px;vertical-align:middle;">${active ? rel : '&nbsp;'}</span>`;
+       + `color:#2563eb;font-weight:700;font-family:${GU_FF};font-size:${FS}px;vertical-align:middle;">${active ? rel : '&nbsp;'}</span>`;
 }
 
 // Vorgegebene (schwarze) Zahlen bzw. Lösungswerte einer Aufgabe — für Layout-Kennzahlen.
@@ -240,53 +269,82 @@ function guMetrics(items) {
 
 // Eine Aufgabe als Tabellenzeile. Zahl und Einheitskürzel stehen in EIGENEN Zellen
 // (wie die Komponenten bei Rechenaufgaben) → Ziffern-Ende und Einheit-Anfang stehen
-// je Spalte exakt untereinander, „=" ebenfalls. Format ist je Widget fix; „gemischt"
-// nutzt ein einheitliches 9-Spalten-Raster (split/join teilen sich die Spalten).
+// je Spalte exakt untereinander, „=" ebenfalls.
+// Abstand: längstes Kürzel links vom „=" → „="  =  „=" → Lösungsstrich (symmetrisch).
+// „Gemischt": 3 Spalten (links | = | rechts), Inhalt rechts- bzw. linksbündig —
+// keine Leer-Spalten mehr (die blähten die Päckchen auf und erzeugten Riesenspalten).
 function guItemRow(it, d, active, m, sc) {
   const { px, FS, LH } = sc;
-  const tdBase = `padding:${px(3)}px 0;font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`
+  const eqGap = px(8); // gleicher Abstand Einheit→„=" und „="→Blank
+  const tdBase = `padding:${px(3)}px 0;font-family:${GU_FF};font-size:${FS}px;`
     + `line-height:${LH}px;vertical-align:middle;color:#222;`;
-  // Feste Kürzel-Breite (in ch): längstes Kürzel + 1 als Puffer (Buchstaben > „0").
-  const unitCh = (m.unitW + 1);
-  const numCh = (m.numDigits * GU_DW).toFixed(2);
+  const unitCh = m.unitW;
   const tdNum = `${tdBase}text-align:right;white-space:nowrap;`;
-  const tdUnit = `${tdBase}text-align:left;white-space:nowrap;padding-left:${px(4)}px;padding-right:${px(9)}px;`;
-  const tdMid = `${tdBase}text-align:center;white-space:nowrap;padding-left:${px(6)}px;padding-right:${px(6)}px;`;
+  const tdNumAfter = `${tdNum}padding-left:${eqGap}px;`;
+  const tdUnitEq = `${tdBase}text-align:left;white-space:nowrap;padding-left:${px(3)}px;padding-right:${eqGap}px;`;
+  const tdUnitAfter = `${tdBase}text-align:left;white-space:nowrap;padding-left:${px(3)}px;`;
+  const tdMid = `${tdBase}text-align:center;white-space:nowrap;padding:0;`;
   const cNum = v => `<td style="${tdNum}">${guNumSpan(v, m.numDigits, FS, LH)}</td>`;
-  const cBlank = v => `<td style="${tdNum}">${guBlankSpan(v, active, m.blankDigits, FS, LH)}</td>`;
-  const cUnit = (u, val) => `<td style="${tdUnit}"><span style="display:inline-block;`
+  const cNumAfter = v => `<td style="${tdNumAfter}">${guNumSpan(v, m.numDigits, FS, LH)}</td>`;
+  const cBlank = v => `<td style="${tdNumAfter}">${guBlankSpan(v, active, m.blankDigits, FS, LH)}</td>`;
+  const unitSpan = (u, val) => `<span style="display:inline-block;width:${unitCh}ch;text-align:left;`
+    + `margin-left:${px(3)}px;">${esc(guUnitLbl(u, val))}</span>`;
+  const cUnitEq = (u, val) => `<td style="${tdUnitEq}"><span style="display:inline-block;`
+    + `width:${unitCh}ch;text-align:left;">${esc(guUnitLbl(u, val))}</span></td>`;
+  const cUnitAfter = (u, val) => `<td style="${tdUnitAfter}"><span style="display:inline-block;`
     + `width:${unitCh}ch;text-align:left;">${esc(guUnitLbl(u, val))}</span></td>`;
   const cMid = html => `<td style="${tdMid}">${html}</td>`;
-  // Leerslots mit fester Breite → Spalten (und „=") stehen auch bei split/join gleich.
-  const cEmptyNum = `<td style="${tdNum}"><span style="display:inline-block;width:${numCh}ch;"></span></td>`;
-  const cEmptyUnit = `<td style="${tdUnit}"><span style="display:inline-block;width:${unitCh}ch;"></span></td>`;
 
   if (it.f === 'einfach') {
-    return `<tr>${cNum(it.fromVal)}${cUnit(it.fromU, it.fromVal)}${cMid('=')}`
-         + `${cBlank(it.ans)}${cUnit(it.toU, it.ans)}</tr>`;
+    return `<tr>${cNum(it.fromVal)}${cUnitEq(it.fromU, it.fromVal)}${cMid('=')}`
+         + `${cBlank(it.ans)}${cUnitAfter(it.toU, it.ans)}</tr>`;
   }
   if (it.f === 'vergleich') {
-    return `<tr>${cNum(it.leftVal)}${cUnit(it.leftU, it.leftVal)}${cMid(guRelBox(it.rel, active, px, FS))}`
-         + `${cNum(it.rightVal)}${cUnit(it.rightU, it.rightVal)}</tr>`;
+    return `<tr>${cNum(it.leftVal)}${cUnitEq(it.leftU, it.leftVal)}${cMid(guRelBox(it.rel, active, px, FS))}`
+         + `${cNumAfter(it.rightVal)}${cUnitAfter(it.rightU, it.rightVal)}</tr>`;
   }
-  if (it.mode === 'split') {
-    return `<tr>${cNum(it.total)}${cUnit(it.loU, it.total)}${cEmptyNum}${cEmptyUnit}${cMid('=')}`
-         + `${cBlank(it.a)}${cUnit(it.hiU, it.a)}${cBlank(it.b)}${cUnit(it.loU, it.b)}</tr>`;
+
+  // Gemischt: linke Seite rechtsbündig, rechte linksbündig.
+  // Breite richtet sich nach dem Päckchen-Modus (alle Zeilen gleich: split oder join).
+  const isSplit = it.mode === 'split';
+  const leftNums = isSplit ? 1 : 2;
+  const rightNums = isSplit ? 2 : 1;
+  const leftW = (leftNums * m.numDigits * GU_DW + leftNums * unitCh + 0.8).toFixed(2);
+  const rightW = (rightNums * m.blankDigits * GU_DW + rightNums * unitCh + 0.8).toFixed(2);
+  const tdLeft = `${tdBase}text-align:right;white-space:nowrap;width:${leftW}ch;`;
+  const tdRight = `${tdBase}text-align:left;white-space:nowrap;width:${rightW}ch;padding-left:${eqGap}px;`;
+  const tdEq = `${tdBase}text-align:center;white-space:nowrap;padding-left:${eqGap}px;padding-right:0;`;
+  let left, right;
+  if (isSplit) {
+    left = `${guNumSpan(it.total, m.numDigits, FS, LH)}${unitSpan(it.loU, it.total)}`;
+    right = `${guBlankSpan(it.a, active, m.blankDigits, FS, LH)}${unitSpan(it.hiU, it.a)}`
+          + `${guBlankSpan(it.b, active, m.blankDigits, FS, LH)}${unitSpan(it.loU, it.b)}`;
+  } else {
+    left = `${guNumSpan(it.a, m.numDigits, FS, LH)}${unitSpan(it.hiU, it.a)}`
+         + `${guNumSpan(it.b, m.numDigits, FS, LH)}${unitSpan(it.loU, it.b)}`;
+    right = `${guBlankSpan(it.total, active, m.blankDigits, FS, LH)}${unitSpan(it.loU, it.total)}`;
   }
-  return `<tr>${cNum(it.a)}${cUnit(it.hiU, it.a)}${cNum(it.b)}${cUnit(it.loU, it.b)}${cMid('=')}`
-       + `${cBlank(it.total)}${cUnit(it.loU, it.total)}${cEmptyNum}${cEmptyUnit}</tr>`;
+  return `<tr><td style="${tdLeft}">${left}</td><td style="${tdEq}">=</td><td style="${tdRight}">${right}</td></tr>`;
 }
 
 // Ein Päckchen = eine Tabelle (Zeilen untereinander, „=" ausgerichtet).
-function guGroupTable(group, d, active, m, sc) {
+// Optional a) b) c) wie bei Rechenaufgaben.
+function guGroupTable(group, d, active, m, sc, gi) {
+  const { FS, LH, px } = sc;
   const rows = group.map(it => guItemRow(it, d, active, m, sc)).join('');
-  return `<table style="border-collapse:collapse;">${rows}</table>`;
+  const table = `<table style="border-collapse:collapse;">${rows}</table>`;
+  if (!d.paeckchenAbc) return table;
+  const letter = String.fromCharCode(97 + ((gi || 0) % 26));
+  return `<div style="display:flex;align-items:flex-start;gap:${px(6)}px;">
+    <span style="font-family:${GU_FF};font-size:${FS}px;font-weight:700;line-height:${LH}px;flex-shrink:0;">${letter})</span>
+    ${table}
+  </div>`;
 }
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
   meta: { type: 'groessen', group: 'groessen', label: 'Größen umrechnen',
-          desc: 'Längen, Gewichte, Hohlmaße, Zeit', icon: '📏', category: 'mathematik' },
+          desc: 'Längen, Gewichte, Hohlmaße, Zeit', icon: '📏', category: 'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -294,6 +352,7 @@ WIDGETS.push({
       bereich: 'laenge', format: 'einfach', stufe: 'leicht',
       aktiveEinheiten: guDefaultUnits(),
       groesse: 'klein', aufgabenProPaeckchen: 5, cols: 2,
+      paeckchenAbc: false,
       aufgabenNr: 0, aufgabenText: '',
     };
     guGenerate(w);
@@ -310,20 +369,28 @@ WIDGETS.push({
       (_, i) => items.slice(i * app, (i + 1) * app)).filter(g => g.length);
     const fmt = d.format || 'einfach';
     const sc = guScale(d);
-    // Einheitliche Slot-Anzahlen fürs ganze Widget → Ziffern-Enden stehen
-    // zeilenübergreifend exakt untereinander; Lösungsstriche gleich lang.
-    const m = guMetrics(items);
-    // Verteilungs-Layout wie Rechenaufgaben (flexDistribute in helpers.js): itemW nur
-    // GROB geschätzt für die Voll/Nicht-voll-Entscheidung, echte Spaltenzahl misst der Browser.
-    const digitPx = 9, unitPx = 22;
+    // Bei Gemischt: Metriken pro Päckchen (ein Modus → engere, passende Breite).
+    // Sonst widgetweit einheitlich.
+    const mAll = guMetrics(items);
+    const digitPx = 9, unitPx = 14;
+    const tables = groups.map((g, gi) => {
+      const gm = fmt === 'gemischt' ? guMetrics(g) : mAll;
+      return guGroupTable(g, d, active, gm, sc, gi);
+    });
+    const sampleM = fmt === 'gemischt' && groups[0] ? guMetrics(groups[0]) : mAll;
     const est = fmt === 'gemischt'
-      ? 3 * m.numDigits * digitPx + 4 * unitPx + 60
-      : 2 * m.numDigits * digitPx + 2 * unitPx + 50;
+      ? (2 * sampleM.numDigits + 2 * sampleM.blankDigits) * digitPx + 4 * unitPx + 40
+      : (mAll.numDigits + mAll.blankDigits) * digitPx + 2 * unitPx + 40;
     const itemW = Math.round(est * sc.S);
     return atHtml(d) + flexDistribute(
+<<<<<<< HEAD
+      tables,
+      { sample: tables[0] || '', itemW, d, estimate: true }
+=======
       groups.map(g => guGroupTable(g, d, active, m, sc)),
-      { gap: 24, marginBottom: 16, sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
+      { sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
         itemW, d, estimate: true }
+>>>>>>> 9cfd0029f41f816dc99070fa582c28ee65d78082
     );
   },
 

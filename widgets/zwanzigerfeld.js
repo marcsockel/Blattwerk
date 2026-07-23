@@ -139,10 +139,12 @@ function zfSize(d) {
 }
 
 WIDGETS.push({
-  meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik" },
+  meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, groesse:'mittel', align:'left', aufgabenNr:0, aufgabenText:''};
+    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, groesse:'mittel',
+      itemsPerRow:'auto', align:'auto', itemGapH:'normal', itemGapV:'normal', itemGap:'normal',
+      aufgabenNr:0, aufgabenText:''};
     return { id, type:"zwanzigerfeld", ...cfg, aufgaben: zfGen(cfg.anzahl, cfg.op) };
   },
 
@@ -182,13 +184,7 @@ WIDGETS.push({
     });
 
     const { W: svgW } = zfGridMetrics(size);
-    // Mittel so gewählt, dass typischerweise 3 Spalten auf „Voll“ passen.
-    const colGap  = small ? 20 : medium ? 22 : 48; // verdoppelt (Abstand im engen Modus war zu klein)
-    const rowGap  = small ? 36 : medium ? 40 : 48;
-    // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Feldbreite svgW,
-    // Inhalt zentriert.
     return atHtml(d) + flexDistribute(items, {
-      gap: colGap, marginBottom: rowGap,
       itemSize: `width:${svgW}px;display:flex;justify-content:center;`, itemW: svgW, d
     });
   },
@@ -226,7 +222,6 @@ WIDGETS.push({
           `<textarea style="width:100%;font-family:monospace;font-size:11px;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;min-height:80px;resize:vertical;box-sizing:border-box;"
             onclick="event.stopPropagation()" onchange="zfManual(${d.id},this.value)">${esc(d.manualText != null ? d.manualText : zfTasksToText(d))}</textarea>`),
         false) +
-      alignToggle(d.id, d.align) +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Klein",  size==='klein',  `upd(${d.id},'groesse','klein')`)}

@@ -1,6 +1,6 @@
 // Widget: Anlautbilder mit Multiple-Choice-Kästchen
 WIDGETS.push({
-  meta: { type:"anlaut", group:"anlaut", label:"Anlautbild", desc:"Anlautbild mit Buchstabenauswahl", icon:"🔤", category:"deutsch" },
+  meta: { type:"anlaut", group:"anlaut", label:"Anlautbild", desc:"Anlautbild mit Buchstabenauswahl", icon:"🔤", category:"deutsch", itemsLayout: true },
 
   createData: id => ({
     id, type:"anlaut",
@@ -10,8 +10,10 @@ WIDGETS.push({
       { anlaut:"C", src:anlautDefaultSrc("C"), choices:anlautShuffleOpts("C",null,"gross") },
     ],
     schreibweise: "gross",
-    size: 80, gap: 16,
-    align: "left", buchstabenAus: false,
+    size: 80,
+    itemGap: "normal",
+    align: "auto",
+    buchstabenAus: false,
     aufgabenNr: 0, aufgabenText: "",
   }),
 
@@ -22,9 +24,12 @@ WIDGETS.push({
       src:     (d.imgSrcs||{})[letter] || anlautDefaultSrc(letter),
       choices: (d.choices && d.choices[i]) || anlautShuffleOpts(letter, null, d.schreibweise||'gross'),
     }));
+    // Legacy numeric gap → itemGap once
+    if (d.gap != null && d.itemGap == null) {
+      const g = +d.gap;
+      d.itemGap = g <= 14 ? 'eng' : g >= 28 ? 'weit' : 'normal';
+    }
     const size        = d.size  || 80;
-    const gap         = d.gap   ?? 16;
-    const align       = d.align || "left";
     const buchstabenAus = d.buchstabenAus || false;
     const schreibweise  = d.schreibweise  || "gross";
     const isActive      = d.id === selId || _solutionsMode;
@@ -32,12 +37,14 @@ WIDGETS.push({
 
     const rendered = items.map(item => {
       const src  = item.src || anlautDefaultSrc(item.anlaut);
-      const opts = item.choices || anlautShuffleOpts(item.anlaut, null, schreibweise);
+      let opts = item.choices || anlautShuffleOpts(item.anlaut, null, schreibweise);
+      // Legacy: ß wurde früher per toUpperCase zu „SS"
+      opts = opts.map(o => anlautNormLetter(o) === 'ß' ? anlautApplyCase('ß', schreibweise) : o);
       // richtige Antwort = Anlaut selbst (bei Digrafen der erste Buchstabe)
-      const base = (item.anlaut.length > 1 ? item.anlaut[0] : item.anlaut).toUpperCase();
+      const base = anlautNormLetter(item.anlaut.length > 1 ? item.anlaut[0] : item.anlaut);
 
       const cells = opts.map((opt, j) => {
-        const correct = isActive && String(opt).toUpperCase() === base;
+        const correct = isActive && anlautNormLetter(opt) === base;
         const sol = correct ? "color:#2563eb;background:#dbeafe;border-radius:4px;" : "";
         return `<div style="flex:1;text-align:center;padding:3px 0;font-size:${fs}px;font-weight:700;font-family:inherit;${j < 2 ? "border-right:1px solid #bbb;" : ""}${sol}">${esc(opt)}</div>`;
       }).join("");
@@ -45,20 +52,16 @@ WIDGETS.push({
       const choiceBox = buchstabenAus ? "" :
         `<div style="display:flex;border:1.5px solid #bbb;border-radius:5px;overflow:hidden;width:${size}px;margin-top:5px;background:#fff;">${cells}</div>`;
 
-      return `<div style="flex:0 0 auto;width:${size}px;display:flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
+      return `<div style="width:${size}px;display:flex;flex-direction:column;align-items:center;">${anlautImg(src, size)}${choiceBox}</div>`;
     });
 
-    const justifyMap = { left: "flex-start", center: "center", right: "flex-end" };
-    const justify = justifyMap[align] || "flex-start";
-    return atHtml(d) +
-      `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:${gap}px;justify-content:${justify};">${rendered.join("")}</div>`;
+    return atHtml(d) + flexDistribute(rendered, { itemW: size, itemSize: `width:${size}px;`, d });
   },
 
   renderProps: d => {
     const items      = d.items || [];
     const schreibweise = d.schreibweise || "gross";
     const size       = d.size || 80;
-    const gap        = d.gap  ?? 16;
 
     const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
 
@@ -134,15 +137,7 @@ WIDGETS.push({
             oninput="this.nextElementSibling.textContent=this.value+'px'"
             onchange="upd(${d.id},'size',+this.value)" style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:36px;">${size}px</span>
-        </div>`) +
-      pr("Abstand",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="4" max="60" value="${gap}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'gap',+this.value)" style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
-        </div>`) +
-      alignToggle(d.id, d.align);
+        </div>`);
   },
 });
 
@@ -270,7 +265,16 @@ function anlautSetSchreibweise(id, val) {
   render(); renderProps(id);
 }
 
+function anlautNormLetter(letter) {
+  const s = String(letter || '');
+  // ß / ẞ / SS (Fehler durch String#toUpperCase) als ein Zeichen behandeln
+  if (s === 'ß' || s === 'ẞ' || s === 'SS' || s === 'ss') return 'ß';
+  return s.toUpperCase();
+}
+
 function anlautApplyCase(letter, schreibweise) {
+  // ß hat in der Grundschule keine SS-Großform — toUpperCase() würde „SS" erzeugen
+  if (anlautNormLetter(letter) === 'ß') return 'ß';
   if (schreibweise === 'klein') return letter.toLowerCase();
   if (schreibweise === 'gross') return letter.toUpperCase();
   return Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase();
@@ -287,7 +291,8 @@ function anlautShuffleOpts(letter, pool, schreibweise) {
   const sw  = schreibweise || 'gross';
   // Für Digrafen (Ei, Sch) den ersten Buchstaben als Kästchen-Buchstabe nehmen
   const baseLetter = letter.length > 1 ? letter[0] : letter;
-  const p = ALL.filter(l => l !== baseLetter.toUpperCase());
+  const baseNorm = anlautNormLetter(baseLetter);
+  const p = ALL.filter(l => anlautNormLetter(l) !== baseNorm);
   for (let i = p.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [p[i], p[j]] = [p[j], p[i]];

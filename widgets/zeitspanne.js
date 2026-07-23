@@ -35,16 +35,24 @@ function zeitspanneGen(count, stufe, stundenbereich) {
   });
 }
 
+/** Uhren- und Textmaße: klein = bisherige 80 px. */
+function zeitspanneMetrics(d) {
+  const g = d.groesse === 'gross' ? 'gross' : d.groesse === 'mittel' ? 'mittel' : 'klein';
+  if (g === 'gross')  return { size: 120, bh: 36, bfs: 14, spanFs: 14 };
+  if (g === 'mittel') return { size: 100, bh: 30, bfs: 13, spanFs: 14 };
+  return { size: 80, bh: 24, bfs: 12, spanFs: 13 };
+}
+
 WIDGETS.push({
-  meta: { type:"zeitspanne", group:"zeit", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik" },
+  meta: { type:"zeitspanne", group:"zeit", label:"Zeitspanne", desc:"Zeitspanne zwischen zwei Uhren", icon:"⏱", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", zeigerFarbe:false, aufgabenNr:0, aufgabenText:'' };
+    const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", zeigerFarbe:false, groesse:"klein", aufgabenNr:0, aufgabenText:'' };
     return { id, type:"zeitspanne", ...cfg, items: zeitspanneGen(cfg.anzahl, cfg.stufe, cfg.stundenbereich) };
   },
 
   render: d => {
-    const SIZE      = 80;
+    const { size: SIZE, bh, bfs, spanFs } = zeitspanneMetrics(d);
     const items     = d.items || zeitspanneGen(d.anzahl||4, d.stufe||"ganz", d.stundenbereich||"1-12");
     const fmt       = d.textfeldFormat || "colon";
     const isActive  = d.id === selId || _solutionsMode;
@@ -57,18 +65,20 @@ WIDGETS.push({
     const mkClockLabel = (h, m) => {
       if (tf === "none") return "";
       if (isActive) {
-        const t1 = `<div style="margin-top:4px;width:${SIZE}px;height:24px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;"><span style="font-size:12px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${timeStr(h,m)} Uhr</span></div>`;
+        const t1 = `<div style="margin-top:4px;width:${SIZE}px;height:${bh}px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;"><span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${timeStr(h,m)} Uhr</span></div>`;
         if (tf === "zwei") {
           const h2 = (h + 12) % 24;
-          const t2 = `<div style="margin-top:4px;width:${SIZE}px;height:24px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;"><span style="font-size:12px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${timeStr(h2,m)} Uhr</span></div>`;
+          const t2 = `<div style="margin-top:4px;width:${SIZE}px;height:${bh}px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;"><span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${timeStr(h2,m)} Uhr</span></div>`;
           return t1 + t2;
         }
         return t1;
       } else {
-        const box = `<div style="margin-top:4px;">${uhrZeitText(SIZE)}</div>`;
+        const box = `<div style="margin-top:4px;">${uhrZeitText(SIZE, bh, bfs)}</div>`;
         return tf === "zwei" ? box + box : box;
       }
     };
+
+    const midMin = Math.max(80, Math.round(SIZE * 0.875));
 
     const mkSpanField = (u) => {
       let t1 = u.h1 * 60 + u.m1;
@@ -77,10 +87,12 @@ WIDGETS.push({
       const diff  = t2 - t1;
       const spanH = Math.floor(diff / 60);
       const spanM = diff % 60;
+      const boxBase = `width:100%;min-width:${midMin}px;box-sizing:border-box;padding:3px 10px;border-radius:3px;font-size:${spanFs}px;font-family:'DidactGothic7',sans-serif;`;
+      const boxIdle = `width:100%;min-width:${midMin}px;box-sizing:border-box;padding:3px 3px 3px 10px;border-radius:3px;font-size:${spanFs}px;font-family:'DidactGothic7',sans-serif;`;
       if (isActive) {
-        return `<div style="width:100%;box-sizing:border-box;padding:3px 6px;border:1.5px solid #2563eb;border-radius:3px;font-size:13px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;text-align:center;">${spanH}h ${spanM}min</div>`;
+        return `<div style="${boxBase}border:1.5px solid #2563eb;color:#2563eb;font-weight:700;text-align:center;white-space:nowrap;">${spanH}h ${spanM}min</div>`;
       }
-      return `<div style="width:100%;box-sizing:border-box;padding:3px 6px;border:1.5px solid #555;border-radius:3px;font-size:13px;font-family:'DidactGothic7',sans-serif;color:#333;display:flex;"><span style="flex:1;text-align:right;">h</span><span style="flex:1;text-align:right;">min</span></div>`;
+      return `<div style="${boxIdle}border:1.5px solid #555;color:#333;display:flex;align-items:center;white-space:nowrap;"><span style="flex:1;"></span><span style="transform:translateX(-3px)">h</span><span style="flex:1;"></span><span>min</span></div>`;
     };
 
     const arrow = `<div style="width:100%;height:18px;display:flex;align-items:center;">
@@ -94,7 +106,7 @@ WIDGETS.push({
           ${uhrSvg(u.h1, u.m1, SIZE, true, farbe)}
           ${mkClockLabel(u.h1, u.m1)}
         </div>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <div style="flex:1 1 ${midMin}px;min-width:${midMin}px;display:flex;flex-direction:column;align-items:stretch;gap:5px;">
           ${mkSpanField(u)}
           ${arrow}
         </div>
@@ -102,14 +114,15 @@ WIDGETS.push({
           ${uhrSvg(u.h2, u.m2, SIZE, true, farbe)}
           ${mkClockLabel(u.h2, u.m2)}
         </div>
-      </div>`).join("");
+      </div>`);
 
-    const _fracMap = {'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75};
-    const _frac  = _fracMap[d.widthFraction] || (d.halfWidth ? 0.5 : 1);
-    const _avail = Math.round(geom().contentW * _frac);
-    // Immer 2 Spalten → 1 Item nimmt nie die volle Breite; bei halber Widget-Breite nur 1 Spalte
-    const cols = _avail < 400 ? 1 : 2;
-    return atHtml(d) + `<div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:20px 40px;justify-content:start;">${rendered}</div>`;
+<<<<<<< HEAD
+    const itemW = SIZE * 2 + midMin + 12;
+=======
+    // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
+    const itemW = SIZE * 2 + 100;
+>>>>>>> 9cfd0029f41f816dc99070fa582c28ee65d78082
+    return atHtml(d) + flexDistribute(rendered, { itemW, d });
   },
 
   renderProps: d => {
@@ -118,6 +131,7 @@ WIDGETS.push({
     const stundenbereich = d.stundenbereich || "1-12";
     const tf            = d.textfeld === true ? "eine" : (d.textfeld === false ? "none" : (d.textfeld || "none"));
     const zeigerFarbe   = !!d.zeigerFarbe;
+    const groesse       = d.groesse === 'gross' ? 'gross' : d.groesse === 'mittel' ? 'mittel' : 'klein';
     const items         = d.items || [];
 
     const stufeOpts = [
@@ -176,6 +190,13 @@ WIDGETS.push({
     return genBlock +
       propFold('zeitspanne-manuell', 'Zeiten manuell', itemEditors, false) +
       propFold('zeitspanne-darstellung', 'Darstellung',
+      `<div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Klein",  groesse==="klein",  `upd(${d.id},'groesse','klein')`)}
+          ${toggleBtn("Mittel", groesse==="mittel", `upd(${d.id},'groesse','mittel')`)}
+          ${toggleBtn("Groß",   groesse==="gross",  `upd(${d.id},'groesse','gross')`)}
+        </div>
+      </div>` +
       `<div class="prow"><label>Textfeld</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Keins",    tf==="none", `upd(${d.id},'textfeld','none')`)}

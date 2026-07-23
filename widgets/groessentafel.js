@@ -45,6 +45,17 @@ function gtQtyText(bigVal, smallVal, pc) {
   if (!parts.length) parts.push(`0 ${pc.smallU}`);
   return parts.join(' ');
 }
+// Zwei Hälften (große / kleine Einheit). Die 2. Hälfte etwas schmaler —
+// weniger Leerraum zwischen 1. Kürzel und 2. Zahl; Einheiten bleiben zeilenweise bündig.
+function gtQtyHtml(bigVal, smallVal, pc, color) {
+  const part = (val, u, flex) => {
+    const txt = val > 0 ? `${val}&nbsp;${esc(u)}` : '&nbsp;';
+    return `<span style="flex:${flex} 1 0;min-width:0;text-align:right;padding:0 2px;`
+      + `box-sizing:border-box;color:${color};">${txt}</span>`;
+  };
+  return `<div style="display:flex;width:100%;align-items:center;">`
+    + part(bigVal, pc.bigU, 1.15) + part(smallVal, pc.smallU, 0.85) + `</div>`;
+}
 // Kommaschreibweise im großen Maß: 37 km 91 m → "37,091"; 5 € 75 ct → "5,75"
 function gtKommaText(bigVal, smallVal, places) {
   places = places || 3;
@@ -73,15 +84,61 @@ function gtGenRows(d) {
 function gtCell(content, given, active, w, h, fs, extra) {
   const show = given ? content : (active ? content : '');
   const color = given ? '#222' : '#2563eb';
-  return `<td style="border:1.2px solid #333;width:${w}px;height:${h}px;text-align:center;`
-       + `vertical-align:middle;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;`
-       + `font-weight:700;color:${color};padding:0;${extra || ''}">`
+  return `<td style="border:1.2px solid #333;width:${w}px;height:${h}px;text-align:right;`
+       + `vertical-align:middle;font-family:Arial,sans-serif;font-size:${fs}px;`
+       + `font-weight:400;color:${color};padding:0 5px 0 2px;box-sizing:border-box;${extra || ''}">`
        + `${show === '' || show == null ? '&nbsp;' : show}</td>`;
 }
 
-function gtRowHtml(row, pc, d, active, dims) {
-  const { cw, ch, qw, kw, fs } = dims;
+// Basismaße = bisheriges „Groß" (jetzt „Klein").
+// „Groß" → auf volle Widget-Breite skalieren (mit oder ohne Kommaspalte).
+// Ohne Kommaspalte: gleiche Gesamtbreite, die Spalten teilen sich den Platz —
+// keine zusätzliche Vergrößerung darüber hinaus.
+// fs/hf = Kopfzeile; vfs = Werte (etwas kleiner, Tabelle bleibt gleich groß).
+function gtDims(d) {
   const showKomma = d.komma !== false;
+  const base = { cw: 34, ch: 30, qw: 118, kw: 148, fs: 17, hf: 14, vfs: 13 };
+  if (d.groesse !== 'gross') return { ...base, showKomma, full: false, tableW: null };
+
+  const pc = GT_PAIRS[d.paar] || GT_PAIRS['km/m'];
+  const sp = pc.smallPlaces || 3;
+  const digitCols = 3 + sp;
+  // Skalierung immer relativ zur vollen Basis inkl. Kommaspalte → Ohne bleibt
+  // gleich breit wie Mit (Komma-Anteil verteilt sich auf die übrigen Spalten).
+  const baseFullW = base.qw + digitCols * base.cw + base.kw;
+  const pad = d.flush ? 0 : 18;
+  let avail = baseFullW;
+  if (typeof geom === 'function' && typeof widthFrac === 'function') {
+    avail = Math.max(baseFullW, Math.floor(geom().contentW * widthFrac(d) - pad));
+  }
+  const scale = avail / baseFullW;
+  const hScale = Math.min(scale, 1.35);
+  const fScale = Math.min(scale, 1.4);
+  const dims = {
+    cw: Math.round(base.cw * scale),
+    ch: Math.round(base.ch * hScale),
+    qw: Math.round(base.qw * scale),
+    kw: Math.round(base.kw * scale),
+    fs: Math.max(14, Math.round(base.fs * fScale)),
+    hf: Math.max(12, Math.round(base.hf * fScale)),
+    vfs: Math.max(11, Math.round(base.vfs * fScale)),
+    showKomma, full: true, tableW: avail,
+  };
+  if (!showKomma) {
+    // Freiwerdende Komma-Breite anteilig auf Größen- + Ziffernspalten verteilen
+    const digitsW = digitCols * dims.cw;
+    const rest = dims.qw + digitsW;
+    if (rest > 0) {
+      const boost = dims.kw / rest;
+      dims.qw = Math.round(dims.qw * (1 + boost));
+      dims.cw = Math.round(dims.cw * (1 + boost));
+    }
+  }
+  return dims;
+}
+
+function gtRowHtml(row, pc, d, active, dims) {
+  const { cw, ch, qw, kw, vfs, showKomma } = dims;
   const lenGiven = row.dir === 'tafel';      // Größe vorgegeben → Raster ausfüllen
   const gridGiven = row.dir === 'groesse';   // Raster vorgegeben → Größe ausfüllen
   const red = 'border-left:2.6px solid #e01b1b;';
@@ -89,18 +146,26 @@ function gtRowHtml(row, pc, d, active, dims) {
   const sp = pc.smallPlaces || 3;
   const bigD = gtBigDigits(row.bigVal);
   const smallD = gtSmallDigits(row.smallVal, sp);
-  const qty = gtQtyText(row.bigVal, row.smallVal, pc);
   const komma = `${gtKommaText(row.bigVal, row.smallVal, sp)} ${pc.bigU}`;
 
+  // Größen-Spalte: zwei gleich breite Slots → Einheiten stehen zeilenweise untereinander.
+  const qtyColor = lenGiven ? '#222' : '#2563eb';
+  const qtyShow = lenGiven || active;
+  const qtyInner = qtyShow
+    ? gtQtyHtml(row.bigVal, row.smallVal, pc, qtyColor)
+    : '&nbsp;';
+  const qtyCell = `<td style="border:1.2px solid #333;width:${qw}px;height:${ch}px;`
+    + `vertical-align:middle;font-family:Arial,sans-serif;font-size:${vfs}px;`
+    + `font-weight:400;padding:0 2px;box-sizing:border-box;">${qtyInner}</td>`;
+
   let html = '<tr>';
-  // Größen-Spalte (links)
-  html += gtCell(qty, lenGiven, active, qw, ch, fs, 'text-align:center;');
+  html += qtyCell;
   // großer Block H Z E
-  bigD.forEach(dg => { html += gtCell(dg, gridGiven, active, cw, ch, fs); });
+  bigD.forEach(dg => { html += gtCell(dg, gridGiven, active, cw, ch, vfs); });
   // kleiner Block H Z E (erste Zelle roter Trennstrich)
-  smallD.forEach((dg, i) => { html += gtCell(dg, gridGiven, active, cw, ch, fs, i === 0 ? red : ''); });
+  smallD.forEach((dg, i) => { html += gtCell(dg, gridGiven, active, cw, ch, vfs, i === 0 ? red : ''); });
   // Komma-Spalte (immer auszufüllen)
-  if (showKomma) html += gtCell(komma, false, active, kw, ch, fs);
+  if (showKomma) html += gtCell(komma, false, active, kw, ch, vfs);
   html += '</tr>';
   return html;
 }
@@ -114,7 +179,7 @@ WIDGETS.push({
     const w = {
       id, type: 'groessentafel',
       paar: 'km/m', stufe: 'mittel', komma: true,
-      groesse: 'gross', anzahl: 6, align: 'center',
+      groesse: 'klein', anzahl: 6, align: 'center',
       aufgabenNr: 0, aufgabenText: '',
     };
     w.rows = gtGenRows(w);
@@ -124,12 +189,9 @@ WIDGETS.push({
   render: d => {
     const pc = GT_PAIRS[d.paar] || GT_PAIRS['km/m'];
     const active = d.id === selId || _solutionsMode;
-    const big = (d.groesse || 'gross') !== 'klein';
-    const dims = big
-      ? { cw: 34, ch: 30, qw: 112, kw: 132, fs: 17, hf: 14 }
-      : { cw: 26, ch: 24, qw: 90,  kw: 108, fs: 14, hf: 12 };
+    const dims = gtDims(d);
     const rows = d.rows || gtGenRows(d);
-    const showKomma = d.komma !== false;
+    const showKomma = dims.showKomma;
     const red = 'border-left:2.6px solid #e01b1b;';
     const sp = pc.smallPlaces || 3;
     const smallLabels = sp === 2 ? ['Z', 'E'] : ['H', 'Z', 'E'];
@@ -139,7 +201,7 @@ WIDGETS.push({
     const th = (txt, w, extra, fs, span) =>
       `<th${span ? ` colspan="${span}"` : ''} style="border:1.2px solid #333;`
       + `${w ? `width:${w}px;` : ''}height:${dims.ch}px;text-align:center;`
-      + `font-family:'DidactGothic7',sans-serif;font-size:${fs || dims.hf}px;font-weight:700;`
+      + `font-family:Arial,sans-serif;font-size:${fs || dims.hf}px;font-weight:700;`
       + `color:#333;padding:0 2px;${extra || ''}">${txt}</th>`;
 
     // Kopf: zwei Zeilen
@@ -147,20 +209,21 @@ WIDGETS.push({
     head += th('', dims.qw, '');                                          // über „Länge"
     head += th(pc.bigU, null, 'background:#e8eef9;', dims.fs, 3);         // großer Block (3 Spalten)
     head += th(pc.smallU, null, 'background:#fbe9e9;' + red, dims.fs, sp); // kleiner Block
-    if (showKomma) head += th('', dims.kw, '');                           // über „Komma"
+    if (showKomma) head += th('', dims.kw, '');                           // über „Kommaschreibung"
     head += '</tr><tr>';
     head += th(pc.art, dims.qw, '');
     ['H', 'Z', 'E'].forEach(l => head += th(l, dims.cw, ''));
     smallLabels.forEach((l, i) => head += th(l, dims.cw, i === 0 ? red : ''));
-    if (showKomma) head += th('Komma', dims.kw, '');
+    if (showKomma) head += th('Kommaschreibung', dims.kw, '');
     head += '</tr>';
 
     const body = rows.map(r => gtRowHtml(r, pc, d, active, dims)).join('');
     const align = d.align || 'center';
+    const tw = dims.tableW ? `width:${dims.tableW}px;` : '';
 
     return atHtml(d) +
       `<div style="text-align:${align};">`
-      + `<table style="border-collapse:collapse;display:inline-table;">${head}${body}</table>`
+      + `<table style="border-collapse:collapse;display:inline-table;${tw}">${head}${body}</table>`
       + `</div>`;
   },
 
@@ -168,7 +231,7 @@ WIDGETS.push({
     const paar = d.paar || 'km/m';
     const stufe = d.stufe || 'mittel';
     const komma = d.komma !== false;
-    const size = d.groesse || 'gross';
+    const size = d.groesse === 'gross' ? 'gross' : 'klein';
     const anz = d.anzahl || 6;
 
     const btn = (active, label, onclick) =>
@@ -183,13 +246,13 @@ WIDGETS.push({
 
     return row('Einheiten', GT_PAIR_ORDER, paar, 'paar') +
       row('Zahlen', GT_STUFEN, stufe, 'stufe') +
-      `<div class="prow"><label>Komma-Spalte</label><div style="display:flex;gap:4px;">`
+      `<div class="prow"><label>Kommaschreibung</label><div style="display:flex;gap:4px;">`
       + btn(komma, 'Mit', `upd(${d.id},'komma',true)`)
       + btn(!komma, 'Ohne', `upd(${d.id},'komma',false)`)
       + `</div></div>` +
       `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">`
       + btn(size === 'klein', 'Klein', `upd(${d.id},'groesse','klein')`)
-      + btn(size !== 'klein', 'Groß', `upd(${d.id},'groesse','gross')`)
+      + btn(size === 'gross', 'Groß', `upd(${d.id},'groesse','gross')`)
       + `</div></div>` +
       alignToggle(d.id, d.align) +
       pr('Anzahl Zeilen',

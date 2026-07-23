@@ -8,6 +8,7 @@ WIDGETS.push({
     desc: "Buchstaben 2D + Bild + Linie",
     icon: "🔀✏",
     category: "deutsch",
+    itemsLayout: true,
   },
 
   createData: id => {
@@ -16,12 +17,15 @@ WIDGETS.push({
     return {
       id, type: "buchstabensalat2",
       items,
-      itemsPerRow: 3,
+      itemsPerRow: 'auto',
+      itemGapH: 'normal',
+      itemGapV: 'normal',
+      itemGap: 'normal',
+      align: 'auto',
       modus: "klein",
       font: "'Grundschrift', sans-serif", fontSize: 18,
       imgSize: 40,
       boxHeight: 80,
-      gap: 10,
       lineatur: 1, lineaturGross: false,
       erstBuchstabeUnterstreichen: false,
       beispiel: false,
@@ -37,9 +41,12 @@ WIDGETS.push({
     const lineatur                  = d.lineatur                  ?? 1;
     const lineaturGross             = d.lineaturGross             || false;
     const lMul                      = lineaturGross ? 1.5 : 1;
-    const itemsPerRow               = d.itemsPerRow               || 3;
+    // Legacy numeric gap → itemGap
+    if (d.gap != null && d.itemGap == null) {
+      const g = +d.gap;
+      d.itemGap = g <= 14 ? 'eng' : g >= 28 ? 'weit' : 'normal';
+    }
     const boxHeight                 = d.boxHeight                 || 80;
-    const gap                       = d.gap                       ?? 10;
     const erstBuchstabeUnterstreichen = d.erstBuchstabeUnterstreichen || false;
     const beispiel                  = d.beispiel                  || false;
     const beispielText              = d.beispielText              ?? "";
@@ -151,12 +158,8 @@ WIDGETS.push({
       `</div>`;
     };
 
-    // Layout: Flexbox mit Umbruch statt starrem Grid. „Items pro Reihe" gibt die
-    // Zielbreite vor (so viele passen bei voller Widget-Breite). Wird das Widget
-    // schmaler gemacht, brechen die Items um (untereinander) statt zu schrumpfen —
-    // eine Mindestbreite verhindert unbenutzbar kleine Felder.
+    // Layout über flexDistribute (Footer „Anordnung": Pro Zeile / Ausrichtung / Abstand).
     const minW = Math.max(120, imgSize + 80);
-    const itemBasis = `calc((100% - ${(itemsPerRow - 1) * gap}px) / ${itemsPerRow})`;
 
     const itemCards = items.map((item, i) => {
       const src    = item.src || anlautDefaultSrc(item.anlaut);
@@ -165,15 +168,17 @@ WIDGETS.push({
       if (isActive)                { answer = word;         answerColor = '#2563eb'; }
       else if (beispiel && i === 0) { answer = beispielText; answerColor = '#222'; }
       else                          { answer = undefined; }
-      return `<div style="display:flex;flex-direction:column;gap:4px;flex:1 1 ${itemBasis};min-width:${minW}px;">` +
+      return `<div style="display:flex;flex-direction:column;gap:4px;width:100%;min-width:0;box-sizing:border-box;">` +
         scatterBox(word, src, i) +
         writeLine(answer, answerColor) +
       `</div>`;
-    }).join('');
+    });
 
-    const gridStyle = `display:flex;flex-wrap:wrap;gap:${gap}px;`;
-
-    return atHtml(d) + `<div style="${gridStyle}">${itemCards}</div>`;
+    return atHtml(d) + flexDistribute(itemCards, {
+      itemW: minW,
+      itemSize: `min-width:${minW}px;max-width:100%;`,
+      d,
+    });
   },
 
   renderProps: d => {
@@ -185,9 +190,7 @@ WIDGETS.push({
     const beispielText                = d.beispielText                ?? "";
     const erstBuchstabeUnterstreichen = d.erstBuchstabeUnterstreichen || false;
     const items                       = d.items                       || [];
-    const itemsPerRow                 = d.itemsPerRow                 || 3;
     const boxHeight                   = d.boxHeight                   || 80;
-    const gap                         = d.gap                         ?? 10;
 
     const fontOptions = GAP_FONTS.map(f =>
       `<option value="${f.value}" ${font === f.value ? "selected" : ""}>${f.label}</option>`
@@ -261,14 +264,6 @@ WIDGETS.push({
                  background:#313244;color:#cdd6f4;font-family:inherit;font-size:11px;
                  font-weight:700;cursor:pointer;">🔀 Reihenfolge mischen</button>
       </div>` : "") +
-      pr("Items pro Reihe",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="1" max="6" value="${itemsPerRow}"
-            oninput="this.nextElementSibling.textContent=this.value"
-            onchange="upd(${d.id},'itemsPerRow',+this.value)"
-            style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:16px;">${itemsPerRow}</span>
-        </div>`) +
       `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Klein", d.modus !== "gross", `bs2Modus(${d.id},'klein')`)}
@@ -289,14 +284,6 @@ WIDGETS.push({
             onchange="upd(${d.id},'boxHeight',+this.value)"
             style="flex:1;accent-color:#7287fd;">
           <span style="font-size:11px;color:#666;min-width:36px;">${boxHeight}px</span>
-        </div>`) +
-      pr("Abstand",
-        `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="range" min="4" max="60" value="${gap}"
-            oninput="this.nextElementSibling.textContent=this.value+'px'"
-            onchange="upd(${d.id},'gap',+this.value)"
-            style="flex:1;accent-color:#7287fd;">
-          <span style="font-size:11px;color:#666;min-width:30px;">${gap}px</span>
         </div>`) +
       pr("Lineatur",
         `<select onchange="upd(${d.id},'lineatur',+this.value)"

@@ -79,7 +79,7 @@ function uhrZeitText(size, bh=24, fs=12) {
 }
 
 WIDGETS.push({
-  meta: { type:"uhr", group:"zeit", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik" },
+  meta: { type:"uhr", group:"zeit", label:"Uhr", desc:"Analoge Uhren lesen", icon:"🕐", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const cfg = { anzahl:4, stufe:"ganz", stundenbereich:"1-12", textfeld:"none", gross:false, zeigerAus:false, zeigerFarbe:false, zahlenAus:false, size:120 , aufgabenNr:0, aufgabenText:''};
@@ -102,29 +102,30 @@ WIDGETS.push({
     const tf = d.textfeld === true ? "eine" : (d.textfeld === false ? "none" : (d.textfeld || "none"));
     const pad2 = n => String(n).padStart(2,'0');
     const timeStr  = (h, m) => fmt === "colon" ? `${h}:${pad2(m)}` : `${h}.${pad2(m)}`;
-    const blueBox  = (text) =>
-      `<div style="margin-top:4px;width:${size}px;height:${bh}px;border:1.5px solid #2563eb;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
-        <span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#2563eb;font-weight:700;">${text} Uhr</span></div>`;
-    const blackBox = (text) =>
-      `<div style="margin-top:4px;width:${size}px;height:${bh}px;border:1.5px solid #555;border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
-        <span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:#222;font-weight:700;">${text} Uhr</span></div>`;
+    const timeBox = (text, { solution = false } = {}) => {
+      const border = solution ? '#2563eb' : '#555';
+      const color  = solution ? '#2563eb' : '#444';
+      const weight = solution ? 'font-weight:700;' : '';
+      return `<div style="margin-top:4px;width:${size}px;height:${bh}px;border:1.5px solid ${border};border-radius:3px;display:flex;align-items:center;justify-content:flex-end;padding:0 6px;box-sizing:border-box;">
+        <span style="font-size:${bfs}px;font-family:'DidactGothic7',sans-serif;color:${color};${weight}">${text} Uhr</span></div>`;
+    };
     const showHands = !zeigerAus || _solutionsMode;
     const items = uhren.map(u => {
       const svg = uhrSvg(u.h, u.m, size, showHands, zeigerFarbe, !zahlenAus);
       let label = "";
       if (zeigerAus) {
-        // Zeiger aus → Zeit als Aufgabenstellung (immer sichtbar, schwarz)
-        label = blackBox(timeStr(u.h, u.m));
+        // Zeiger aus → Zeit als Aufgabenstellung (gleiche Schrift wie Platzhalter „Uhr")
+        label = timeBox(timeStr(u.h, u.m));
         if (tf === "zwei") {
           const h2 = (u.h + 12) % 24;
-          label += blackBox(timeStr(h2, u.m));
+          label += timeBox(timeStr(h2, u.m));
         }
       } else if (tf !== "none") {
         if (isActive) {
-          label = blueBox(timeStr(u.h, u.m));
+          label = timeBox(timeStr(u.h, u.m), { solution: true });
           if (tf === "zwei") {
             const h2 = (u.h + 12) % 24;
-            label += blueBox(timeStr(h2, u.m));
+            label += timeBox(timeStr(h2, u.m), { solution: true });
           }
         } else {
           label = `<div style="margin-top:4px;">${uhrZeitText(size,bh,bfs)}</div>`;
@@ -135,7 +136,7 @@ WIDGETS.push({
     });
 
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
-    return atHtml(d) + flexDistribute(items, { gap: 20, marginBottom: 16, itemSize: `width:${size}px;`, itemW: size, d });
+    return atHtml(d) + flexDistribute(items, { itemSize: `width:${size}px;`, itemW: size, d });
   },
 
   renderProps: d => {

@@ -167,19 +167,20 @@ function hfDims(d) {
 }
 
 function hfItemW(d) {
-  const tier = hfSizeTier(d);
   const perRow = hfPerRow(d);
-  const ideal = Math.floor((hfFullContentW() - (perRow - 1) * tier.colGap) / perRow);
+  const gap = itemsLayoutProps(d).gap;
+  const ideal = Math.floor((hfFullContentW() - (perRow - 1) * gap) / perRow);
   return Math.min(ideal, hfContentW(d));
 }
 
 function hfGridHtml(cells, d) {
-  const tier = hfSizeTier(d);
-  const itemW = hfItemW(d);
-  const inner = cells.map(c =>
-    `<div style="width:${itemW}px;flex:0 0 auto;">${c}</div>`
-  ).join('');
-  return `<div style="display:flex;flex-wrap:wrap;column-gap:${tier.colGap}px;row-gap:${tier.rowGap}px;">${inner}</div>`;
+  const D = hfDims(d);
+  const itemW = Math.max(D.W, hfItemW(d));
+  return flexDistribute(cells, {
+    itemW,
+    itemSize: `width:${itemW}px;max-width:100%;`,
+    d,
+  });
 }
 
 function hfSvg(base, op, d) {
@@ -301,13 +302,14 @@ function hfLabel(item, d) {
 }
 
 WIDGETS.push({
-  meta: { type:'hunderterfeld', label:'Hunderterfeld', desc:'Punkte-/Kästchenfeld bis 100', icon:'⣿', category:'mathematik' },
+  meta: { type:'hunderterfeld', label:'Hunderterfeld', desc:'Punkte-/Kästchenfeld bis 100', icon:'⣿', category:'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
       id, type:'hunderterfeld',
       modus:'feld', format:'ergebnis', luecke:'erste', ueberschreitung:'ohne', plusStapel:false,
       anzahl:4, darstellung:'punkte', farbe:'sw', groesse:'klein',
+      itemsPerRow:'auto', align:'auto', itemGap:'normal',
       aufgabenNr:0, aufgabenText:'',
     };
     w.items = hfGenAll(w);

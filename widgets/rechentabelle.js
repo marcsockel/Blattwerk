@@ -158,7 +158,7 @@ function rtTableHtml(tbl, d) {
 }
 
 WIDGETS.push({
-  meta: { type:'rechentabelle', group:'rechenformate', label:'Rechentabelle', desc:'Funktionstabelle (Plus, Minus, Mal, Geteilt)', icon:'▦', category:'mathematik' },
+  meta: { type:'rechentabelle', group:'rechenformate', label:'Rechentabelle', desc:'Funktionstabelle (Plus, Minus, Mal, Geteilt)', icon:'▦', category:'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -182,7 +182,7 @@ WIDGETS.push({
     const itemW = (ncol + 1) * cwW + 4;
     return atHtml(d) + flexDistribute(
       tables.map(t => rtTableHtml(t, d)),
-      { gap: 28, marginBottom: 14, itemSize: `width:${itemW}px;`, itemW, d }
+      { itemSize: `width:${itemW}px;`, itemW, d }
     );
   },
 

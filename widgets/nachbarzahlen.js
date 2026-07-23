@@ -139,7 +139,7 @@ function nzApplyManual(w, text) {
 }
 
 WIDGETS.push({
-  meta: { type: 'nachbarzahlen', label: 'Nachbarzahlen', desc: 'Zahl davor und danach', icon: '«»', category: 'mathematik' },
+  meta: { type: 'nachbarzahlen', label: 'Nachbarzahlen', desc: 'Zahl davor und danach', icon: '«»', category: 'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -150,7 +150,11 @@ WIDGETS.push({
       cols: 2,
       aufgabenProPaeckchen: 4,
       groesse: 'klein',
-      align: 'center',
+      itemsPerRow: 'auto',
+      align: 'auto',
+      itemGapH: 'normal',
+      itemGapV: 'normal',
+      itemGap: 'normal',
       aufgabenNr: 0, aufgabenText: '',
     };
     nzRegen(w);
@@ -223,7 +227,7 @@ WIDGETS.push({
 
     return atHtml(d) + flexDistribute(
       groups.map(renderGroup),
-      { gap: 40, marginBottom: 16, sample, itemW, d, estimate: true }
+      { sample, itemW, d, estimate: true }
     );
   },
 
@@ -276,7 +280,6 @@ WIDGETS.push({
           ${toggleBtn('Mittel', groesse === 'mittel', `upd(${d.id},'groesse','mittel')`)}
           ${toggleBtn('Groß', groesse === 'gross', `upd(${d.id},'groesse','gross')`)}
         </div></div>` +
-      alignToggle(d.id, d.align) +
       `<button onclick="event.stopPropagation();nzWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;

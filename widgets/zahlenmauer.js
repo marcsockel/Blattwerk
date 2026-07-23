@@ -126,7 +126,7 @@ function zmSvg(mauer, n, fillMode, isActive=false) {
 }
 
 WIDGETS.push({
-  meta: { type:"zahlenmauer", group:"rechenformate", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik" },
+  meta: { type:"zahlenmauer", group:"rechenformate", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;
@@ -144,7 +144,7 @@ WIDGETS.push({
     const svgs = mauern.slice(0, anzahl).map(m => zmSvg(m, n, fillMode, active));
     const itemW   = Math.round(n * 54 + 2);
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
-    return atHtml(d) + flexDistribute(svgs, { gap: 20, marginBottom: 12, itemSize: `width:${itemW}px;`, itemW, d });
+    return atHtml(d) + flexDistribute(svgs, { itemSize: `width:${itemW}px;`, itemW, d });
   },
 
   renderProps: d => {

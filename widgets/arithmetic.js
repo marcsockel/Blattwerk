@@ -2,7 +2,7 @@
 const ARITH_DEFAULT_FONT = "'Arial', sans-serif";
 
 WIDGETS.push({
-  meta: { type:"arithmetic", label:"Rechenaufgaben", desc:"Plus, Minus, Mal, Geteilt", icon:"➕", category:"mathematik" },
+  meta: { type:"arithmetic", label:"Rechenaufgaben", desc:"Plus, Minus, Mal, Geteilt", icon:"➕", category:"mathematik", itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -19,7 +19,11 @@ WIDGETS.push({
       vergleich: false,
       vergleichSeiten: "gemischt",
       luecke: "erste",
-      showLoesungen: false, groesse:'klein', font: ARITH_DEFAULT_FONT, aufgabenNr:0, aufgabenText:'',
+      showLoesungen: false, groesse:'klein', font: ARITH_DEFAULT_FONT,
+      paeckchenAbc: false,
+      itemsPerRow: 'auto', align: 'auto',
+      itemGapH: 'normal', itemGapV: 'normal', itemGap: 'normal',
+      aufgabenNr:0, aufgabenText:'',
     };
     arithDoGenerate(w);
     return w;
@@ -298,13 +302,19 @@ WIDGETS.push({
       return `<tr>${cell(p.left, "right", leftContent, lW)}${opCell}${cell(p.right, "right", rightContent, rW)}${ansCell}</tr>`;
     };
 
-    const renderGroup = group => {
+    const renderGroup = (group, gi) => {
       const rows = group.map(p => {
         if (ergaenzungZufall && p.result != null && p.raw === undefined && !p.isVergleich && !p.isZeichen)
           return renderZufallRow(p);
         return renderTaskRow(p);
       }).join('');
-      return `<table style="border-collapse:collapse;">${rows}</table>`;
+      const table = `<table style="border-collapse:collapse;">${rows}</table>`;
+      if (!d.paeckchenAbc) return table;
+      const letter = String.fromCharCode(97 + (gi % 26)); // a) b) c) …
+      return `<div style="display:flex;align-items:flex-start;gap:${px(6)}px;">
+        <span style="font-family:${FF};font-size:${FS}px;font-weight:700;line-height:${LH}px;flex-shrink:0;">${letter})</span>
+        ${table}
+      </div>`;
     };
 
     // Einheitliches Verteilungs-Layout (siehe flexDistribute in helpers.js). Items sind
@@ -313,8 +323,8 @@ WIDGETS.push({
     // itemW hier nur GROB geschätzt (font-abhängige Breite) — dient allein der Voll/Nicht-
     // voll-Entscheidung in flexDistribute; die echte Spaltenzahl misst der Browser.
     const tasksHtml = atHtml(d) + flexDistribute(
-      groups.map(g => renderGroup(g)),
-      { gap: 24, marginBottom: 16, sample: parsed.length ? renderGroup([parsed[0]]) : '',
+      groups.map((g, gi) => renderGroup(g, gi)),
+      { sample: parsed.length ? renderGroup([parsed[0]], 0) : '',
         itemW: Math.round((3 * maxDigits * 9 + 70) * S), d, estimate: true }
     );
 

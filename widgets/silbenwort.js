@@ -96,7 +96,8 @@ WIDGETS.push({
     label: "Silbenwort",
     desc: "Wörter mit Silbenbögen",
     icon: "⌢",
-    category: "deutsch"
+    category: "deutsch",
+    itemsLayout: true,
   },
 
   createData: id => ({
@@ -106,6 +107,8 @@ WIDGETS.push({
     font: "inherit",
     modus: "gleichlang", // "wortform" | "gleichlang" | "zeichnen"
     arcWidth: 60,
+    itemGap: "normal",
+    align: "auto",
     ausnahmen: "", aufgabenNr:0, aufgabenText:''
   }),
 
@@ -119,28 +122,32 @@ WIDGETS.push({
     window._silbenCustomText = d.ausnahmen || '';
 
     const boxH = Math.round(fontSize * 1.4); // Kastenhöhe im Zeichnen-Modus
+    const clean = words.map(w => w.trim()).filter(Boolean);
 
-    const items = words
-      .map(w => w.trim()).filter(Boolean)
-      .map((w, wi) => {
-        if (modus === "zeichnen") {
-          const wordId = `silbwort-zeichnen-${d.id}-${wi}`;
-          // Wort oben, darunter ein Kasten – Breite wird nach Render gemessen
-          const box = `<div id="${wordId}-box"
-                            style="border:1.5px solid #333;border-radius:2px;
-                                   height:${boxH}px;margin-top:4px;border-color:#aaa;border-radius:3px;"></div>`;
-          const wordSpan = `<div id="${wordId}"
-                                 data-zeichnen-widget="${d.id}"
-                                 style="font-size:${fontSize}px;font-family:${font};
-                                        line-height:1;white-space:nowrap;"
-                            >${esc(w)}</div>`;
-          return `<div style="display:inline-block;margin:0 18px 16px 0;">${wordSpan}${box}</div>`;
-        }
-        const inner = modus === "gleichlang"
-          ? silbenbogenGleichlangHTML(w, fontSize, arcWidth, d.id, wi)
-          : silbenbogenHTML(w, fontSize);
-        return `<div style="display:inline-block;margin:0 18px 16px 0;font-family:${font};">${inner}</div>`;
-      }).join('');
+    const items = clean.map((w, wi) => {
+      if (modus === "zeichnen") {
+        const wordId = `silbwort-zeichnen-${d.id}-${wi}`;
+        // Wort oben, darunter ein Kasten – Breite wird nach Render gemessen
+        const box = `<div id="${wordId}-box"
+                          style="border:1.5px solid #333;border-radius:2px;
+                                 height:${boxH}px;margin-top:4px;border-color:#aaa;border-radius:3px;"></div>`;
+        const wordSpan = `<div id="${wordId}"
+                               data-zeichnen-widget="${d.id}"
+                               style="font-size:${fontSize}px;font-family:${font};
+                                      line-height:1;white-space:nowrap;"
+                          >${esc(w)}</div>`;
+        return `<div style="display:inline-block;line-height:1.4;">${wordSpan}${box}</div>`;
+      }
+      const inner = modus === "gleichlang"
+        ? silbenbogenGleichlangHTML(w, fontSize, arcWidth, d.id, wi)
+        : silbenbogenHTML(w, fontSize);
+      return `<div style="display:inline-block;font-family:${font};line-height:1.4;">${inner}</div>`;
+    });
+
+    const avgLen = clean.length
+      ? clean.reduce((s, w) => s + w.length, 0) / clean.length
+      : 6;
+    const itemW = Math.ceil(avgLen * fontSize * 0.6 + (modus === "gleichlang" ? 24 : 12));
 
     const trigger = modus === "gleichlang"
       ? `<img src="" onerror="this.onerror=null;silbenwortDrawGleichlang(${d.id})" style="display:none">`
@@ -148,7 +155,9 @@ WIDGETS.push({
       ? `<img src="" onerror="this.onerror=null;silbenwortSyncBoxen(${d.id})" style="display:none">`
       : '';
 
-        return atHtml(d) + `<div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px 20px;line-height:1.4;">${items}${trigger}</div>`;
+    return atHtml(d) + (items.length
+      ? flexDistribute(items, { itemW, d }) + trigger
+      : '') ;
   },
 
   renderProps: d => {

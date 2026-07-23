@@ -151,7 +151,7 @@ function zrWheelSvg(wh, d) {
 }
 
 WIDGETS.push({
-  meta: { type:'zahlenrad', group:'rechenformate', label:'Zahlenrad', desc:'Rechenrad mit Innen-/Außenring', icon:'☸', category:'mathematik' },
+  meta: { type:'zahlenrad', group:'rechenformate', label:'Zahlenrad', desc:'Rechenrad mit Innen-/Außenring', icon:'☸', category:'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
@@ -173,7 +173,7 @@ WIDGETS.push({
     const dia = big ? 162 : 140;
     return atHtml(d) + flexDistribute(
       wheels.map(wh => zrWheelSvg(wh, d)),
-      { gap: 14, marginBottom: 12, itemSize: `width:${dia}px;`, itemW: dia, d }
+      { itemSize: `width:${dia}px;`, itemW: dia, d }
     );
   },
 

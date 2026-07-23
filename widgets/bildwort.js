@@ -9,6 +9,16 @@ function bwShuffle(n) {
   return arr;
 }
 
+/** Max. Items pro Zeile (Querformat) — Legacy-Helfer, nutzt itemsLayoutProps. */
+function bwProZeile(d) {
+  const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
+  if (L && L.itemsPerRow !== 'auto') return L.itemsPerRow;
+  // Legacy proZeile / Default 2
+  const p = d.itemsPerRow != null ? d.itemsPerRow : d.proZeile;
+  if (p === 'auto' || p == null) return 2;
+  return Math.max(1, Math.min(6, Math.round(+p) || 2));
+}
+
 /** Klein / Mittel / Groß — mit Migration alter Werte. */
 function bwGroesse(d) {
   if (d && d._bwG3) {
@@ -56,11 +66,10 @@ function bwTrenlinienCss(d) {
   })[b] || "1px solid #333";
 }
 
-/** Gemeinsame Props: Bildgröße, Schriftgröße, Pro Zeile, Trennlinien. */
+/** Gemeinsame Props: Bildgröße, Schriftgröße, Trennlinien (Anordnung = Footer). */
 function bwSharedLayoutProps(d) {
   const size = d.imageSize || 80;
   const g = bwGroesse(d);
-  const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
   const trenn = !!d.trennlinien;
   const trennStil = d.trennStil || "thin";
   const toggleBtn = (label, active, onclick) =>
@@ -90,14 +99,6 @@ function bwSharedLayoutProps(d) {
         ${toggleBtn("Groß", g === "gross", `bwSetGroesse(${d.id},'gross')`)}
       </div>
     </div>` +
-    `<div class="prow"><label>Pro Zeile</label>
-      <div style="display:flex;gap:6px;align-items:center;">
-        <input type="range" min="1" max="3" step="1" value="${proZeile}"
-          oninput="this.nextElementSibling.textContent=this.value"
-          onchange="upd(${d.id},'proZeile',+this.value)" style="flex:1;accent-color:#7287fd;">
-        <span style="font-size:11px;color:#666;min-width:14px;font-weight:700;">${proZeile}</span>
-      </div>
-    </div>` +
     `<div class="prow"><label>Trennlinien</label>
       <div style="display:flex;gap:4px;">
         ${toggleBtn("Aus", !trenn, `upd(${d.id},'trennlinien',false)`)}
@@ -107,59 +108,56 @@ function bwSharedLayoutProps(d) {
     </div>`;
 }
 
-/** Gemeinsames Item-Raster (Pro Zeile + optionale Trennlinien). */
+/** Gemeinsames Item-Raster. Ohne Trennlinien → flexDistribute; mit Trennlinien → Grid + Borders. */
 function bwItemsGrid(d, cellHtmls) {
-  const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
   const trenn = !!d.trennlinien;
-  const colGap = trenn ? 0 : 24;
-  const rowMb = trenn ? 0 : 32;
-  const cellPad = trenn ? "22px 14px" : "0";
+  if (!trenn) {
+    const { size } = bwSizeMetrics(d);
+    // Grobe Itembreite: Bild + Wortliste nebeneinander ≈ size + ~100
+    const itemW = size + 110;
+    return flexDistribute(cellHtmls, { itemW, d });
+  }
+  const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
+  const proZeile = (L && L.itemsPerRow !== 'auto') ? L.itemsPerRow : bwProZeile(d);
+  const cellPad = "22px 14px";
   const lineCss = bwTrenlinienCss(d);
   const n = cellHtmls.length;
   const rows = Math.max(1, Math.ceil(n / proZeile));
-  const itemBasis = proZeile === 1
-    ? null
-    : `calc(${100 / proZeile}% - ${colGap * (proZeile - 1) / proZeile}px)`;
 
   const wrap = (inner, i) => {
-    if (trenn) {
-      const col = i % proZeile;
-      const row = Math.floor(i / proZeile);
-      const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
-      const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
-      return `<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}">${inner}</div>`;
-    }
-    // 1 pro Zeile: volle Breite, damit wirklich nur ein Item nebeneinander passt
-    if (proZeile === 1) {
-      return `<div style="flex:0 0 100%;width:100%;box-sizing:border-box;margin-bottom:${rowMb}px;">${inner}</div>`;
-    }
-    return `<div style="flex:0 0 ${itemBasis};max-width:${itemBasis};box-sizing:border-box;margin-bottom:${rowMb}px;">${inner}</div>`;
+    const col = i % proZeile;
+    const row = Math.floor(i / proZeile);
+    const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
+    const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
+    return `<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}">${inner}</div>`;
   };
 
   const cells = cellHtmls.map((html, i) => wrap(html, i));
-  if (trenn) {
-    while (cells.length < rows * proZeile) {
-      const i = cells.length;
-      const col = i % proZeile;
-      const row = Math.floor(i / proZeile);
-      const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
-      const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
-      cells.push(`<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}"></div>`);
-    }
-    return `<div style="display:grid;grid-template-columns:repeat(${proZeile},1fr);">${cells.join("")}</div>`;
+  while (cells.length < rows * proZeile) {
+    const i = cells.length;
+    const col = i % proZeile;
+    const row = Math.floor(i / proZeile);
+    const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
+    const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
+    cells.push(`<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}"></div>`);
   }
-  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${colGap}px;row-gap:0;justify-content:flex-start;margin-bottom:-${rowMb}px;">${cells.join("")}</div>`;
+  const layout = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : { gap: 24, mb: 16 };
+  return `<div style="display:grid;grid-template-columns:repeat(${proZeile},1fr);column-gap:${layout.gap}px;row-gap:${layout.mb}px;">${cells.join("")}</div>`;
 }
 
 WIDGETS.push({
-  meta: { type:"bildwort", label:"Bild-Wort-Zuordnung", desc:"Bild mit Wort verbinden", icon:"🖼↔", category:"deutsch" },
+  meta: { type:"bildwort", label:"Bild-Wort-Zuordnung", desc:"Bild mit Wort verbinden", icon:"🖼↔", category:"deutsch", itemsLayout: true },
 
   createData: id => ({
     id, type:"bildwort",
     imageSize: 80,
     groesse: "klein",
     _bwG3: true,
-    proZeile: 2,
+    itemsPerRow: 'auto',
+    align: 'auto',
+    itemGapH: 'normal',
+    itemGapV: 'normal',
+    itemGap: 'normal',
     trennlinien: false,
     trennStil: "thin",
     aufgaben: [
@@ -171,7 +169,6 @@ WIDGETS.push({
 
   render: d => {
     const { size, fontSize, cb } = bwSizeMetrics(d);
-    const proZeile = Math.max(1, Math.min(3, d.proZeile || 2));
     const trenn = !!d.trennlinien;
     const isActive = d.id === selId || _solutionsMode;
     const checkbox = on => {
@@ -211,7 +208,8 @@ WIDGETS.push({
         ).join("") +
         `</div>`;
 
-      const fullWidth = proZeile > 1 || trenn;
+      const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
+      const fullWidth = trenn || (L && L.itemsPerRow !== 'auto');
       return `<div style="display:flex;align-items:center;gap:16px;${fullWidth ? 'width:100%;' : 'width:max-content;'}min-width:0;box-sizing:border-box;">
           ${imgEl}
           ${wordList}

@@ -90,7 +90,7 @@ function ztPiecesHtml(d) {
   const slot = 4 * cs;
   return flexDistribute(
     (d.pieces || []).map(p => ztPieceSvg(p, d, cs)),
-    { gap: 16, marginBottom: 14, itemSize: `width:${slot}px;height:${slot}px;display:flex;align-items:center;justify-content:center;`, itemW: slot, d }
+    { itemSize: `width:${slot}px;height:${slot}px;display:flex;align-items:center;justify-content:center;`, itemW: slot, d }
   );
 }
 
@@ -138,12 +138,13 @@ function ztChartSvg(d) {
 }
 
 WIDGETS.push({
-  meta: { type:'zahlentafel', label:'Zahlentafel', desc:'Hundertertafel 1–100', icon:'🔢', category:'mathematik' },
+  meta: { type:'zahlentafel', label:'Zahlentafel', desc:'Hundertertafel 1–100', icon:'🔢', category:'mathematik', itemsLayout: true },
 
   createData: id => {
     const w = {
       id, type:'zahlentafel',
-      modus:'luecken', anzahl:15, circle:'', groesse:'gross', align:'left', schatten:false,
+      modus:'luecken', anzahl:15, circle:'', groesse:'gross', align:'auto', itemGap:'normal',
+      itemsPerRow:'auto', schatten:false,
       aufgabenNr:0, aufgabenText:'',
     };
     ztGenerate(w);
@@ -152,7 +153,8 @@ WIDGETS.push({
 
   render: d => {
     const modus = d.modus || 'luecken';
-    const align = d.align || 'left';
+    const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : { align: 'left' };
+    const chartAlign = ['left', 'center', 'right'].includes(L.align) ? L.align : 'left';
     if (modus === 'stuecke') {
       if (!Array.isArray(d.pieces)) ztGenerate(d);
       return atHtml(d) + ztPiecesHtml(d);
@@ -165,7 +167,7 @@ WIDGETS.push({
         Kreise ein:&nbsp; <b>${nums.length ? nums.join(',&nbsp; ') : '—'}</b></div>`;
     }
     return atHtml(d) +
-      `<div style="text-align:${align};">${head}<div style="display:inline-block;text-align:left;">${ztChartSvg(d)}</div></div>`;
+      `<div style="text-align:${chartAlign};">${head}<div style="display:inline-block;text-align:left;">${ztChartSvg(d)}</div></div>`;
   },
 
   renderProps: d => {
@@ -218,7 +220,6 @@ WIDGETS.push({
     out += `<div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">${vtgl(size,'klein','Klein','groesse')}${vtgl(size,'gross','Groß','groesse')}</div>
       </div>`;
-    if (modus !== 'stuecke') out += alignToggle(d.id, d.align);  // Links/Mitte/Rechts
     return out;
   },
 });
