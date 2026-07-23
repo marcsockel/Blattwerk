@@ -116,7 +116,7 @@ WIDGETS.push({
         </div>
       </div>`);
 
-<<<<<<< HEAD
+    // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
     const itemW = SIZE * 2 + midMin + 12;
 =======
     // Zwei Uhren + Mitte ≈ 2*SIZE + ~80
