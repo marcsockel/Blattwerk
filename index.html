@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#1e1e2e">
-<title>Blattwerk – Worksheet Builder</title>
+<meta name="theme-color" content="#1c1e23">
+<title>Blattwerkstatt – Worksheet Builder</title>
 <!-- Lokale Schriften statt Google-Fonts-CDN (offline-fähig) -->
 <link rel="stylesheet" href="fonts/vendor/fonts.css">
 <!-- Schriften vorladen: verhindert, dass Safari beim ersten Layout die ch-Einheit
@@ -28,7 +28,7 @@
   font-weight: 400;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#f0eee8;--sb:#1e1e2e;--sbt:#cdd6f4;--acc:#f38ba8;--acc2:#a6e3a1;--acc3:#89b4fa;--acc4:#fab387;--tb:#181825;}
+:root{--bg:#e7eaef;--sb:#191b20;--sbt:#c7cad1;--acc:#f38ba8;--acc2:#a6e3a1;--acc3:#89b4fa;--acc4:#fab387;--tb:#141519;--acc5:#3b6fd4;}
 /* ── Seitengeometrie (A4). Default = Hochformat. body.landscape überschreibt → Querformat.
    ALLE festen Blattmaße hängen an diesen Variablen; JS-Pendants in PAGE_GEOM (Überlauf/Übersicht). */
 :root{
@@ -52,36 +52,38 @@ body.landscape{
   --prn-page-minh:207mm;
   --prn-page-maxh:209mm;
 }
-body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1e1e2e;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#1c1e23;}
 /* Toolbar */
-#toolbar{background:var(--tb);color:var(--sbt);display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;border-bottom:2px solid #313244;}
-.logo{font-size:16px;font-weight:800;color:var(--acc);letter-spacing:-.5px;margin-right:8px;}.logo span{display:inline-block;color:var(--acc3);}
+#toolbar{background:var(--tb);color:var(--sbt);display:flex;align-items:center;gap:10px;padding:9px 16px;flex-shrink:0;border-bottom:2px solid #24262c;}
+.logo{font-size:16px;font-weight:800;color:var(--sbt);letter-spacing:-.3px;margin-right:8px;display:inline-flex;align-items:center;}
+.logo::before{content:'';width:16px;height:16px;border-radius:4px;background:var(--acc5);flex-shrink:0;margin-right:8px;}
+.logo span{display:inline-block;font-weight:400;color:var(--sbt);}
 @keyframes logoIn{from{opacity:0;transform:translateY(-6px) scale(.9);}to{opacity:1;transform:none;}}
 @keyframes logoWerkIn{from{opacity:0;transform:translateX(10px);}70%{transform:translateX(-2px);}to{opacity:1;transform:none;}}
 .logo.logo-intro{animation:logoIn .65s cubic-bezier(.34,1.35,.64,1) both;}
 .logo.logo-intro span{animation:logoWerkIn .55s .2s cubic-bezier(.34,1.2,.64,1) both;}
 @media (prefers-reduced-motion:reduce){.logo.logo-intro,.logo.logo-intro span{animation:none!important;}}
-.tbtn{background:#313244;border:none;color:var(--sbt);padding:5px 13px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:background .15s;}
-.tbtn:hover{background:#45475a;}.tbtn.p{background:var(--acc);color:#1e1e2e;}.tbtn.p:hover{background:#eb6f92;}
+.tbtn{background:transparent;border:none;color:var(--sbt);padding:6px 11px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:background .15s,color .15s;}
+.tbtn:hover{background:rgba(255,255,255,.07);color:#fff;}.tbtn.p{background:transparent;color:var(--acc5);}.tbtn.p:hover{background:rgba(59,111,212,.14);color:#5a8ce0;}
 .spacer{flex:1;}
 /* Layout */
 #layout{display:flex;flex:1;overflow:hidden;}
 /* Sidebar */
-#sidebar{width:220px;background:var(--sb);color:var(--sbt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;border-right:2px solid #313244;}
-#sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:#45475a;border-radius:4px;}
+#sidebar{width:220px;background:var(--sb);color:var(--sbt);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;border-right:2px solid #24262c;}
+#sidebar::-webkit-scrollbar{width:4px;}#sidebar::-webkit-scrollbar-thumb{background:#2f3239;border-radius:4px;}
 .sb-search{padding:10px 12px 6px;position:sticky;top:0;background:var(--sb);z-index:2;}
-.sb-search input{width:100%;background:#313244;border:none;border-radius:5px;padding:6px 9px;color:var(--sbt);font-family:inherit;font-size:12px;outline:none;}
+.sb-search input{width:100%;background:#24262c;border:none;border-radius:5px;padding:6px 9px;color:var(--sbt);font-family:inherit;font-size:12px;outline:none;}
 .sb-search input::placeholder{color:#6c7086;}
 /* Category tabs */
-.cat-tabs{display:flex;gap:0;border-bottom:2px solid #313244;flex-shrink:0;}
+.cat-tabs{display:flex;gap:0;border-bottom:2px solid #24262c;flex-shrink:0;}
 .cat-tab{flex:1;background:transparent;border:none;color:#6c7086;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:color .15s,background .15s;border-bottom:2px solid transparent;margin-bottom:-2px;}
-.cat-tab:hover{color:var(--sbt);background:#252535;}
+.cat-tab:hover{color:var(--sbt);background:#24262c;}
 .cat-tab.active{color:var(--sbt);border-bottom-color:var(--cat-color,#89b4fa);}
 /* Widget buttons */
 .wcat{padding:8px 10px 4px;}
 .catlabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#6c7086;margin-bottom:5px;}
-.wbtn{display:flex;align-items:center;gap:7px;width:100%;background:#313244;border:none;border-radius:6px;color:var(--sbt);padding:6px 9px;margin-bottom:3px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;text-align:left;transition:background .12s,transform .1s;}
-.wbtn:hover{background:#45475a;transform:translateX(2px);}
+.wbtn{display:flex;align-items:center;gap:7px;width:100%;background:#24262c;border:none;border-radius:6px;color:var(--sbt);padding:6px 9px;margin-bottom:3px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;text-align:left;transition:background .12s,transform .1s;}
+.wbtn:hover{background:#2f3239;transform:translateX(2px);}
 .wi{font-size:13px;width:18px;text-align:center;flex-shrink:0;}
 .wd{font-size:10px;color:#6c7086;font-weight:400;display:block;}
 .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-left:auto;}
@@ -122,7 +124,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .ov-cont-badge{position:absolute;top:50%;transform:translateY(-50%);z-index:3;
   width:18px;height:28px;background:#f38ba8;border-radius:3px;
   display:flex;align-items:center;justify-content:center;
-  font-size:11px;color:#1e1e2e;font-weight:900;line-height:1;pointer-events:none;}
+  font-size:11px;color:#1c1e23;font-weight:900;line-height:1;pointer-events:none;}
 .ov-cont-badge.right{right:-9px;border-radius:3px 0 0 3px;}
 .ov-cont-badge.left {left:-9px; border-radius:0 3px 3px 0;}
 /* Widgets on canvas */
@@ -133,7 +135,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wacts.wacts-right{right:3px;left:auto;}
 .wacts.wacts-left{left:3px;right:auto;}
 .wwrap:hover > .wacts,.wwrap.sel > .wacts{display:flex;}
-.wa{background:var(--acc3);border:none;border-radius:3px;color:#1e1e2e;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;font-family:inherit;}
+.wa{background:var(--acc3);border:none;border-radius:3px;color:#1c1e23;font-size:10px;font-weight:700;padding:2px 6px;cursor:pointer;font-family:inherit;}
 /* Tabellen-Zellenauswahl: reine Bildschirm-Markierung (Druck: outline aus, s. @media print) */
 .tbl-selcell{outline:2px solid #89b4fa;outline-offset:-2px;}
 .wa.del{background:var(--acc);}
@@ -157,18 +159,19 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
 .ws-cell{width:24px;height:24px;background:none;border:1px solid #e0ddd6;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Grundschrift',sans-serif;font-size:12px;font-weight:500;color:#333;}
 /* Props panel */
-#props{width:360px;background:#f7f5f0;border-left:2px solid #e0ddd6;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
-#props h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:10px;}
+#props{width:360px;background:#e7eaef;border-left:2px solid #d7dbe2;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
+#props h3{font-size:12px;font-weight:600;color:#2a2e35;background:#fff;display:inline-block;margin:0 0 -1px;padding:8px 14px;border-radius:8px 8px 0 0;}
+#pi{background:#fff;border-radius:0 8px 8px 8px;padding:14px;}
 .prow{margin-bottom:9px;}
 .prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
 .prow input:not([type=checkbox]):not([type=radio]),.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
 .prow input[type=checkbox],.prow input[type=radio]{width:auto;flex-shrink:0;}
-.prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc3);}
+.prow input:focus,.prow select:focus,.prow textarea:focus{border-color:var(--acc5);}
 /* Standard-Props-Footer: einheitlicher, optisch abgesetzter Block am Ende jedes Widgets */
-.std-footer{margin:14px -14px 0;padding:10px 14px 8px;border-top:2px solid #d8d4c8;background:#eeebe2;}
+.std-footer{margin:14px -14px 0;padding:10px 14px 8px;border-top:1.5px solid #e7eaef;background:#f4f6f8;}
 .sf-h{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;}
 /* Klappbare Props-Abschnitte */
-.prop-fold{margin-bottom:5px;border:1px solid #d5d0c4;border-radius:6px;background:#f7f5f0;overflow:hidden;}
+.prop-fold{margin-bottom:5px;border:1px solid #e2e5ea;border-radius:6px;background:#f4f6f8;overflow:hidden;}
 .prop-fold:last-child{margin-bottom:0;}
 .prop-fold-h{font-size:11px;font-weight:800;color:#555;padding:7px 9px;cursor:pointer;list-style:none;
   display:flex;align-items:center;gap:6px;user-select:none;}
@@ -176,7 +179,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prop-fold-h::marker{content:'';}
 .prop-fold-h::before{content:'▶';font-size:8px;color:#999;transition:transform .15s;flex-shrink:0;line-height:1;}
 .prop-fold[open]>.prop-fold-h::before{transform:rotate(90deg);}
-.prop-fold[open]>.prop-fold-h{border-bottom:1px solid #e5e1d8;margin-bottom:0;}
+.prop-fold[open]>.prop-fold-h{border-bottom:1px solid #e2e5ea;margin-bottom:0;}
 .prop-fold-b{padding:8px 9px 9px;}
 .std-footer .prop-fold{background:#faf8f3;border-color:#ccc8bc;}
 /* misc */
@@ -256,33 +259,48 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   body{background:#fff;height:auto;}
   .wwrap{outline:none!important;margin-bottom:14px;} /* = Bildschirm-Abstand → WYSIWYG (war 12px, Druck dadurch enger) */
 }
+/* ── Serien-Verteilung (Pro Zeile/Ausrichtung/Abstand, main/helpers.js flexDistribute) ──
+   Spaltenzahl kommt inline als Startwert vom Server-Render; fitSeries() (ResizeObserver)
+   misst die echte Breite und korrigiert sie — siehe attachSeries() unten. */
+.series{display:grid;column-gap:var(--s-col-gap,24px);row-gap:var(--s-row-gap,16px);justify-content:start;}
+.series.is-stretched{justify-content:space-between;}
+.series.is-overflow{overflow-x:auto;}
+.series-item{min-width:0;}
+body.debug-series .series{outline:1px dashed rgba(255,0,170,.35);position:relative;}
+body.debug-series .series::after{content:attr(data-fit) " Spalten / " attr(data-count) " Items";
+  position:absolute;top:-16px;left:0;font-size:9px;color:#e0a;background:#fff;padding:0 3px;z-index:5;}
 </style>
 <style id="dyn-print-style"></style>
 </head>
 <body>
 <div id="toolbar">
-  <div class="logo" id="logo">Blatt<span>werk</span></div>
-  <button class="tbtn" onclick="document.getElementById('blatt-open').click()">📂 Öffnen</button>
-  <button class="tbtn" onclick="blattSave()">💾 Speichern</button>
-  <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
-    style="background:#f0eee8;border:none;border-radius:5px;color:#1e1e2e;
-           padding:5px 8px;font-family:'DM Mono',monospace;font-size:12px;width:130px;outline:none;box-shadow:inset 0 3px 7px rgba(0,0,0,.45);"
-    onfocus="this.select()">
-  <input type="file" id="blatt-open" accept=".blatt" style="display:none" onchange="if(this.files[0])blattOpen(this.files[0]);this.value=''">
-  <div style="width:1px;background:#313244;height:20px;margin:0 4px;"></div>
-  <div style="position:relative;display:inline-flex;align-self:stretch;">
-    <button class="tbtn" onclick="toggleSamplePanel(event)" style="height:100%;">📄 Beispiel</button>
-    <div id="sample-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:8px;z-index:200;width:240px;max-height:340px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);">
-      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin:4px 6px 8px;">Beispiel wählen</div>
-      <div id="sample-list"></div>
+  <div class="logo" id="logo">Blattwerk<span>statt</span></div>
+  <div style="position:relative;display:inline-flex;align-self:stretch;margin-left:90px;">
+    <button class="tbtn" onclick="toggleFilePanel(event)" style="height:100%;">📁 Datei</button>
+    <div id="file-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);left:0;background:#1c1e23;border:1.5px solid #24262c;border-radius:8px;padding:14px 16px;z-index:200;width:240px;max-height:400px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:10px;">Datei</div>
+      <input id="blatt-name" type="text" value="Arbeitsblatt_1" placeholder="Dateiname"
+        style="width:100%;background:#24262c;border:none;border-radius:5px;color:#cdd6f4;
+               padding:6px 9px;font-family:'DM Mono',monospace;font-size:12px;outline:none;box-sizing:border-box;margin-bottom:10px;"
+        onclick="event.stopPropagation()" onfocus="this.select()">
+      <div style="display:flex;gap:6px;margin-bottom:12px;">
+        <button class="tbtn" onclick="document.getElementById('blatt-open').click()" style="flex:1;background:#24262c;">📂 Öffnen</button>
+        <button class="tbtn" onclick="blattSave()" style="flex:1;background:#24262c;">💾 Speichern</button>
+      </div>
+      <input type="file" id="blatt-open" accept=".blatt" style="display:none" onchange="if(this.files[0])blattOpen(this.files[0]);this.value=''">
+      <div style="border-top:1px solid #24262c;padding-top:10px;">
+        <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:8px;">Beispiel wählen</div>
+        <div id="sample-list"></div>
+      </div>
     </div>
   </div>
+  <div style="width:1px;background:#24262c;height:20px;margin:0 4px;"></div>
   <button class="tbtn" onclick="clearCanvas()">🗑 Leeren</button>
   <button class="tbtn" onclick="addPage()">＋ Neue Seite</button>
   <button class="tbtn" onclick="dupPage()" title="Aktuelle Seite duplizieren">⧉ Seite duplizieren</button>
   <button class="tbtn" id="undobtn" onclick="undo()" title="Rückgängig (Strg+Z)">↩ Rückgängig</button>
   <button class="tbtn" id="redobtn" onclick="redo()" title="Wiederholen (Strg+Shift+Z)">↪ Vorwärts</button>
-  <div style="width:1px;background:#313244;height:20px;margin:0 4px;"></div>
+  <div style="width:1px;background:#24262c;height:20px;margin:0 4px;"></div>
   <div id="zoom-ctrl" style="display:flex;align-items:center;gap:3px;" title="Ansichts-Zoom (Strg+Mausrad)">
     <button class="tbtn" onclick="viewZoomStep(-10)" title="Verkleinern" style="padding:5px 10px;">−</button>
     <button class="tbtn" id="zoom-pct" onclick="viewZoomReset()" title="Zoom zurücksetzen (100%)" style="min-width:52px;padding:5px 8px;font-variant-numeric:tabular-nums;">100%</button>
@@ -294,12 +312,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   <button class="tbtn p" onclick="document.getElementById('print-warning').style.display='flex'">🖨 Drucken</button>
   <div style="position:relative;display:inline-flex;align-self:stretch;">
     <button class="tbtn p" onclick="togglePrintPanel(event)" style="height:100%;">⚙ Optionen</button>
-    <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+    <div id="print-panel" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1c1e23;border:1.5px solid #24262c;border-radius:8px;padding:14px 16px;z-index:200;width:230px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:12px;">Druckoptionen</div>
       <div style="font-size:11px;color:#cdd6f4;margin-bottom:6px;font-weight:700;">Ausrichtung</div>
       <div style="display:flex;gap:6px;margin-bottom:12px;">
-        <button id="or-portrait" onclick="setOrientation('portrait')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #89b4fa;background:#89b4fa;color:#1e1e2e;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▯ Hochformat</button>
-        <button id="or-landscape" onclick="setOrientation('landscape')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #45475a;background:#313244;color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▭ Querformat</button>
+        <button id="or-portrait" onclick="setOrientation('portrait')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #89b4fa;background:#89b4fa;color:#1c1e23;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▯ Hochformat</button>
+        <button id="or-landscape" onclick="setOrientation('landscape')" style="flex:1;padding:6px 4px;border-radius:5px;border:1.5px solid #2f3239;background:#24262c;color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">▭ Querformat</button>
       </div>
       <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;color:#cdd6f4;margin-bottom:10px;">
         <input type="checkbox" id="opt-pagenums" onchange="printOpts.pageNumbers=this.checked;updatePrintStyle()">
@@ -309,21 +327,21 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
         <input type="checkbox" id="opt-doublesided" onchange="printOpts.doubleSided=this.checked;updatePrintStyle()">
         Beidseitiger Druck
       </label>
-      <div style="border-top:1px solid #313244;margin-top:10px;padding-top:10px;">
-        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
+      <div style="border-top:1px solid #24262c;margin-top:10px;padding-top:10px;">
+        <button onclick="doPrintSolutions()" style="width:100%;padding:6px;border:none;border-radius:5px;background:#24262c;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">Lösung drucken</button>
       </div>
       <!-- Nur Chrome/macOS: „PDF in Vorschau öffnen" im Chrome-Druckdialog rendert via
            Quartz und fällt auf US Letter zurück (ignoriert Papierformat + macOS-Standard)
            → unten ~18mm abgeschnitten. Einblendung via JS, siehe initChromePdfHint(). -->
-      <div id="chrome-pdf-hint" style="display:none;border-top:1px solid #313244;margin-top:10px;padding-top:9px;font-size:10.5px;line-height:1.45;color:#f9e2af;">
+      <div id="chrome-pdf-hint" style="display:none;border-top:1px solid #24262c;margin-top:10px;padding-top:9px;font-size:10.5px;line-height:1.45;color:#f9e2af;">
         💡 PDF bitte über <b>„Als PDF speichern"</b> erzeugen — der Link „PDF in Vorschau öffnen" im Chrome-Druckdialog erzeugt US-Letter-Format und schneidet unten ab.
       </div>
     </div>
   </div>
   <button class="tbtn" onclick="window.open('hilfe.html','_blank')" title="Hilfe & Anleitung in neuem Fenster öffnen">❓ Hilfe</button>
   <div style="position:relative;display:inline-flex;margin-left:8px;">
-    <button class="tbtn" onmousedown="event.preventDefault()" onclick="toggleUniPanel(event)" title="Sonderzeichen am Cursor des fokussierten Textfelds einfügen" style="background:#a6e3a1;color:#1e1e2e;font-weight:800;font-size:15px;padding:5px 11px;">Ω</button>
-    <div id="uni-panel" onmousedown="event.preventDefault()" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1e1e2e;border:1.5px solid #313244;border-radius:8px;padding:12px;z-index:200;width:276px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
+    <button class="tbtn" onmousedown="event.preventDefault()" onclick="toggleUniPanel(event)" title="Sonderzeichen am Cursor des fokussierten Textfelds einfügen" style="background:#a6e3a1;color:#1c1e23;font-weight:800;font-size:15px;padding:5px 11px;">Ω</button>
+    <div id="uni-panel" onmousedown="event.preventDefault()" onclick="event.stopPropagation()" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#1c1e23;border:1.5px solid #24262c;border-radius:8px;padding:12px;z-index:200;width:276px;box-shadow:0 4px 20px rgba(0,0,0,.5);">
       <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6c7086;margin-bottom:10px;">Sonderzeichen einfügen</div>
       <div id="uni-grid" style="display:flex;flex-wrap:wrap;gap:5px;max-height:280px;overflow-y:auto;"></div>
       <div style="font-size:10px;color:#6c7086;margin-top:10px;line-height:1.4;">Erst in ein Textfeld klicken, dann das Zeichen wählen.</div>
@@ -349,14 +367,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 <div id="overview-overlay" onclick="closeOverview()">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;align-self:stretch;max-width:900px;" onclick="event.stopPropagation()">
     <span style="color:#cdd6f4;font-size:14px;font-weight:700;font-family:'Nunito',sans-serif;">Seitenübersicht</span>
-    <button onclick="closeOverview()" style="background:none;border:1.5px solid #45475a;border-radius:6px;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;padding:5px 14px;cursor:pointer;">✕ Schließen</button>
+    <button onclick="closeOverview()" style="background:none;border:1.5px solid #2f3239;border-radius:6px;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;padding:5px 14px;cursor:pointer;">✕ Schließen</button>
   </div>
   <div id="overview-grid" onclick="event.stopPropagation()" style="max-width:900px;"></div>
 </div>
 
 <!-- PDF hint modal (Vektor-PDF über den Druckdialog) -->
 <div id="pdf-hint" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
+  <div style="background:#1c1e23;border:1.5px solid #24262c;border-radius:10px;padding:22px 26px;max-width:360px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
     <div style="font-size:13px;font-weight:800;color:#cdd6f4;margin-bottom:10px;">⬇ Gestochen scharfes PDF</div>
     <div style="font-size:12px;color:#a6adc8;line-height:1.6;margin-bottom:18px;">
       Es öffnet sich gleich der Druckdialog.<br><br>
@@ -365,13 +383,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     </div>
     <div style="display:flex;gap:8px;">
       <button onclick="document.getElementById('pdf-hint').style.display='none'"
-        style="flex:1;padding:7px;border:1.5px solid #45475a;border-radius:6px;background:transparent;
+        style="flex:1;padding:7px;border:1.5px solid #2f3239;border-radius:6px;background:transparent;
                color:#a6adc8;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
         Abbrechen
       </button>
       <button onclick="document.getElementById('pdf-hint').style.display='none';doPrint()"
         style="flex:1;padding:7px;border:none;border-radius:6px;background:#89b4fa;
-               color:#1e1e2e;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
+               color:#1c1e23;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
         Weiter
       </button>
     </div>
@@ -387,14 +405,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     ondragover="event.preventDefault();event.stopPropagation();this.style.outline='2px dashed #89b4fa';"
     ondragleave="this.style.outline='none';"
     ondrop="event.preventDefault();event.stopPropagation();this.style.outline='none';imgPickerDrop(event);"
-    style="background:#1e1e2e;border:1.5px solid #313244;border-radius:12px;padding:0;width:100%;max-width:480px;
+    style="background:#1c1e23;border:1.5px solid #24262c;border-radius:12px;padding:0;width:100%;max-width:480px;
            max-height:min(90vh,620px);display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.55);
            font-family:'Nunito',sans-serif;overflow:hidden;outline:none;outline-offset:-4px;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;
-                border-bottom:1px solid #313244;flex-shrink:0;">
+                border-bottom:1px solid #24262c;flex-shrink:0;">
       <span id="img-picker-title" style="font-size:14px;font-weight:800;color:#cdd6f4;">Bild auswählen</span>
       <button type="button" onclick="closeImgPicker()"
-        style="background:none;border:1.5px solid #45475a;border-radius:6px;color:#cdd6f4;font-family:inherit;
+        style="background:none;border:1.5px solid #2f3239;border-radius:6px;color:#cdd6f4;font-family:inherit;
                font-size:12px;font-weight:700;padding:4px 10px;cursor:pointer;">✕</button>
     </div>
     <div id="img-picker-body" style="padding:14px 16px 16px;overflow-y:auto;flex:1;min-height:0;"></div>
@@ -403,7 +421,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 
 <!-- Print warning modal -->
 <div id="print-warning" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#1e1e2e;border:1.5px solid #313244;border-radius:10px;padding:22px 26px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
+  <div style="background:#1c1e23;border:1.5px solid #24262c;border-radius:10px;padding:22px 26px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.6);font-family:'DM Mono',monospace;">
     <div style="font-size:13px;font-weight:800;color:#cdd6f4;margin-bottom:10px;">🖨 Alles gut!</div>
     <div style="font-size:12px;color:#a6adc8;line-height:1.6;margin-bottom:18px;">
       Der Ausdruck wird genau so aussehen wie das Arbeitsblatt hier.<br><br>
@@ -411,12 +429,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
     </div>
     <div style="display:flex;gap:8px;">
       <button onclick="document.getElementById('print-warning').style.display='none'"
-        style="flex:1;padding:7px;border:1.5px solid #45475a;border-radius:6px;background:transparent;
+        style="flex:1;padding:7px;border:1.5px solid #2f3239;border-radius:6px;background:transparent;
                color:#a6adc8;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
         Abbrechen
       </button>
       <button onclick="document.getElementById('print-warning').style.display='none';doPrint()"
-        style="flex:1;padding:7px;border:none;border-radius:6px;background:#313244;
+        style="flex:1;padding:7px;border:none;border-radius:6px;background:#24262c;
                color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">
         Trotzdem drucken
       </button>
@@ -427,9 +445,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 <script>
 // ── CATEGORIES ────────────────────────────────────────────────────
 const CATEGORIES = {
-  allgemein:  { label: "Allgemein",  color: "#89b4fa" },
-  deutsch:    { label: "Deutsch",    color: "#f38ba8" },
-  mathematik: { label: "Mathematik", color: "#a6e3a1" },
+  allgemein:  { label: "Allgemein",  color: "#3b6fd4" },
+  deutsch:    { label: "Deutsch",    color: "#3b6fd4" },
+  mathematik: { label: "Mathematik", color: "#3b6fd4" },
 };
 const WIDGET_GROUPS = {
   rechnen: { label: "Schriftl. Rechnen", icon: "✏" },
@@ -681,7 +699,7 @@ function buildList(){
         // Header button
         const hdr=document.createElement("button");
         hdr.className="wbtn";
-        hdr.style.cssText=`background:${open?"#1e2d4a":"#252535"};`;
+        hdr.style.cssText=`background:${open?"#1c2c42":"#24262c"};`;
         hdr.innerHTML=`<span class="wi">${grp.icon}</span><span>${grp.label}<span class="wd">${groupWidgets.length} Typen</span></span><span style="font-size:10px;margin-left:auto;transition:transform .15s;display:inline-block;transform:rotate(${open?90:0}deg);">▶</span>`;
         hdr.onclick=()=>{_groupOpen[w.meta.group]=!_groupOpen[w.meta.group];buildList();};
         sec.appendChild(hdr);
@@ -862,6 +880,7 @@ function fitCanvasPostLayout(root, opts) {
   });
   if (typeof fitAllFrameInkSvgs === 'function') fitAllFrameInkSvgs(scope);
   if (typeof redrawConnectionLines === 'function') redrawConnectionLines();
+  if (typeof attachSeries === 'function') attachSeries(scope);
 }
 
 function patchWidgetPost(w, root) {
@@ -1134,7 +1153,7 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     pageDiv.appendChild(pdz);
   }
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
-  const brandEl=document.createElement("div");brandEl.className="pg-brand";brandEl.textContent="Blattwerk";pageDiv.appendChild(brandEl);
+  const brandEl=document.createElement("div");brandEl.className="pg-brand";brandEl.textContent="Blattwerkstatt";pageDiv.appendChild(brandEl);
   if(pageWidgets.length===0){
     const hint=document.createElement("div");hint.className="page-hint";
     hint.textContent="← Widget aus der Liste wählen und einfügen";
@@ -1616,9 +1635,9 @@ function sfTaskBlock(id,w){
     </button>`;
   };
   const tgl=(label,on,onclick)=>`<button onclick="event.stopPropagation();${onclick}"
-    style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};
-           background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;
-           cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;
+    style="flex:1;padding:5px 4px;border-radius:4px;border:none;
+           background:${on?'#3b6fd4':'#eef0f4'};font-family:inherit;font-size:11px;font-weight:700;
+           cursor:pointer;color:${on?'#fff':'#7c828d'};">${label}</button>`;
   // Päckchen a) b) c) — Rechenaufgaben & Größen umrechnen
   const abcTop = (w.type === 'arithmetic' || w.type === 'groessen')
     ? `<div class="sf-h">Päckchen-Nummerierung</div>
@@ -1669,7 +1688,7 @@ function sfPunkteBlock(id,w){
   const einheit=w.punkteEinheit!=null?w.punkteEinheit:'Pkt.';
   const eBtn=(val,lbl)=>{const on=einheit===val;return `<button onclick="event.stopPropagation();upd(${id},'punkteEinheit','${val}')"
     style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};
-           font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;};
+           font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${lbl}</button>`;};
   return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
       <input type="number" min="0" max="99" value="${pts}"
         onclick="event.stopPropagation()"
@@ -1704,7 +1723,7 @@ function sfBgBlock(id,w){
 function sfBorderBlock(id,w){
   const b=frameBorder(w);
   const ecken=frameEcken(w);
-  const ebtn=(label,val)=>{const on=ecken===val;return `<button onclick="event.stopPropagation();upd(${id},'ecken','${val}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;};
+  const ebtn=(label,val)=>{const on=ecken===val;return `<button onclick="event.stopPropagation();upd(${id},'ecken','${val}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${label}</button>`;};
   return sfBgBlock(id,w)
     + `<div class="sf-h">Ecken</div>
     <div style="display:flex;gap:4px;margin-bottom:9px;">${ebtn('Eckig','eckig')}${ebtn('Rund','rund')}</div>
@@ -1721,7 +1740,7 @@ function sfBorderBlock(id,w){
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
       <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Schatten</span>
       <div style="display:flex;gap:4px;flex:1;">
-        ${[['Aus',false],['An',true]].map(([lbl,val])=>{const on=!!w.schatten===val;return `<button onclick="event.stopPropagation();upd(${id},'schatten',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
+        ${[['Aus',false],['An',true]].map(([lbl,val])=>{const on=!!w.schatten===val;return `<button onclick="event.stopPropagation();upd(${id},'schatten',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${lbl}</button>`;}).join('')}
       </div>
     </div>`;
 }
@@ -1731,7 +1750,7 @@ function sfLayoutBlock(id,w){
     <button onclick="setWidth(${id},'${val}')"
       style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
              background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:${val==='full'?'11px':'15px'};font-weight:700;
-             line-height:1.1;cursor:pointer;color:${wf===val?'#1e1e2e':'#999'};">${lbl}</button>`).join('');
+             line-height:1.1;cursor:pointer;color:${wf===val?'#1c1e23':'#999'};">${lbl}</button>`).join('');
   // Innenabstand (flush): global über winnerStyle (w.flush → padding:0). Typen mit
   // EIGENEM Innenabstand-Konzept ausnehmen: group/image (eigener Toggle),
   // platzhalter (immer bündig), text/silbentext/gap_text (px-Slider innerPad).
@@ -1740,7 +1759,7 @@ function sfLayoutBlock(id,w){
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
       <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Innenabstand</span>
       <div style="display:flex;gap:4px;flex:1;">
-        ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!w.flush===val;return `<button onclick="event.stopPropagation();upd(${id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${lbl}</button>`;}).join('')}
+        ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!w.flush===val;return `<button onclick="event.stopPropagation();upd(${id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${lbl}</button>`;}).join('')}
       </div>
     </div>`;
   return `<div style="display:flex;gap:4px;">${btns}</div>
@@ -1787,7 +1806,7 @@ function enhanceNumberInputs(container) {
     const mkBtn = (label, delta) => {
       const b = document.createElement('button');
       b.textContent = label;
-      b.style.cssText = 'width:30px;height:30px;flex-shrink:0;border:1.5px solid #45475a;border-radius:5px;background:#313244;color:#cdd6f4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;';
+      b.style.cssText = 'width:30px;height:30px;flex-shrink:0;border:1.5px solid #2f3239;border-radius:5px;background:#24262c;color:#cdd6f4;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;';
       b.onmousedown = e => e.preventDefault();
       b.onclick = () => {
         const min = inp.min !== '' ? +inp.min : -Infinity;
@@ -1997,12 +2016,12 @@ async function addSample(){
   addSampleBuiltin();
 }
 
-// ── Beispiel-Auswahl-Panel ───────────────────────────────────────
-function closeSamplePanel(){ const p=document.getElementById('sample-panel'); if(p)p.style.display='none'; }
+// ── Datei-Panel (Öffnen/Speichern/Dateiname/Beispiel) ────────────
+function closeSamplePanel(){ const p=document.getElementById('file-panel'); if(p)p.style.display='none'; }
 
-async function toggleSamplePanel(e){
+async function toggleFilePanel(e){
   e.stopPropagation();
-  const p=document.getElementById('sample-panel'); if(!p) return;
+  const p=document.getElementById('file-panel'); if(!p) return;
   // andere Panels schließen
   const pp=document.getElementById('print-panel'); if(pp)pp.style.display='none';
   const u=document.getElementById('uni-panel');   if(u)u.style.display='none';
@@ -2018,9 +2037,9 @@ async function buildSamplePanel(){
     b.textContent=label;
     b.onclick=ev=>{ ev.stopPropagation(); onclick(); };
     b.style.cssText='display:block;width:100%;text-align:left;padding:7px 9px;margin-bottom:3px;border:none;'
-      +'border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;cursor:pointer;';
-    b.onmouseenter=()=>b.style.background='#45475a';
-    b.onmouseleave=()=>b.style.background='#313244';
+      +'border-radius:5px;background:#24262c;color:#cdd6f4;font-family:inherit;font-size:12px;cursor:pointer;';
+    b.onmouseenter=()=>b.style.background='#2f3239';
+    b.onmouseleave=()=>b.style.background='#24262c';
     return b;
   };
   let names=[];
@@ -2170,7 +2189,7 @@ async function blattSave() {
       if (!handle || handle.name.replace(/\.blatt$/i, '') !== base) {
         handle = await window.showSaveFilePicker({
           suggestedName: _blattFilename,
-          types: [{ description: 'Blattwerk-Arbeitsblatt', accept: { 'application/octet-stream': ['.blatt'] } }],
+          types: [{ description: 'Blattwerkstatt-Arbeitsblatt', accept: { 'application/octet-stream': ['.blatt'] } }],
         });
       }
       const ws = await handle.createWritable();
@@ -2289,13 +2308,13 @@ function showRestoreBanner(draft){
   const bar=document.createElement('div');
   bar.id='restore-banner';
   bar.style.cssText='position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;'
-    +'background:#1e1e2e;color:#cdd6f4;border:1.5px solid #45475a;border-radius:10px;padding:12px 16px;'
+    +'background:#1c1e23;color:#cdd6f4;border:1.5px solid #2f3239;border-radius:10px;padding:12px 16px;'
     +'box-shadow:0 8px 28px rgba(0,0,0,.45);display:flex;align-items:center;gap:14px;'
     +"font-family:'Fira Sans',sans-serif;font-size:13px;max-width:90vw;";
   const btn=(label,bg,color)=>`padding:6px 12px;border:none;border-radius:6px;background:${bg};color:${color};font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;`;
   bar.innerHTML=`<span>💾 Nicht gespeicherter Entwurf gefunden${n?` (${n} Widget${n!==1?'s':''}`:''}${when?`, ${when}`:''}${n?')':''}.</span>`
-    +`<button id="rb-yes" style="${btn('Wiederherstellen','#89b4fa','#1e1e2e')}">Wiederherstellen</button>`
-    +`<button id="rb-no" style="${btn('Verwerfen','#313244','#cdd6f4')}">Verwerfen</button>`;
+    +`<button id="rb-yes" style="${btn('Wiederherstellen','#89b4fa','#1c1e23')}">Wiederherstellen</button>`
+    +`<button id="rb-no" style="${btn('Verwerfen','#24262c','#cdd6f4')}">Verwerfen</button>`;
   document.body.appendChild(bar);
   document.getElementById('rb-yes').onclick=()=>{
     widgets=draft.widgets||[];
@@ -2440,9 +2459,9 @@ function updateOrientationUI(){
   [['or-portrait','portrait'],['or-landscape','landscape']].forEach(([id,val])=>{
     const b=document.getElementById(id); if(!b)return;
     const on=_orientation===val;
-    b.style.borderColor=on?'#89b4fa':'#45475a';
-    b.style.background=on?'#89b4fa':'#313244';
-    b.style.color=on?'#1e1e2e':'#cdd6f4';
+    b.style.borderColor=on?'#89b4fa':'#2f3239';
+    b.style.background=on?'#89b4fa':'#24262c';
+    b.style.color=on?'#1c1e23':'#cdd6f4';
   });
 }
 
@@ -2474,6 +2493,7 @@ function prepareCanvasForPrint(solutions) {
   // Layout flushen — render()'s rAF-Fit läuft sonst erst NACH window.print().
   void document.getElementById('canvas-area')?.offsetHeight;
   fitCanvasPostLayout(document.getElementById('canvas-area'));
+  if (typeof fitAllSeries === 'function') fitAllSeries(document.getElementById('canvas-area'));
   drawPrintConnectionLines();
   updatePrintStyle();
   applyPrintLayoutFixes();
@@ -2504,6 +2524,7 @@ function runPrintAfterPrep(state) {
     const zoomEl = document.getElementById('canvas-zoom');
     if (zoomEl) zoomEl.style.transform = 'none';
     fitCanvasPostLayout(document.getElementById('canvas-area'));
+    if (typeof fitAllSeries === 'function') fitAllSeries(document.getElementById('canvas-area'));
     drawPrintConnectionLines();
     applyPrintLayoutFixes();
   };
@@ -2526,7 +2547,10 @@ function doPrintSolutions() {
 function togglePrintPanel(e) {
   e.stopPropagation();
   const p = document.getElementById('print-panel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  const open = p.style.display === 'none';
+  const f = document.getElementById('file-panel'); if (f) f.style.display = 'none';
+  const u = document.getElementById('uni-panel');  if (u) u.style.display = 'none';
+  p.style.display = open ? 'block' : 'none';
 }
 
 /** Hinweis nur für Chrome/Chromium auf macOS: dessen Druckdialog-Link „PDF in Vorschau
@@ -2575,7 +2599,7 @@ function buildUniPanel() {
   UNI_CHARS.forEach(ch => {
     const b = document.createElement('button');
     b.textContent = ch;
-    b.style.cssText = 'width:30px;height:30px;border:1px solid #45475a;background:#313244;color:#cdd6f4;'
+    b.style.cssText = 'width:30px;height:30px;border:1px solid #2f3239;background:#24262c;color:#cdd6f4;'
       + 'border-radius:5px;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;';
     b.addEventListener('mousedown', e => e.preventDefault()); // Fokus im Textfeld behalten
     b.addEventListener('click', e => { e.stopPropagation(); uniInsert(ch); });
@@ -2586,7 +2610,9 @@ function toggleUniPanel(e) {
   e.stopPropagation();
   buildUniPanel();
   const p = document.getElementById('uni-panel');
-  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  const open = p.style.display === 'none';
+  const f = document.getElementById('file-panel'); if (f) f.style.display = 'none';
+  p.style.display = open ? 'block' : 'none';
   const pp = document.getElementById('print-panel'); if (pp) pp.style.display = 'none';
 }
 function uniInsert(ch) {
@@ -2612,7 +2638,7 @@ document.addEventListener('click', () => {
   if (p) p.style.display = 'none';
   const u = document.getElementById('uni-panel');
   if (u) u.style.display = 'none';
-  const s = document.getElementById('sample-panel');
+  const s = document.getElementById('file-panel');
   if (s) s.style.display = 'none';
 });
 

@@ -383,14 +383,8 @@ WIDGETS.push({
       : (mAll.numDigits + mAll.blankDigits) * digitPx + 2 * unitPx + 40;
     const itemW = Math.round(est * sc.S);
     return atHtml(d) + flexDistribute(
-<<<<<<< HEAD
       tables,
       { sample: tables[0] || '', itemW, d, estimate: true }
-=======
-      groups.map(g => guGroupTable(g, d, active, m, sc)),
-      { sample: groups.length ? guGroupTable(groups[0], d, active, m, sc) : '',
-        itemW, d, estimate: true }
->>>>>>> 9cfd0029f41f816dc99070fa582c28ee65d78082
     );
   },
 

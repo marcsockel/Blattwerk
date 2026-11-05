@@ -241,8 +241,9 @@ function itemsLayoutProps(d) {
   if (!['auto', 'left', 'center', 'right', 'justify'].includes(align)) align = 'auto';
   let gapHKey = d.itemGapH;
   let gapVKey = d.itemGapV;
-  if (gapHKey == null && gapVKey == null && d.itemGap != null) {
-    gapHKey = gapVKey = d.itemGap;
+  if (gapHKey == null && gapVKey == null) {
+    if (d.itemGap != null) gapHKey = gapVKey = d.itemGap;
+    else if (d.abstand != null) gapHKey = gapVKey = d.abstand; // Blattwerkstatt-Altfeld
   }
   gapHKey = normItemGapKey(gapHKey || 'normal');
   gapVKey = normItemGapKey(gapVKey || 'normal');
@@ -292,12 +293,19 @@ function itemsLayoutPropsBlock(id, w) {
  * (Rechenpäckchen, Karten, SVG-Felder, Räder, Tabellen, Stücke …).
  *
  * Steuerung über d.itemsPerRow / d.align / d.itemGapH / d.itemGapV (Props „Verteilung"):
- *  - Pro Zeile Auto → flex-wrap nach echter Itembreite (opts.itemW-Schätzung für Voll-Zeile).
- *  - Pro Zeile 1–6 + Block/Auto → wie Auto-Blocksatz: erstes Item links, letztes rechts
- *    (space-between), feste Spaltenzahl; unvollständige letzte Zeile mit Füllern.
- *  - Pro Zeile 1–6 + Links/Mitte/Rechts → auto-Spalten, Items eng gruppiert.
+ *  - Pro Zeile Auto → der Browser MISST die echte Container-Breite (ResizeObserver,
+ *    siehe fitSeries/attachSeries unten) und setzt die Spaltenzahl — keine
+ *    geom()-Schätzung mehr.
+ *  - Pro Zeile 1–6 → feste Spaltenzahl, unabhängig von der Breite.
+ *  - Ausrichtung Auto → volle Zeile spreizt (space-between), sonst eng
+ *    (links/mitte/rechts). Block → spreizt IMMER, auch bei nicht voller Zeile.
  *  - Spaltenabstand Eng/Normal/Weit → column-gap (bei Blocksatz ausgeblendet/0).
- *  - Zeilenabstand Eng/Normal/Weit → row-gap / margin-bottom zwischen Zeilen.
+ *  - Zeilenabstand Eng/Normal/Weit → row-gap.
+ *
+ * Implementierung: EIN `.series`-Grid mit expliziten Spalten `repeat(N, itemW)`.
+ * Weil alle Zeilen dieselben Spuren nutzen, richtet sich eine unvollständige
+ * letzte Zeile von selbst aus — keine Füller, keine Umbruchkante wie bei
+ * flex-wrap (früherer Bug: „nur 4 passen, aber bei 4 wird nicht verteilt").
  *
  * @param {string[]} innerHtmls  Item-Inhalte (je 1 Item).
  * @param {object} [opts] gap, itemSize, marginBottom, sample, itemW (px), d (Widget-Daten).
@@ -305,85 +313,116 @@ function itemsLayoutPropsBlock(id, w) {
  */
 function flexDistribute(innerHtmls, opts) {
   opts = opts || {};
+  const items = innerHtmls || [];
+  if (!items.length) return '';
+
   const d = opts.d || {};
   const layout = itemsLayoutProps(d);
+  const sz = opts.itemSize || '';
   const blockMode = layout.align === 'justify';
-  const gap = blockMode ? 0 : (opts.gap != null ? opts.gap : layout.gap);
-  const sz  = opts.itemSize || '';
-  const mb  = opts.marginBottom != null ? opts.marginBottom : layout.mb;
-  const samp = opts.sample != null ? opts.sample : (innerHtmls[0] || '');
-  const n = innerHtmls.length;
-  const align = layout.align;
-  const isAutoAlign = align === 'auto';
-  // Auto: volle Zeile verteilen; justify: immer Block wenn voll; left/center/right: nie space-between.
-  const spreadWanted = align === 'justify' || isAutoAlign;
-  // margin-bottom der LETZTEN Zeile am Container kompensieren.
-  const comp = mb ? `margin-bottom:-${mb}px;` : '';
 
-  // ── Feste Spaltenzahl (1–6) ───────────────────────────────────────
-  if (layout.itemsPerRow !== 'auto') {
-    const N = layout.itemsPerRow;
+  const gapCol = blockMode ? 0 : (opts.gap != null ? opts.gap : layout.gap);
+  const gapRow = opts.marginBottom != null ? opts.marginBottom : layout.mb;
 
-    if (spreadWanted) {
-      // Block / Ausrichtung Auto: wie Pro-Zeile-Auto — space-between,
-      // erstes Item am linken Innenrand, letztes am rechten; feste N pro Zeile.
-      // Zeilenweise, damit jede Zeile unabhängig verteilt (nicht ein globales 1fr-Raster).
-      const rows = [];
-      for (let i = 0; i < n; i += N) {
-        const slice = innerHtmls.slice(i, i + N);
-        let rowItems = slice.map(h =>
-          `<div style="flex:0 0 auto;${sz}">${h}</div>`
-        );
-        // Unvollständige Zeile: unsichtbare Füller gleicher Breite → Spalten bündig.
-        while (rowItems.length < N && n > 0) {
-          rowItems.push(
-            `<div aria-hidden="true" style="flex:0 0 auto;margin:0;${sz}height:0;overflow:hidden;">${samp}</div>`
-          );
-        }
-        const isLast = i + N >= n;
-        rows.push(
-          `<div style="display:flex;flex-wrap:nowrap;align-items:flex-start;` +
-          `justify-content:space-between;column-gap:${gap}px;` +
-          `margin-bottom:${isLast ? 0 : mb}px;">${rowItems.join('')}</div>`
-        );
-      }
-        return `<div>${rows.join('')}</div>`;
-      }
-
-    // Links / Mitte / Rechts: Items eng gruppiert, Spaltenbreite nach Inhalt.
-    const jc = align === 'center' ? 'center' : align === 'right' ? 'end' : 'start';
-    const cells = innerHtmls.map(h => {
-      const inner = sz ? `<div style="${sz}">${h}</div>` : h;
-      return `<div style="min-width:0;box-sizing:border-box;">${inner}</div>`;
-    });
-    return `<div style="display:grid;grid-template-columns:repeat(${N},auto);` +
-      `column-gap:${gap}px;row-gap:${mb}px;justify-content:${jc};">${cells.join('')}</div>`;
+  let itemW = +opts.itemW || 0;
+  if (!itemW) {
+    const m = /width:\s*(\d+(?:\.\d+)?)px/.exec(sz);
+    if (m) itemW = parseFloat(m[1]);
   }
+  if (!itemW) itemW = 120;
+  itemW = Math.round(itemW);
 
-  // ── Auto: flex-wrap nach echter Breite ─────────────────────────────
-  const items = innerHtmls.map(h => `<div style="flex:0 0 auto;${sz}margin-bottom:${mb}px;">${h}</div>`).join('');
+  const perRow = layout.itemsPerRow === 'auto' ? 0 : layout.itemsPerRow;
+  const cells = items.map(h => `<div class="series-item" style="${sz}">${h}</div>`).join('');
+  const initial = perRow > 0 ? String(perRow) : 'auto-fill';
 
-  // Voll/Nicht-voll-Entscheidung: perRow aus itemW + verfügbarer Breite.
-  // WICHTIG: .winner-Padding (~18px) abziehen — außer bei flush.
-  const WINNER_PAD = 18;
-  let perRow = Infinity;
-  if (opts.itemW && opts.d && typeof geom === 'function' && typeof widthFrac === 'function') {
-    const pad = opts.d.flush ? 0 : WINNER_PAD;
-    const avail = geom().contentW * widthFrac(opts.d) - pad;
-    perRow = Math.max(1, Math.floor((avail + gap) / (opts.itemW + gap)));
+  return `<div class="series" data-itemw="${itemW}" data-align="${layout.align}"`
+    + ` data-gapcol="${gapCol}" data-perrow="${perRow}" data-count="${items.length}"`
+    + ` style="--s-col-gap:${gapCol}px;--s-row-gap:${gapRow}px;`
+    + `grid-template-columns:repeat(${initial},${itemW}px);">${cells}</div>`;
+}
+
+/** Toleranz gegen Bruchbreiten (mm/Zoom). Nach OBEN — bei Grid ist exakte
+ *  Gleichheit unproblematisch, anders als bei flex-wrap. */
+const SERIES_EPS = 0.5;
+
+/** Wie viele Items passen bei Breite w nebeneinander? (rein, testbar) */
+function seriesFits(w, itemW, minGap) {
+  if (!(w > 0) || !(itemW > 0)) return 1;
+  return Math.max(1, Math.floor((w + minGap + SERIES_EPS) / (itemW + minGap)));
+}
+
+/**
+ * Spaltenzahl und Ausrichtung einer Serie. Rein — ohne DOM testbar.
+ *
+ * WICHTIG zu `align`:
+ *   'auto'    = bisheriges Verhalten (volle Zeile verteilen, sonst eng links).
+ *   'justify' = AUSDRÜCKLICH Blocksatz: verteilt IMMER über die volle Breite,
+ *               auch wenn die Zeile nicht voll ist. Eine Heuristik darf eine
+ *               ausdrückliche Wahl nicht überstimmen.
+ */
+function seriesResolve(o) {
+  const { width, itemW, count, perRow, minGap, align } = o;
+  const soll = Math.max(1, perRow > 0 ? perRow : seriesFits(width, itemW, minGap));
+  const passt = soll * itemW + (soll - 1) * minGap <= width + SERIES_EPS;
+
+  const volleZeile = count >= soll;
+  const spreizen = soll > 1 && passt && (
+    align === 'justify' ||            // ausdrücklich gewählt: immer
+    (align === 'auto' && volleZeile)  // Automatik: nur bei voller Zeile
+  );
+
+  // Nie mehr Spuren als Items. Sonst hält `space-between` Platz für ein Item
+  // frei, das es gar nicht gibt.
+  const cols = Math.max(1, Math.min(soll, count));
+
+  const jc = spreizen ? 'space-between'
+    : align === 'center' ? 'center'
+    : align === 'right' ? 'end'
+    : 'start';
+
+  return { cols, jc, spreizen, ueberlauf: !passt };
+}
+
+/** Misst einen .series-Container und setzt die Spalten. Kein Re-Render. */
+function fitSeries(el) {
+  if (!el || !el.isConnected) return;
+  const width = el.clientWidth;
+  if (!width) return;                       // display:none (Lösungsseiten)
+
+  const itemW = +el.dataset.itemw || 0;
+  const minGap = +el.dataset.gapcol || 24;
+  const r = seriesResolve({
+    width, itemW,
+    count: +el.dataset.count || el.children.length,
+    perRow: +el.dataset.perrow || 0,
+    minGap,
+    align: el.dataset.align || 'auto',
+  });
+
+  el.style.gridTemplateColumns = `repeat(${r.cols}, ${itemW}px)`;
+  el.style.justifyContent = r.jc;
+  el.classList.toggle('is-stretched', r.spreizen);
+  el.classList.toggle('is-overflow', r.ueberlauf);
+  el.dataset.fit = String(r.cols);
+}
+
+/** EIN ResizeObserver für die ganze App — feuert bei Orientierung, Breite,
+ *  Zoom und nach dem Fontload, also genau dann, wenn eine Schätzung falsch läge. */
+let _seriesRO = null;
+function attachSeries(root) {
+  if (!_seriesRO && typeof ResizeObserver === 'function') {
+    _seriesRO = new ResizeObserver(entries => { for (const e of entries) fitSeries(e.target); });
   }
+  (root || document).querySelectorAll('.series').forEach(el => {
+    fitSeries(el);
+    if (_seriesRO) _seriesRO.observe(el);
+  });
+}
 
-  const rowFull = n >= perRow && perRow > 1;
-  if (!rowFull || !spreadWanted) {
-    const jcAlign = align === 'justify' ? 'left'
-      : (!isAutoAlign ? align : (perRow === 1 ? 'center' : 'left'));
-    const jc = jcAlign === 'center' ? 'center' : jcAlign === 'right' ? 'flex-end' : 'flex-start';
-    return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:${jc};${comp}">${items}</div>`;
-  }
-  // Füller (echtes Item auf Höhe 0) richten die letzte Zeile an denselben Spalten aus.
-  const filler  = `<div aria-hidden="true" style="flex:0 0 auto;margin:0;${sz}height:0;overflow:hidden;">${samp}</div>`;
-  const fillers = n ? Array(16).fill(filler).join('') : '';
-  return `<div style="display:flex;flex-wrap:wrap;align-items:flex-start;column-gap:${gap}px;row-gap:0;justify-content:space-between;${comp}">${items}${fillers}</div>`;
+/** Synchron messen — vor window.print(), weil der Observer zu spät käme. */
+function fitAllSeries(root) {
+  (root || document).querySelectorAll('.series').forEach(fitSeries);
 }
 
 // ── Tusche-Rahmen (handgezeichnet wirkende SVG-Kontur) ──────────────
