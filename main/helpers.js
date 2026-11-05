@@ -206,7 +206,10 @@ function schriftlichGroesseBlock(id, d) {
 
 /** Einheitliche Item-Verteilung: Pro Zeile / Ausrichtung / Abstände (Footer „Verteilung"). */
 const ITEM_GAP_MAP = {
-  eng:    { h: 29, v: 19 },  // früher „Mittel/Normal“
+  eng:    { h: 12, v: 12 },  // verkleinert (2026-07-31) — kommt näher an die alten,
+                             // pro Widget fest einprogrammierten Abstände heran
+                             // (z.B. zahlenhaus 10px), damit „Eng" wieder mehr
+                             // Items pro Zeile erlaubt als der neue Mittel-Default.
   normal: { h: 43, v: 29 },  // früher „Weit“ — UI-Label „Mittel“
   weit:   { h: 64, v: 44 },  // ~ gleiche Stufe weiter
 };
@@ -265,9 +268,9 @@ function itemsLayoutPropsBlock(id, w) {
     const on = cur === val;
     const v = typeof val === 'string' ? `'${val}'` : val;
     return `<button onclick="event.stopPropagation();upd(${id},'${key}',${v})"
-      style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${on ? '#89b4fa' : '#ddd'};
-             background:${on ? '#e8f0ff' : '#fff'};font-family:inherit;font-size:11px;font-weight:700;
-             cursor:pointer;color:${on ? '#1e1e2e' : '#999'};">${label}</button>`;
+      style="flex:1;padding:5px 2px;border-radius:4px;border:none;
+             background:${on ? '#3b6fd4' : '#eef0f4'};font-family:inherit;font-size:11px;font-weight:700;
+             cursor:pointer;color:${on ? '#fff' : '#7c828d'};">${label}</button>`;
   };
   const perRowBtns = ['auto', 1, 2, 3, 4, 5, 6].map(v => btn('itemsPerRow', v, v === 'auto' ? 'Auto' : String(v))).join('');
   const alignBtns = [
