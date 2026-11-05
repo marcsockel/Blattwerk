@@ -539,6 +539,9 @@ function replaceWinnerContent(winner, html) {
 function winnerInnerRefresh(w, winner) {
   if (!w || !winner) return;
   replaceWinnerContent(winner, winnerInner(w));
+  // Neu erzeugte .series-Container messen (Blocksatz/Spalten) — sonst bleiben
+  // sie nach sel()/desel() im Startzustand (auto-fill, linksbündig) stehen.
+  if (typeof attachSeries === 'function') attachSeries(winner);
   if (typeof fitAllFrameInkSvgs === 'function') fitAllFrameInkSvgs(winner);
   if (typeof fitNumberlineSvg === 'function') {
     winner.querySelectorAll('svg.numberline-svg').forEach(fitNumberlineSvg);
