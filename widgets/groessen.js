@@ -351,7 +351,7 @@ WIDGETS.push({
       id, type: 'groessen',
       bereich: 'laenge', format: 'einfach', stufe: 'leicht',
       aktiveEinheiten: guDefaultUnits(),
-      groesse: 'klein', aufgabenProPaeckchen: 5, cols: 2,
+      groesse: 'mittel', aufgabenProPaeckchen: 5, cols: 3,
       paeckchenAbc: false,
       aufgabenNr: 0, aufgabenText: '',
     };

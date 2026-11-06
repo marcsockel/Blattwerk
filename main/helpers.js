@@ -58,17 +58,17 @@ function atHtml(d) {
   const stil   = d.aufgabenStil || 'kreis';
   const radius = stil.startsWith('quadrat') ? '3px' : '50%';
   const fill   = stil.endsWith('-fill');
-  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+  return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
     ${nr > 0
       ? `<span style="display:inline-flex;align-items:center;justify-content:center;
-           width:16px;height:16px;border-radius:${radius};border:1.5px solid #222;
+           width:22px;height:22px;border-radius:${radius};border:1.8px solid #222;
            background:${fill ? '#222' : 'transparent'};
-           font-family:'DidactGothic7',sans-serif;font-size:10px;font-weight:700;
+           font-family:'DidactGothic7',sans-serif;font-size:13px;font-weight:700;
            color:${fill ? '#fff' : '#222'};flex-shrink:0;line-height:1;">${nr}</span>`
       : ''}
     ${txt
-      ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:13px;
-           color:#222;">${esc(txt)}</span>`
+      ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:18px;
+           color:#222;line-height:1.2;">${esc(txt)}</span>`
       : ''}
   </div>`;
 }
@@ -239,9 +239,11 @@ function itemsLayoutProps(d) {
   else {
     per = Math.max(1, Math.min(6, Math.round(+per) || 1));
   }
+  // Nur noch Links | Mitte | Block (Default). Ältere Werte werden umgedeutet:
+  // 'auto' → Block, 'right' → Mitte. So gibt es keine Einstellung mehr, die schlecht aussieht.
   let align = d.align;
-  if (align == null || align === '') align = 'auto';
-  if (!['auto', 'left', 'center', 'right', 'justify'].includes(align)) align = 'auto';
+  if (align === 'right') align = 'center';
+  if (!['left', 'center', 'justify'].includes(align)) align = 'justify';
   let gapHKey = d.itemGapH;
   let gapVKey = d.itemGapV;
   if (gapHKey == null && gapVKey == null) {
@@ -250,7 +252,9 @@ function itemsLayoutProps(d) {
   }
   gapHKey = normItemGapKey(gapHKey || 'normal');
   gapVKey = normItemGapKey(gapVKey || 'normal');
-  const gapH = align === 'justify' ? 0 : ITEM_GAP_MAP[gapHKey].h;
+  // Spaltenabstand ist keine Einstellung mehr → immer „Mittel". Auch bei Block NICHT 0:
+  // Widgets mit eigenem Raster (bildwort, hunderterfeld) nutzen L.gap direkt.
+  const gapH = ITEM_GAP_MAP.normal.h;
   const gapV = ITEM_GAP_MAP[gapVKey].v;
   return {
     itemsPerRow: per, align,
@@ -272,21 +276,20 @@ function itemsLayoutPropsBlock(id, w) {
              background:${on ? '#3b6fd4' : '#eef0f4'};font-family:inherit;font-size:11px;font-weight:700;
              cursor:pointer;color:${on ? '#fff' : '#7c828d'};">${label}</button>`;
   };
-  const perRowBtns = ['auto', 1, 2, 3, 4, 5, 6].map(v => btn('itemsPerRow', v, v === 'auto' ? 'Auto' : String(v))).join('');
+  // Nur Anzahlen anbieten, die mit Mindestabstand wirklich in die Breite passen
+  // (aus der gemessenen Serie). Ohne Messung (noch nicht gerendert) → alle.
+  const maxFit = seriesMaxFit(id);
+  const perRowBtns = ['auto', 1, 2, 3, 4, 5, 6].filter(v => v === 'auto' || v <= maxFit || v === L.itemsPerRow).map(v => btn('itemsPerRow', v, v === 'auto' ? 'Auto' : String(v))).join('');
   const alignBtns = [
-    ['auto', 'Auto'], ['left', 'Links'], ['center', 'Mitte'], ['right', 'Rechts'], ['justify', 'Block']
+    ['left', 'Links'], ['center', 'Mitte'], ['justify', 'Block']
   ].map(([v, l]) => btn('align', v, l)).join('');
   const gapBtns = (key) => [
     ['eng', 'Eng'], ['normal', 'Mittel'], ['weit', 'Weit']
   ].map(([v, l]) => btn(key, v, l)).join('');
-  const colSection = L.align === 'justify' ? '' :
-    `<div class="sf-h">Spaltenabstand</div>
-    <div style="display:flex;gap:3px;margin-bottom:9px;">${gapBtns('itemGapH')}</div>`;
   return `<div class="sf-h">Pro Zeile</div>
     <div style="display:flex;gap:3px;margin-bottom:9px;">${perRowBtns}</div>
     <div class="sf-h">Ausrichtung</div>
     <div style="display:flex;gap:3px;margin-bottom:9px;">${alignBtns}</div>
-    ${colSection}
     <div class="sf-h">Zeilenabstand</div>
     <div style="display:flex;gap:3px;">${gapBtns('itemGapV')}</div>`;
 }
@@ -324,7 +327,9 @@ function flexDistribute(innerHtmls, opts) {
   const sz = opts.itemSize || '';
   const blockMode = layout.align === 'justify';
 
-  const gapCol = blockMode ? 0 : (opts.gap != null ? opts.gap : layout.gap);
+  // Spaltenabstand ist keine Einstellung mehr: Block verteilt selbst, Links/Mitte
+  // nehmen den im Widget abgestimmten Abstand (opts.gap), sonst „Mittel".
+  const gapCol = blockMode ? 0 : (opts.gap != null ? opts.gap : ITEM_GAP_MAP.normal.h);
   const gapRow = opts.marginBottom != null ? opts.marginBottom : layout.mb;
 
   let itemW = +opts.itemW || 0;
@@ -339,7 +344,7 @@ function flexDistribute(innerHtmls, opts) {
   const cells = items.map(h => `<div class="series-item" style="${sz}">${h}</div>`).join('');
   const initial = perRow > 0 ? String(perRow) : 'auto-fill';
 
-  return `<div class="series" data-itemw="${itemW}" data-align="${layout.align}"`
+  return `<div class="series" data-itemw="${itemW}"${opts.estimate ? ' data-estimate="1"' : ''} data-align="${layout.align}"`
     + ` data-gapcol="${gapCol}" data-perrow="${perRow}" data-count="${items.length}"`
     + ` style="--s-col-gap:${gapCol}px;--s-row-gap:${gapRow}px;`
     + `grid-template-columns:repeat(${initial},${itemW}px);">${cells}</div>`;
@@ -348,6 +353,15 @@ function flexDistribute(innerHtmls, opts) {
 /** Toleranz gegen Bruchbreiten (mm/Zoom). Nach OBEN — bei Grid ist exakte
  *  Gleichheit unproblematisch, anders als bei flex-wrap. */
 const SERIES_EPS = 0.5;
+
+/** Kleinster Abstand, den eine feste „Pro Zeile"-Wahl noch haben darf. */
+const SERIES_MIN_GAP = 12;
+
+/** Größte sinnvolle „Pro Zeile"-Zahl für ein Widget (aus der letzten Messung). */
+function seriesMaxFit(id) {
+  const el = document.querySelector(`.wwrap[data-id="${id}"] .series[data-maxfit]`);
+  return el ? Math.max(1, +el.dataset.maxfit || 1) : 6;
+}
 
 /** Wie viele Items passen bei Breite w nebeneinander? (rein, testbar) */
 function seriesFits(w, itemW, minGap) {
@@ -366,8 +380,20 @@ function seriesFits(w, itemW, minGap) {
  */
 function seriesResolve(o) {
   const { width, itemW, count, perRow, minGap, align } = o;
-  const soll = Math.max(1, perRow > 0 ? perRow : seriesFits(width, itemW, minGap));
-  const passt = soll * itemW + (soll - 1) * minGap <= width + SERIES_EPS;
+  let soll = Math.max(1, perRow > 0 ? perRow : seriesFits(width, itemW, minGap));
+  let gap = null;   // null = Abstand aus den Props; Zahl = verkleinerter Abstand
+  // Feste „Pro Zeile"-Zahl passt mit dem gewählten Abstand nicht in die Breite:
+  // erst den Abstand verkleinern (notfalls bis 0), und wenn selbst das nicht reicht,
+  // weniger Spalten nehmen. Nie über den Widgetrand hinaus.
+  if (perRow > 0 && soll * itemW + (soll - 1) * minGap > width + SERIES_EPS) {
+    // nie enger als SERIES_MIN_GAP — sonst kleben die Items aneinander
+    soll = Math.min(soll, seriesFits(width, itemW, SERIES_MIN_GAP));
+    if (soll > 1 && soll * itemW + (soll - 1) * minGap > width + SERIES_EPS) {
+      gap = Math.floor((width - soll * itemW) / (soll - 1));
+    }
+  }
+  const effGap = gap != null ? gap : minGap;
+  const passt = soll * itemW + (soll - 1) * effGap <= width + SERIES_EPS;
 
   const volleZeile = count >= soll;
   const spreizen = soll > 1 && passt && (
@@ -384,7 +410,7 @@ function seriesResolve(o) {
     : align === 'right' ? 'end'
     : 'start';
 
-  return { cols, jc, spreizen, ueberlauf: !passt };
+  return { cols, jc, spreizen, ueberlauf: !passt, gap };
 }
 
 /** Misst einen .series-Container und setzt die Spalten. Kein Re-Render. */
@@ -393,7 +419,22 @@ function fitSeries(el) {
   const width = el.clientWidth;
   if (!width) return;                       // display:none (Lösungsseiten)
 
-  const itemW = +el.dataset.itemw || 0;
+  // itemW ist bei manchen Widgets nur GESCHÄTZT (z.B. Rechenaufgaben im
+  // Größer/Kleiner-Modus: zwei Terme + Kästchen sind viel breiter). Ist der
+  // echte Inhalt breiter als die Spalte, würde er in die Nachbarspalte bzw.
+  // über den Widgetrand ragen → echte Breite messen und nur nach OBEN korrigieren.
+  let itemW = +el.dataset.itemw || 0;
+  if (el.dataset.estimate) {
+    // Nur geschätzt → echte Inhaltsbreite messen (Spalten kurz auf max-content).
+    // Sonst bleibt bei zu großer Schätzung rechts in jeder Spalte Leerraum, und der
+    // Abstand zum rechten Widgetrand ist größer als zum linken.
+    el.style.gridTemplateColumns = `repeat(${el.children.length || 1}, max-content)`;
+    let m = 0;
+    for (const c of el.children) m = Math.max(m, Math.ceil(c.getBoundingClientRect().width));
+    if (m) itemW = m;
+  } else {
+    for (const c of el.children) itemW = Math.max(itemW, Math.ceil(c.scrollWidth));
+  }
   const minGap = +el.dataset.gapcol || 24;
   const r = seriesResolve({
     width, itemW,
@@ -405,9 +446,20 @@ function fitSeries(el) {
 
   el.style.gridTemplateColumns = `repeat(${r.cols}, ${itemW}px)`;
   el.style.justifyContent = r.jc;
+  el.style.columnGap = r.gap != null ? r.gap + 'px' : '';
+  // Blocksatz: unterschiedlich breite Items in ihrer Spalte so ausrichten, dass sie
+  // außen bündig mit dem Rand abschließen (1. Spalte links, letzte rechts, Mitte zentriert).
+  // Sonst bleibt bei einem schmaleren Item in der letzten Spalte rechts mehr Luft als links.
+  [...el.children].forEach((c, i) => {
+    const col = i % r.cols;
+    c.style.justifySelf = (!r.spreizen || r.cols < 2) ? ''
+      : col === 0 ? 'start' : col === r.cols - 1 ? 'end' : 'center';
+  });
   el.classList.toggle('is-stretched', r.spreizen);
   el.classList.toggle('is-overflow', r.ueberlauf);
   el.dataset.fit = String(r.cols);
+  el.dataset.mw = String(itemW);
+  el.dataset.maxfit = String(seriesFits(width, itemW, SERIES_MIN_GAP));
 }
 
 /** EIN ResizeObserver für die ganze App — feuert bei Orientierung, Breite,

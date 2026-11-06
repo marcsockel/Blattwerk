@@ -5,7 +5,7 @@ WIDGETS.push({
   createData: id => {
     const pairs = [["Hund","bellen"],["Katze","miauen"],["Kuh","muhen"]];
     return { id, type:"matching", pairs, rightOrder: matchingShuffleIdx(pairs.length),
-             rightOrder2: null, font:"inherit", fontSize:13, gap:24,
+             rightOrder2: null, font:"inherit", fontSize:22, gap:24,
              layout:"vertikal",
              schreiblinien:false, beispiel:false, beispielText:"Der Hund bellt.",
              aufgabenNr:0, aufgabenText:''};

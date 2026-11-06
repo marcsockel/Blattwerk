@@ -336,7 +336,7 @@ function haProps(d, op) {
 WIDGETS.push({
   meta: { type:"halbadd", group:"halbschriftlich", label:"Halbschriftlich +", desc:"Halbschriftliche Addition", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
-    const w = { id, type:"halbadd", anzahl:4, methode:"schritte", zahlenraum:100,
+    const w = { id, type:"halbadd", anzahl:3, methode:"schritte", zahlenraum:100,
                 uebergang:"gemischt", hilfe:false, groesse:"klein", stellen:true,
                 aufgabenNr:0, aufgabenText:"Rechne halbschriftlich." };
     haGen(w);
@@ -349,7 +349,7 @@ WIDGETS.push({
 WIDGETS.push({
   meta: { type:"halbmul", group:"halbschriftlich", label:"Halbschriftlich ·", desc:"Halbschriftliche Multiplikation", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
-    const w = { id, type:"halbmul", anzahl:4, zahlenraum:1000,
+    const w = { id, type:"halbmul", anzahl:3, zahlenraum:1000,
                 hilfe:false, groesse:"klein", stellen:true,
                 aufgabenNr:0, aufgabenText:"Rechne halbschriftlich." };
     haGen(w);
@@ -374,8 +374,8 @@ WIDGETS.push({
 WIDGETS.push({
   meta: { type:"halbsub", group:"halbschriftlich", label:"Halbschriftlich −", desc:"Halbschriftliche Subtraktion", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
-    const w = { id, type:"halbsub", anzahl:4, zahlenraum:100,
-                uebergang:"gemischt", hilfe:false, groesse:"klein", stellen:true,
+    const w = { id, type:"halbsub", anzahl:3, zahlenraum:100,
+                uebergang:"gemischt", hilfe:false, groesse:"mittel", stellen:true,
                 aufgabenNr:0, aufgabenText:"Rechne halbschriftlich." };
     haGen(w);
     return w;

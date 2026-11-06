@@ -88,7 +88,7 @@ WIDGETS.push({
   meta: { type:"zahlenhaus", group:"rechenformate", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { summands:2, zahlenraum:10, haeuser:3, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};
+    const cfg = { summands:2, zahlenraum:10, haeuser:4, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};
     return { id, type:"zahlenhaus", ...cfg, houses: zhGen(cfg.haeuser, cfg.summands, cfg.stockwerke, cfg.zahlenraum, cfg.leerfeld) };
   },
 

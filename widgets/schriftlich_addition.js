@@ -136,8 +136,8 @@ WIDGETS.push({
   meta: { type:"schriftlich_addition", group:"rechnen", label:"Schriftl. Addition", desc:"Schriftliche Addition", icon:"⊞+", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false,
-      groesse:'klein', itemsPerRow:'auto', align:'auto', itemGap:'normal', aufgabenNr:0, aufgabenText:'' };
+    const cfg = { summanden:2, zahlenraum:100, uebertrag:false, loesung:false, anzahl:5, luecken:false,
+      groesse:'mittel', itemsPerRow:'auto', align:'auto', itemGap:'normal', aufgabenNr:0, aufgabenText:'' };
     return { id, type:"schriftlich_addition", ...cfg,
       aufgaben: saGen(cfg.anzahl, cfg.summanden, cfg.zahlenraum, cfg.uebertrag),
       aufgabenGaps: [] };

@@ -164,7 +164,7 @@ WIDGETS.push({
     const w = {
       id, type:'rechentabelle',
       op:'+', zahlenraum:20, ueberschreitung:false,
-      groesse:'gross', spalten:2, zeilen:3, anzahl:2,
+      groesse:'gross', spalten:2, zeilen:3, anzahl:3,
       aufgabenNr:0, aufgabenText:'',
     };
     rtDoGenerate(w);

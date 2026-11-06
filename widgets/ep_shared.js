@@ -6,7 +6,7 @@ const EP_DEFAULT_FONT = "'Arial', sans-serif";
 // (flexDistribute-Schätzung: contentW 640 − 18 Pad, packW+gap bei S=1.2).
 const EP_DEFAULTS = {
   erste_paketchen: { cols: 3, groesse: 'mittel' },
-  ep_zehner_stop:  { cols: 2, aufgabenProPaeckchen: 1, groesse: 'mittel' },
+  ep_zehner_stop:  { cols: 3, aufgabenProPaeckchen: 1, groesse: 'klein' },
   ep_analogie:     { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 3 },
   ep_zerlegung:    { cols: 4, groesse: 'mittel', aufgabenProPaeckchen: 1, zahlenraum: 10, immerZehn: false },
   ep_umkehr:       { cols: 3, groesse: 'mittel', aufgabenProPaeckchen: 1 },

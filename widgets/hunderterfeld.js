@@ -308,7 +308,7 @@ WIDGETS.push({
     const w = {
       id, type:'hunderterfeld',
       modus:'feld', format:'ergebnis', luecke:'erste', ueberschreitung:'ohne', plusStapel:false,
-      anzahl:4, darstellung:'punkte', farbe:'sw', groesse:'klein',
+      anzahl:3, darstellung:'punkte', farbe:'sw', groesse:'mittel',
       itemsPerRow:'auto', align:'auto', itemGap:'normal',
       aufgabenNr:0, aufgabenText:'',
     };

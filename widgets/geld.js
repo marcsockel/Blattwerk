@@ -265,7 +265,7 @@ WIDGETS.push({
   meta: { type:"geld", label:"Geld", desc:"Scheine und Münzen zählen", icon:"€", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { anzahl:4, maxEuro:10, mitCent:false, modus:'geld', farbe:false , aufgabenNr:0, aufgabenText:''};
+    const cfg = { anzahl:3, maxEuro:10, mitCent:false, modus:'geld', farbe:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"geld", ...cfg,
       aufgaben: geldGen(cfg.anzahl, cfg.maxEuro*100, cfg.mitCent) };
   },

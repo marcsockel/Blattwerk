@@ -155,7 +155,7 @@ WIDGETS.push({
   },
 
   createData: id => {
-    const cfg = { zahlenraum: 1000, teiler: 0, mitRest: false, loesung: false, anzahl: 4, linien: true, groesse: 'klein', aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum: 1000, teiler: 0, mitRest: false, loesung: false, anzahl: 3, linien: true, groesse: 'klein', aufgabenNr:0, aufgabenText:''};
     return {
       id, type: 'schriftlich_division', ...cfg,
       aufgaben: sdGen(cfg.anzahl, cfg.zahlenraum, cfg.teiler, cfg.mitRest),

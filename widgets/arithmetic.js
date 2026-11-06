@@ -8,7 +8,7 @@ WIDGETS.push({
     const w = {
       id, type:"arithmetic",
       tasks:"",
-      cols: 2,
+      cols: 3,
       zahlenraum: 20,
       ueberschreitung: 'ohne',
       hueberschreitung: 'ohne',
@@ -19,7 +19,7 @@ WIDGETS.push({
       vergleich: false,
       vergleichSeiten: "gemischt",
       luecke: "erste",
-      showLoesungen: false, groesse:'klein', font: ARITH_DEFAULT_FONT,
+      showLoesungen: false, groesse:'mittel', font: ARITH_DEFAULT_FONT,
       paeckchenAbc: false,
       itemsPerRow: 'auto', align: 'auto',
       itemGapH: 'normal', itemGapV: 'normal', itemGap: 'normal',
@@ -136,6 +136,14 @@ WIDGETS.push({
       dR   = Math.max(dR,   digitsOf(p.right));
       dRes = Math.max(dRes, digitsOf(p.result));
     });
+    // Vergleich: Slot-Breite = meiste Stellen einer Zahl in irgendeinem Vergleichsterm
+    // (1.2ch je Ziffer wie in digitCells) → Einer unter Einern, Zeichen unter Zeichen.
+    let dV = 0;
+    parsed.forEach(p => {
+      if (!p.isVergleich) return;
+      [p.left, p.right].forEach(side => String(side).split(/[+\-·:]/).forEach(n => { dV = Math.max(dV, digitsOf(n.trim())); }));
+    });
+    const vglW = ((dV || maxDigits) * 1.2) + 'ch';
     const lW = (dL || maxDigits) + 'ch', rW = (dR || maxDigits) + 'ch', resW = (dRes || maxDigits) + 'ch';
     const cell = (val, align = "right", override = null, w = numW) => {
       const content = override !== null ? override : val === "_" ? box : numSpan(val, w);
@@ -274,12 +282,22 @@ WIDGETS.push({
       const sqBoxSlot = (inner, w = px(28)) => `<span style="display:inline-flex;width:${w}px;height:${LH}px;align-items:center;justify-content:center;vertical-align:middle;">${inner}</span>`;
       const sqBox = sqBoxSlot(sqBoxInner);
       if (p.isVergleich) {
+        // Jede Seite in feste Slots zerlegen (Zahl | Rechenzeichen | Zahl), genau wie im
+        // Normalmodus: digitCells gibt nur den ZIFFERN gleiche Breite — „+" und „-" sowie
+        // die Leerzeichen wären sonst unterschiedlich breit, und untereinander stehende
+        // Aufgaben mit + und - liefen auseinander.
+        const vglSide = s => {
+          const m = String(s).match(/^(-?\d+(?:[.,]\d+)?)\s*([+\-·:])\s*(-?\d+(?:[.,]\d+)?)$/);
+          if (!m) return numSpan(s, vglW);
+          const opSp = `<span style="display:inline-block;width:${px(9)}px;margin:0 ${px(4)}px;text-align:center;font-family:${FF};font-size:${FS}px;line-height:${LH}px;">${esc(m[2])}</span>`;
+          return `<span style="display:inline-flex;align-items:center;white-space:nowrap;">${numSpan(m[1], vglW)}${opSp}${numSpan(m[3], vglW)}</span>`;
+        };
         const cmpBox = `<span style="display:inline-block;width:${px(24)}px;height:${px(24)}px;border:1.5px solid #999;border-radius:2px;vertical-align:middle;background:#fff;"></span>`;
         const mid = isActive ? blueBox(p.sym, px(24), px(24)) : cmpBox;
         return `<tr>
-          <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.left)}</td>
+          <td style="text-align:right;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${vglSide(p.left)}</td>
           <td style="text-align:center;${tdBase}padding-left:8px;padding-right:8px;">${mid}</td>
-          <td style="text-align:left;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${numSpan(p.right)}</td>
+          <td style="text-align:left;${tdBase}padding-left:6px;padding-right:6px;white-space:nowrap;">${vglSide(p.right)}</td>
         </tr>`;
       }
       const opCell = p.isZeichen

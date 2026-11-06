@@ -129,7 +129,7 @@ WIDGETS.push({
   meta: { type:"zahlenmauer", group:"rechenformate", label:"Zahlenmauer", desc:"Steine addieren", icon:"🧱", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const n = 4, fillMode = "basis", anzahl = 1, zahlenraum = 10;
+    const n = 4, fillMode = "basis", anzahl = 2, zahlenraum = 10;
     const mauern = Array.from({length: anzahl}, () => zmMakeMauer(n, fillMode, zahlenraum));
     return { id, type:"zahlenmauer", rows_count:n, fillMode, anzahl, zahlenraum, mauern , aufgabenNr:0, aufgabenText:''};
   },

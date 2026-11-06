@@ -66,8 +66,8 @@ WIDGETS.push({
   meta: { type:"zwanzigerrahmen", label:"Zwanzigerrahmen", desc:"Zahl ablesen ZR 20", icon:"⬭", category:"mathematik", itemsLayout: true },
 
   createData: id => ({
-    id, type:"zwanzigerrahmen", anzahl:6, zahlenraum:20, loesung:false, bw:false, gross:true,
-    zahlen: zrahGen(6, 20), aufgabenNr:0, aufgabenText:''
+    id, type:"zwanzigerrahmen", anzahl:3, zahlenraum:20, loesung:false, bw:false, gross:false,
+    zahlen: zrahGen(3, 20), aufgabenNr:0, aufgabenText:''
   }),
 
   render: d => {

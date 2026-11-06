@@ -92,7 +92,7 @@ WIDGETS.push({
   meta: { type:"rechendreiecke", group:"rechenformate", label:"Rechendreiecke", desc:"Ecken & Seiten addieren", icon:"🔺", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, leerfeld:"seiten", gross:false , aufgabenNr:0, aufgabenText:''};
+    const cfg = { anzahl:3, zahlenraum:100, leerfeld:"seiten", gross:false , aufgabenNr:0, aufgabenText:''};
     return { id, type:"rechendreiecke", ...cfg, dreiecke: rdGen(cfg.anzahl, cfg.zahlenraum, cfg.leerfeld) };
   },
 

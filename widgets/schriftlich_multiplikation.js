@@ -110,7 +110,7 @@ WIDGETS.push({
   meta: { type:"schriftlich_multiplikation", group:"rechnen", label:"Schriftl. Multiplikation", desc:"Schriftliche Multiplikation", icon:"⊠×", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { zahlenraum:100, modus:"einstellig", uebertrag:false, loesung:false, anzahl:4, groesse:'klein', aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum:100, modus:"einstellig", uebertrag:false, loesung:false, anzahl:3, groesse:'mittel', aufgabenNr:0, aufgabenText:''};
     return { id, type:"schriftlich_multiplikation", ...cfg,
       aufgaben: smGen(cfg.anzahl, cfg.zahlenraum, cfg.modus, cfg.uebertrag) };
   },

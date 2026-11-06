@@ -131,7 +131,7 @@ WIDGETS.push({
   meta: { type:"stellenwert", label:"Stellenwerttafel", desc:"Zahlen aus Punkten ablesen", icon:"⠿", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { anzahl:4, zahlenraum:100, modus:'zahl', ungeordnet:false , aufgabenNr:0, aufgabenText:''};
+    const cfg = { anzahl:5, zahlenraum:100, modus:'zahl', ungeordnet:false, gross:false, aufgabenNr:0, aufgabenText:''};
     return { id, type:"stellenwert", ...cfg, zahlen: svwGen(cfg.anzahl, cfg.zahlenraum) };
   },
 

@@ -139,7 +139,7 @@ WIDGETS.push({
   meta: { type:"schriftlich_subtraktion", group:"rechnen", label:"Schriftl. Subtraktion", desc:"Schriftliche Subtraktion", icon:"⊟−", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:4, luecken:false, groesse:'klein', aufgabenNr:0, aufgabenText:''};
+    const cfg = { zahlenraum:100, uebertrag:false, loesung:false, anzahl:5, luecken:false, groesse:'mittel', aufgabenNr:0, aufgabenText:''};
     return { id, type:"schriftlich_subtraktion", ...cfg,
       aufgaben: ssGen(cfg.anzahl, cfg.zahlenraum, cfg.uebertrag), aufgabenGaps: [] };
   },

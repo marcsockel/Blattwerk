@@ -44,7 +44,7 @@ WIDGETS.push({
     const words = "ELMAR,ELEFANT,BUNT,FREUND".split(",").map(w => w.trim().toUpperCase());
     const cols = 10, rows = 10;
     const opts = { horizontal:true, vertikal:true, diagonal:true, rueckwaerts:false };
-    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:false, align:'left', ...opts, grid: wsGenGrid(words, cols, rows, opts) , aufgabenNr:0, aufgabenText:'Finde die Wörter'};
+    return { id, type:"wordsearch", words:"ELMAR,ELEFANT,BUNT,FREUND", cols, rows, gross:true, align:'left', ...opts, grid: wsGenGrid(words, cols, rows, opts) , aufgabenNr:0, aufgabenText:'Finde die Wörter'};
   },
 
   render: d => {

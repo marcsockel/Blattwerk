@@ -142,7 +142,7 @@ WIDGETS.push({
   meta: { type:"zwanzigerfeld", label:"Zwanzigerfeld", desc:"Anschauung ZR 20", icon:"⬛", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { modus:'rechnen', op:'both', anzahl:4, loesung:false, bw:true, groesse:'mittel',
+    const cfg = { modus:'rechnen', op:'both', anzahl:3, loesung:false, bw:true, groesse:'mittel',
       itemsPerRow:'auto', align:'auto', itemGapH:'normal', itemGapV:'normal', itemGap:'normal',
       aufgabenNr:0, aufgabenText:''};
     return { id, type:"zwanzigerfeld", ...cfg, aufgaben: zfGen(cfg.anzahl, cfg.op) };

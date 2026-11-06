@@ -470,7 +470,7 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=18"></script>
+<script src="main/helpers.js?v=23"></script>
 <script src="main/img_picker.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
@@ -486,32 +486,32 @@ const WIDGETS = [];
 <script src="widgets/checkbox.js"></script>
 <script src="widgets/table.js"></script>
 <script src="widgets/gap_text.js"></script>
-<script src="widgets/wordsearch.js"></script>
+<script src="widgets/wordsearch.js?v=3"></script>
 <script src="widgets/scramble.js"></script>
-<script src="widgets/matching.js"></script>
+<script src="widgets/matching.js?v=3"></script>
 <script src="widgets/numbering.js"></script>
-<script src="widgets/arithmetic.js"></script>
-<script src="widgets/ep_shared.js"></script>
+<script src="widgets/arithmetic.js?v=3"></script>
+<script src="widgets/ep_shared.js?v=3"></script>
 <script src="widgets/numberline.js"></script>
 <script src="widgets/geometry.js"></script>
-<script src="widgets/zahlenmauer.js"></script>
-<script src="widgets/zahlenhaus.js"></script>
+<script src="widgets/zahlenmauer.js?v=3"></script>
+<script src="widgets/zahlenhaus.js?v=3"></script>
 <script src="widgets/uhr.js"></script>
 <script src="widgets/zeitspanne.js"></script>
 <script src="widgets/kaestchen.js"></script>
 <script src="widgets/eingabekaestchen.js"></script>
-<script src="widgets/halbschriftlich.js"></script>
-<script src="widgets/schriftlich_addition.js"></script>
-<script src="widgets/schriftlich_subtraktion.js"></script>
-<script src="widgets/schriftlich_multiplikation.js"></script>
-<script src="widgets/schriftlich_division.js"></script>
+<script src="widgets/halbschriftlich.js?v=3"></script>
+<script src="widgets/schriftlich_addition.js?v=3"></script>
+<script src="widgets/schriftlich_subtraktion.js?v=3"></script>
+<script src="widgets/schriftlich_multiplikation.js?v=3"></script>
+<script src="widgets/schriftlich_division.js?v=3"></script>
 <script src="widgets/bildwort.js"></script>
 <script src="widgets/auslaut.js"></script>
 <script src="widgets/anlaut.js"></script>
 <script src="widgets/anlaut_zuordnung.js"></script>
 <script src="widgets/wort_schreiben.js"></script>
 <script src="widgets/wortchips.js"></script>
-<script src="widgets/buchstabensalat2.js"></script>
+<script src="widgets/buchstabensalat2.js?v=3"></script>
 <script src="widgets/geheimschrift.js"></script>
 <script src="widgets/bild_wort_zuordnung2.js"></script>
 <script src="widgets/aeue.js"></script>
@@ -522,19 +522,19 @@ const WIDGETS = [];
 <script src="widgets/crossword.js"></script>
 <script src="widgets/multiplechoice.js"></script>
 <script src="widgets/zahlenkette.js"></script>
-<script src="widgets/nachbarzahlen.js"></script>
+<script src="widgets/nachbarzahlen.js?v=3"></script>
 <script src="widgets/nachbarzahlen_tabelle.js"></script>
-<script src="widgets/stellenwert.js"></script>
+<script src="widgets/stellenwert.js?v=3"></script>
 <script src="widgets/buendeln.js"></script>
-<script src="widgets/geld.js"></script>
-<script src="widgets/zwanzigerfeld.js"></script>
-<script src="widgets/zwanzigerrahmen.js"></script>
-<script src="widgets/rechendreiecke.js"></script>
+<script src="widgets/geld.js?v=3"></script>
+<script src="widgets/zwanzigerfeld.js?v=3"></script>
+<script src="widgets/zwanzigerrahmen.js?v=3"></script>
+<script src="widgets/rechendreiecke.js?v=3"></script>
 <script src="widgets/zahlenrad.js"></script>
-<script src="widgets/rechentabelle.js"></script>
-<script src="widgets/groessen.js"></script>
+<script src="widgets/rechentabelle.js?v=3"></script>
+<script src="widgets/groessen.js?v=3"></script>
 <script src="widgets/groessentafel.js"></script>
-<script src="widgets/hunderterfeld.js"></script>
+<script src="widgets/hunderterfeld.js?v=3"></script>
 <script src="widgets/zahlentafel.js"></script>
 <script src="widgets/diagramm.js"></script>
 <script src="widgets/kuchendiagramm.js"></script>
@@ -2177,7 +2177,7 @@ async function blattSave() {
     }
   }
 
-  zip.file('document.json', JSON.stringify({ version:1, name:base, idC, orientation:_orientation, widgets:wcopy }, null, 2));
+  zip.file('document.json', JSON.stringify({ version:BLATT_VERSION, name:base, idC, orientation:_orientation, widgets:wcopy }, null, 2));
   const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE' });
 
   // Echter „Speichern unter"-Dialog via File System Access API (Chrome/Edge): Name aus dem
@@ -2259,6 +2259,26 @@ async function blattOpen(file) {
   render(); desel();
   _dirty=false; // frisch geladen = nichts Ungespeichertes
   draftClear();  // geladene Datei ist der neue Stand → alten Auto-Entwurf verwerfen
+  if ((doc.version || 1) < BLATT_VERSION) showVersionNotice();
+}
+
+// Dateiformat-Version. 2 = neue Verteilung (nur Links/Mitte/Block, kein Spaltenabstand).
+// Ältere Blätter laden weiter, können aber anders aussehen → Hinweis beim Öffnen.
+const BLATT_VERSION = 2;
+function showVersionNotice(){
+  document.getElementById('version-notice')?.remove();
+  const bar=document.createElement('div');
+  bar.id='version-notice';
+  bar.style.cssText='position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9999;'
+    +'background:#1c1e23;color:#cdd6f4;border:1.5px solid #2f3239;border-radius:10px;padding:12px 16px;'
+    +'box-shadow:0 8px 28px rgba(0,0,0,.45);display:flex;align-items:center;gap:14px;'
+    +"font-family:'Fira Sans',sans-serif;font-size:13px;max-width:90vw;";
+  bar.innerHTML='<span>ℹ️ Dieses Blatt wurde mit einer älteren Version erstellt. '
+    +'Die Verteilung der Aufgaben wurde überarbeitet – die Darstellung kann etwas anders aussehen. '
+    +'Beim nächsten Speichern wird es auf die neue Version gebracht.</span>'
+    +'<button style="padding:6px 12px;border:none;border-radius:6px;background:#89b4fa;color:#1c1e23;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">OK</button>';
+  bar.querySelector('button').onclick=()=>bar.remove();
+  document.body.appendChild(bar);
 }
 
 // ── AUTOSAVE (IndexedDB) ─────────────────────────────────────────
