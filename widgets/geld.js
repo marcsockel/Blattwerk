@@ -125,6 +125,8 @@ function geldItemSize(val, sc=1) {
 }
 
 // ── Haupt-SVG für eine Aufgabe ────────────────────────────────────
+const GELD_KLEIN_SCALE = 1.11;   // 3 × 191 px + 2 × ≥24 px Abstand passen in die Zeile
+
 function geldSvg(aufgabe, mitCent, modus, isActive, gross=false, farbe=false) {
   const amountCents = aufgabe.betrag;
   const showGeld   = modus !== 'betrag';
@@ -251,7 +253,10 @@ function geldSvg(aufgabe, mitCent, modus, isActive, gross=false, farbe=false) {
       font-weight="700" fill="${fillColor}">${label}</text>`;
   }
 
-  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg"
+  // Klein wird um GELD_KLEIN_SCALE vergrößert dargestellt (gleiche Zeichnung, nur größer):
+  // 3 Aufgaben füllen die Zeile, ohne riesige Lücken dazwischen.
+  const z = gross ? 1 : GELD_KLEIN_SCALE;
+  return `<svg width="${Math.round(W * z)}" height="${Math.round(H * z)}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
     style="display:block;">${svg}</svg>`;
 }
 
@@ -276,7 +281,7 @@ WIDGETS.push({
     const gross    = d.gross    || false;
     const isActive = d.id === selId || _solutionsMode;
     const aufgaben = d.aufgaben || geldGen(d.anzahl||4, (d.maxEuro||10)*100, mitCent);
-    const itemW    = (gross ? 270 : 168) + 4;
+    const itemW    = gross ? 274 : Math.round(172 * GELD_KLEIN_SCALE);
     const farbe    = d.farbe || false;
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
     return atHtml(d) + flexDistribute(

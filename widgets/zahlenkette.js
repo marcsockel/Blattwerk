@@ -112,7 +112,7 @@ WIDGETS.push({
     const isActive     = d.id === selId || _solutionsMode;
     const ketten       = d.ketten || [];
     const ops          = d.ops || [];
-    const ks           = zkKastenEffektiv(d);   // nie breiter als die Zeile
+    const ks           = d.kastenGroesse || 34;
     const fs           = Math.round(ks * 0.42);
     const zeigeStart   = d.zeigeStart   !== false;
     const zeigeZwischen= d.zeigeZwischen|| false;
@@ -193,8 +193,8 @@ WIDGETS.push({
 
     return `<div class="prow"><label>Rechenarten</label>
         <div style="display:flex;gap:4px;">${['+','-','×',':'].map(opToggle).join('')}</div></div>` +
-      pr('Schritte', `<input type="number" min="1" max="10" value="${nSchritte}"
-        onclick="event.stopPropagation()" onchange="zkSetLayout(${d.id},'nSchritte',+this.value)"
+      pr('Schritte', `<input type="number" min="1" max="${zkMax(d,'n',1,10)}" value="${nSchritte}"
+        onclick="event.stopPropagation()" onchange="zkSetLayout(${d.id},'nSchritte',Math.min(+this.value,${zkMax(d,'n',1,10)}))"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
       `<div class="prow"><label>Anzeigen</label>
         <div style="display:flex;gap:3px;flex-wrap:wrap;">
@@ -208,12 +208,12 @@ WIDGETS.push({
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
       pr('Zahlenraum', `<select onchange="zkSetLayout(${d.id},'zahlenraum',+this.value)"
         style="border:1.5px solid #ddd;border-radius:4px;padding:3px 5px;font-family:inherit;font-size:12px;">
-        ${[10,20,50,100,1000].map(n=>`<option value="${n}" ${zahlenraum===n?'selected':''}>${n}</option>`).join('')}
+        ${[10,20,50,100,1000].map(n=>{ const ok = zkPasst(d,{zr:n}) || zahlenraum===n; return `<option value="${n}" ${zahlenraum===n?'selected':''} ${ok?'':'disabled'}>${n}${ok?'':' (passt nicht)'}</option>`; }).join('')}
       </select>`) +
       // Größe: Klein / Mittel / Groß setzen die Kastengröße (Feinjustierung darunter)
-      `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">${[['Klein',34],['Mittel',44],['Groß',54]].map(([l,v]) => { const on = ks === v; return `<button onclick="event.stopPropagation();upd(${d.id},'kastenGroesse',${v})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${l}</button>`; }).join('')}</div></div>` +
-      pr('Kastengröße', `<input type="number" min="24" max="60" value="${ks}"
-        onclick="event.stopPropagation()" onchange="upd(${d.id},'kastenGroesse',+this.value)"
+      `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">${[['Klein',34],['Mittel',44],['Groß',54]].map(([l,v]) => { const on = ks === v; const ok = on || zkPasst(d,{ks:v}); return `<button ${ok?'':'disabled title="Kette würde über den Rand ragen"'} onclick="event.stopPropagation();upd(${d.id},'kastenGroesse',${v})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:${ok?'pointer':'not-allowed'};opacity:${ok?1:0.35};color:${on?'#1e1e2e':'#999'};">${l}</button>`; }).join('')}</div></div>` +
+      pr('Kastengröße', `<input type="number" min="24" max="${Math.max(ks, zkMax(d,'ks',24,60))}" value="${ks}"
+        onclick="event.stopPropagation()" onchange="upd(${d.id},'kastenGroesse',Math.min(+this.value,${Math.max(ks, zkMax(d,'ks',24,60))}))"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
       `<button onclick="event.stopPropagation();zkWuerfeln(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
@@ -283,16 +283,21 @@ function zkWuerfelnOps(id) {
   zkRegen(w); render(); renderProps(id);
 }
 
-// Kastengröße so begrenzen, dass die längste Kette in die verfügbare Breite passt
-// (viele Schritte + großer Zahlenraum + Größe „Groß" würde sonst rechts überlaufen).
+// Passt eine Kette mit diesen Einstellungen in die Zeile? Optionen, die über den Rand
+// führen würden, werden in den Eigenschaften gesperrt (es wird NICHT verkleinert).
 // Breite ≈ (Schritte+1)·Kasten + Schritte·(Pfeil ≈ 0,357·Kasten·(Stellen+0,5) + 4).
-function zkKastenEffektiv(d) {
-  const ks = d.kastenGroesse || 34;
-  const zr = d.zahlenraum || 20;
+function zkPasst(d, o = {}) {
+  const ks = o.ks ?? (d.kastenGroesse || 34);
+  const zr = o.zr ?? (d.zahlenraum || 20);
+  const n  = o.n  ?? (d.nSchritte || 4);
   const valDigits = zr >= 1000 ? 3 : zr >= 100 ? 2 : 1;
-  const n = Math.max(1, ...(d.ketten || []).map(k => ((k.ops || d.ops || []).length) || 0), d.nSchritte || 1);
   const frac = ({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1})[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-  const avail = 615 * frac;
-  const factor = (n + 1) + n * 0.357 * (valDigits + 0.5);
-  return Math.max(20, Math.min(ks, Math.floor((avail - 4 * n) / factor)));
+  const breite = ks * ((n + 1) + n * 0.357 * (valDigits + 0.5)) + 4 * n;
+  return breite <= 615 * frac;
+}
+// Größter noch passender Wert (für max-Attribute der Zahlenfelder)
+function zkMax(d, key, lo, hi) {
+  let best = lo;
+  for (let v = lo; v <= hi; v++) if (zkPasst(d, { [key]: v })) best = v;
+  return best;
 }

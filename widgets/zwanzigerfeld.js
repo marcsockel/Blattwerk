@@ -172,7 +172,9 @@ WIDGETS.push({
           ? `<span style="font-weight:700;color:${blue ? '#2563eb' : '#1a7f3c'};">${result}</span>`
           : `<span style="display:inline-block;border-bottom:2px solid #555;min-width:${small?44:56}px;height:${small?6:8}px;align-self:flex-end;margin-bottom:2px;"></span>`;
         label = modus === 'zahl'
-          ? `<div style="font-family:${ff};font-size:${fs}px;display:flex;align-items:center;gap:6px;">${resEl}</div>`
+          // Nur Zahl: Zeile so hoch wie eine geschriebene Zahl → der Strich sitzt mit Abstand
+          // unter dem Feld (Platz zum Hineinschreiben), nicht direkt darunter.
+          ? `<div style="font-family:${ff};font-size:${fs}px;display:flex;align-items:flex-end;gap:6px;min-height:${Math.round(fs * 1.25)}px;">${resEl}</div>`
           : `<div style="font-family:${ff};font-size:${fs}px;display:flex;align-items:center;gap:${small?4:7}px;">
               <span>${a}</span><span>${o}</span><span>${b}</span><span>=</span>${resEl}
              </div>`;
