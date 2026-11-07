@@ -1,11 +1,15 @@
 // Widget: Nummerierung
 WIDGETS.push({
   meta: { type:"numbering", label:"Nummerierung", desc:"Geordnete Liste", icon:"1.", category:"allgemein" },
-  createData: id => ({ id, type:"numbering", items:["Erstens","Zweitens","Drittens"], font:"inherit", fontSize:14, aufgabenNr:0, aufgabenText:''}),
+  createData: id => ({ id, type:"numbering", items:["Erstens","Zweitens","Drittens"], cols:1, font:"inherit", fontSize:18, aufgabenNr:0, aufgabenText:''}),
   render: d => {
     const font     = d.font     || "inherit";
     const fontSize = d.fontSize || 14;
-    return atHtml(d) + d.items.map((it,i)=>`<div style="font-family:${font};font-size:${fontSize}px;padding:3px 0;"><strong>${i+1}.</strong> ${esc(it)}</div>`).join("");
+    const rows = d.items.map((it,i)=>`<div style="font-family:${font};font-size:${fontSize}px;padding:3px 0;"><strong>${i+1}.</strong> ${esc(it)}</div>`);
+    // Spalten wie beim Multiple-Choice-Quiz: Einträge spaltenweise verteilt (1. Spalte zuerst)
+    const cols = Math.max(1, d.cols || 1);
+    const colDivs = mcColumnChunks(rows, cols).map(ch => `<div style="flex:1;min-width:0;">${ch.join('')}</div>`).join('');
+    return atHtml(d) + (cols > 1 ? `<div style="display:flex;gap:24px;align-items:flex-start;">${colDivs}</div>` : rows.join(''));
   },
   renderProps: d => {
     const font     = d.font     || "inherit";
@@ -36,6 +40,11 @@ WIDGETS.push({
             ${fontOptions}
           </select>
         </div>
-      </div>` ;
+      </div>` +
+      pr('Spalten', `<input type="number" min="1" max="4" value="${d.cols || 1}"
+        onclick="event.stopPropagation()"
+        onchange="upd(${d.id},'cols',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
+               font-family:inherit;font-size:12px;text-align:center;">`);
   },
 });

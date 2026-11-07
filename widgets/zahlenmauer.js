@@ -164,10 +164,12 @@ WIDGETS.push({
         ).join("")
       : null;
 
+    // Zu kleine Zahlenräume für die Mauergröße sind gesperrt (Spitze ≥ 2^(n-1))
+    const zrMin = typeof zmMinZahlenraum === 'function' ? zmMinZahlenraum(n) : 10;
     return pr("Zahlenraum",
         `<select onchange="zmSetZahlenraum(${d.id},+this.value)">
-          ${[10,20,100].map(v=>`<option value="${v}" ${zahlenraum===v?"selected":""}>${v}</option>`).join("")}
-        </select>`) +
+          ${[10,20,100].map(v=>`<option value="${v}" ${zahlenraum===v?"selected":""} ${v<zrMin?"disabled":""}>${v}${v<zrMin?" (zu klein)":""}</option>`).join("")}
+        </select>` + (zrMin > 10 ? `<div style="font-size:10px;color:#aaa;margin-top:3px;">Bei ${n} Basissteinen ist die Spitze mindestens ${Math.pow(2, n - 1)} → Zahlenraum ab ${zrMin}.</div>` : '')) +
       pr("Anzahl Basissteine",
         `<select onchange="zmResize(${d.id},+this.value)">
           ${[2,3,4,5,6].map(v=>`<option value="${v}" ${n===v?"selected":""}>${v}</option>`).join("")}

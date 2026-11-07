@@ -71,8 +71,25 @@ WIDGETS.push({
            style="flex-shrink:0;width:${thumbSz}px;height:${thumbSz}px;background:#f0f0f0;border:1.5px dashed #ccc;border-radius:3px;
            display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:border-color .12s,background .12s;">🖼</div>`;
 
+    // Bild-Auswahl ganz oben und beschriftet — sonst wirkt es, als ginge es nur per
+    // Drag & Drop aufs Blatt.
+    const bildRow = `<div class="prow"><label>Bild</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${thumb}
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:1;min-width:0;">
+            <button onclick="event.stopPropagation();imgOpenPicker(${d.id});"
+              style="padding:5px 10px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;
+                     font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🖼 ${d.src ? 'Anderes Bild auswählen' : 'Bild auswählen'}</button>
+            <div style="font-size:10px;color:#aaa;">oder Bilddatei hierher bzw. aufs Blatt ziehen</div>
+            ${d.src ? `<button onclick="event.stopPropagation();upd(${d.id},'src','')"
+              style="padding:2px 7px;border:none;border-radius:3px;background:#fde8ec;color:#a0003c;
+                     font-family:inherit;font-size:10px;cursor:pointer;">🗑 Bild entfernen</button>` : ""}
+          </div>
+        </div>
+      </div>`;
+
     const valign = d.valign || "top";
-    return pr("Beschriftung", `<input value="${esc(d.caption)}" placeholder="optional" onchange="upd(${d.id},'caption',this.value)">`) +
+    return bildRow + pr("Beschriftung", `<input value="${esc(d.caption)}" placeholder="optional" onchange="upd(${d.id},'caption',this.value)">`) +
       pr("Höhe (px)", `<input type="number" min="60" max="600" step="10" value="${d.height}" onchange="upd(${d.id},'height',+this.value)">`) +
       `<div class="prow"><label>Innenabstand</label>
         <div style="display:flex;gap:4px;">
@@ -101,14 +118,7 @@ WIDGETS.push({
         </div>
         ${d.rotate ? `<div style="font-size:10px;color:#aaa;margin-top:3px;">Drehung: ${d.rotate}° — bei 90°/270° ggf. Höhe anpassen.</div>` : ''}
       </div>` : '') +
-      `<div class="prow"><label>Bild</label>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">
-          ${thumb}
-          ${d.src ? `<button onclick="event.stopPropagation();upd(${d.id},'src','')"
-            style="padding:1px 5px;border:none;border-radius:3px;background:#fde8ec;color:#a0003c;
-                   font-size:10px;cursor:pointer;">🗑</button>` : ""}
-        </div>
-      </div>` ;
+      '' ;
   },
 });
 

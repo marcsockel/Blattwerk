@@ -2,11 +2,13 @@
 
 function rdRand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
 
-// All 16 valid "gemischt" combinations: uniquely solvable, no redundant value.
-// Redundant triples (excluded): {A,B,AB}, {A,C,AC}, {B,C,BC} — two corners + their common side.
+// „Gemischt": 15 Kombinationen, die OHNE Probieren lösbar sind — es gibt immer einen
+// Rechenschritt mit nur einer Unbekannten (mind. 1 Innenzahl ist vorgegeben).
+// Nicht dabei: nur die drei Außenzahlen (dafür muss man Innenzahlen vermuten) — das ist
+// der eigene Modus „Nur Außenzahlen". Redundant und ebenfalls ausgeschlossen:
+// {A,B,AB}, {A,C,AC}, {B,C,BC} — zwei Ecken + ihre gemeinsame Seite.
 // corners = [A=top, B=bl, C=br], sides = [AB=left, AC=right, BC=bottom]
 const RD_GEMISCHT = [
-  [[0,0,0],[1,1,1]], // all sides shown
   [[1,1,0],[0,1,0]], [[1,1,0],[0,0,1]], // 2 corners + 1 non-adjacent side
   [[1,0,1],[1,0,0]], [[1,0,1],[0,0,1]],
   [[0,1,1],[1,0,0]], [[0,1,1],[0,1,0]],
@@ -26,6 +28,10 @@ function rdGenOne(zahlenraum, leerfeld) {
   if (leerfeld === "seiten") {
     shownC = [true, true, true];
     shownS = [false, false, false];
+  } else if (leerfeld === "aussen") {
+    // Nur Außenzahlen: eindeutig lösbar (Innen = halbe Summe der Außenzahlen minus Gegenseite)
+    shownC = [false, false, false];
+    shownS = [true, true, true];
   } else {
     const [sc, ss] = RD_GEMISCHT[rdRand(0, RD_GEMISCHT.length - 1)];
     shownC = sc.map(Boolean);
@@ -111,7 +117,8 @@ WIDGETS.push({
     const { anzahl=4, zahlenraum=100, leerfeld="seiten", gross=false } = d;
     const leerOpts = [
       ["seiten",   "Alle Seiten leer"],
-      ["gemischt", "Gemischt"],
+      ["gemischt", "Gemischt (ohne Probieren lösbar)"],
+      ["aussen",   "Nur Außenzahlen (Innen leer)"],
     ].map(([v,l]) => `<option value="${v}"${leerfeld===v?" selected":""}>${l}</option>`).join("");
 
     return pr("Zahlenraum",

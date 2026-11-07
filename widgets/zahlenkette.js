@@ -112,7 +112,7 @@ WIDGETS.push({
     const isActive     = d.id === selId || _solutionsMode;
     const ketten       = d.ketten || [];
     const ops          = d.ops || [];
-    const ks           = d.kastenGroesse || 34;
+    const ks           = zkKastenEffektiv(d);   // nie breiter als die Zeile
     const fs           = Math.round(ks * 0.42);
     const zeigeStart   = d.zeigeStart   !== false;
     const zeigeZwischen= d.zeigeZwischen|| false;
@@ -210,6 +210,8 @@ WIDGETS.push({
         style="border:1.5px solid #ddd;border-radius:4px;padding:3px 5px;font-family:inherit;font-size:12px;">
         ${[10,20,50,100,1000].map(n=>`<option value="${n}" ${zahlenraum===n?'selected':''}>${n}</option>`).join('')}
       </select>`) +
+      // Größe: Klein / Mittel / Groß setzen die Kastengröße (Feinjustierung darunter)
+      `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">${[['Klein',34],['Mittel',44],['Groß',54]].map(([l,v]) => { const on = ks === v; return `<button onclick="event.stopPropagation();upd(${d.id},'kastenGroesse',${v})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${l}</button>`; }).join('')}</div></div>` +
       pr('Kastengröße', `<input type="number" min="24" max="60" value="${ks}"
         onclick="event.stopPropagation()" onchange="upd(${d.id},'kastenGroesse',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;font-size:12px;text-align:center;">`) +
@@ -279,4 +281,18 @@ function zkWuerfelnOps(id) {
   }
   // Fallback: nur Zahlen neu würfeln
   zkRegen(w); render(); renderProps(id);
+}
+
+// Kastengröße so begrenzen, dass die längste Kette in die verfügbare Breite passt
+// (viele Schritte + großer Zahlenraum + Größe „Groß" würde sonst rechts überlaufen).
+// Breite ≈ (Schritte+1)·Kasten + Schritte·(Pfeil ≈ 0,357·Kasten·(Stellen+0,5) + 4).
+function zkKastenEffektiv(d) {
+  const ks = d.kastenGroesse || 34;
+  const zr = d.zahlenraum || 20;
+  const valDigits = zr >= 1000 ? 3 : zr >= 100 ? 2 : 1;
+  const n = Math.max(1, ...(d.ketten || []).map(k => ((k.ops || d.ops || []).length) || 0), d.nSchritte || 1);
+  const frac = ({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1})[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
+  const avail = 615 * frac;
+  const factor = (n + 1) + n * 0.357 * (valDigits + 0.5);
+  return Math.max(20, Math.min(ks, Math.floor((avail - 4 * n) / factor)));
 }

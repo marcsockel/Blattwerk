@@ -243,9 +243,48 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();rtGenerate(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
+      rtRandEditor(d);
   },
 });
+
+// ── Randzahlen von Hand ändern ────────────────────────────────────
+// Pro Tabelle: obere Randzahlen (Spalten) und linke Randzahlen (Zeilen) als kleine Felder.
+// Ungültige Kombinationen (z.B. Ergebnis über dem Zahlenraum, Rest beim Teilen) werden
+// erlaubt, aber mit einem Hinweis markiert.
+function rtRandEditor(d) {
+  const tables = d.tables || [];
+  if (!tables.length) return '';
+  const op = d.op || '+', zr = d.zahlenraum || 20, ue = d.ueberschreitung || false;
+  const inp = (ti, key, i, v) => `<input type="text" inputmode="numeric" value="${v}"
+      onclick="event.stopPropagation()" onchange="rtSetRand(${d.id},${ti},'${key}',${i},this.value)"
+      style="width:38px;padding:3px 2px;border:1.5px solid #ddd;border-radius:4px;font-family:inherit;
+             font-size:12px;text-align:center;">`;
+  const rows = tables.map((t, ti) => {
+    const ok = rtValid(op, zr, ue, t.cols, t.rows);
+    return `<div style="padding:6px 0;border-bottom:1px solid #eee;">
+      <div style="font-size:11px;font-weight:700;color:#666;margin-bottom:4px;">Tabelle ${ti + 1}
+        ${ok ? '' : '<span style="color:#c2410c;font-weight:700;margin-left:6px;">⚠ passt nicht zu Zahlenraum/Rechenart</span>'}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-size:11px;color:#888;width:34px;">oben</span>${t.cols.map((v, i) => inp(ti, 'cols', i, v)).join('')}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#888;width:34px;">links</span>${t.rows.map((v, i) => inp(ti, 'rows', i, v)).join('')}</div>
+    </div>`;
+  }).join('');
+  const inner = rows + `<div style="font-size:10px;color:#aaa;margin-top:4px;">„Neu würfeln" und Änderungen an Rechenart, Zahlenraum, Spalten oder Zeilen erzeugen neue Randzahlen.</div>`;
+  return typeof propFold === 'function'
+    ? `<div style="margin-top:10px;">${propFold('rt-rand', 'Randzahlen bearbeiten', inner, false)}</div>`
+    : `<div class="prow" style="margin-top:10px;"><label>Randzahlen bearbeiten</label></div>${inner}`;
+}
+
+function rtSetRand(id, ti, key, i, val) {
+  const w = widgets.find(x => x.id === id); if (!w || !w.tables || !w.tables[ti]) return;
+  const n = parseInt(String(val).trim(), 10);
+  if (!Number.isFinite(n) || n < 0) { renderProps(id); return; }
+  saveHistory();
+  w.tables[ti][key][i] = n;
+  render(); renderProps(id);
+}
 
 // ── Helpers ───────────────────────────────────────────────────────
 // Strukturelle Änderung → neu generieren.

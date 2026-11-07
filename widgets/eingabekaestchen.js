@@ -10,13 +10,18 @@ WIDGETS.push({
     const cs     = sizes[d.groesse || 'mittel'];
     const fullCols = { klein: 42, mittel: 31, gross: 15 }[d.groesse || 'mittel'];
     const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
-    const cols   = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1}[_frac]||1)));
+    // Spaltenzahl wie beim Kästchenfeld aus der ECHTEN verfügbaren Breite (ekzFit misst
+    // nach dem Layout, z.B. bei „Bündig" mehr Platz). Bis dahin: Schätzwert.
+    const est    = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1}[_frac]||1)));
+    const maxC   = d.spalten || 0;                       // 0 = ganze Breite
+    const fitKey = `${cs}|${_frac}|${d.flush ? 1 : 0}|${maxC}`;
+    const cols   = (d._ekzFit && d._ekzFit.key === fitKey) ? d._ekzFit.cols : (maxC ? Math.min(maxC, est) : est);
     const rows   = d.zeilen || 4;
     const w      = cols * cs;
     const h      = rows * cs;
     const fs     = Math.round(cs * 0.58);
     const pfx    = `ekz${d.id}`;
-    const vals   = d.values || {};
+    const vals   = ekzDisp(d, cols);   // gespeichert nach Zeile/Spalte → bleibt an Ort und Stelle
     const linien = d.lines  || [];
     const isLinien = d.mode === 'linien';
 
@@ -62,7 +67,7 @@ WIDGETS.push({
       <line id="ekzprev${d.id}" stroke="#89b4fa" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3" x1="0" y1="0" x2="0" y2="0"/>
     </svg>`;
 
-    return atHtml(d) + `<div onclick="event.stopPropagation()" style="position:relative;display:inline-block;line-height:0;">
+    return atHtml(d) + `<div onclick="event.stopPropagation()" data-ekz-fit="${d.id}" data-cs="${cs}" data-maxcols="${maxC}" data-cols="${cols}" data-key="${fitKey}" style="position:relative;display:inline-block;line-height:0;">
       <div style="display:grid;grid-template-columns:repeat(${cols},${cs}px);
                   width:${w}px;gap:0;
                   border-left:0.7px solid #888;border-top:0.7px solid #888;
@@ -103,6 +108,7 @@ WIDGETS.push({
       </div></div>` +
 
       pr('Zeilen', `<input type="number" min="1" max="50" value="${rows}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
+      kzSpaltenBlock(d) +
       pr('Schrift', `<select onchange="upd(${d.id},'font',this.value)">
         ${GAP_FONTS.map(f => `<option value="${f.value}" ${(d.font||'inherit')===f.value?'selected':''}>${f.label}</option>`).join('')}
       </select>`) +
@@ -142,14 +148,14 @@ function ekzInput(id, pfx, idx, cols, rows) {
   if (el.value === '*') el.value = '·';
 
   // ── Brüche: "1" "/" "2" → gestapelter Bruch "1/2" in EINEM Kästchen ──
-  const prevStored = (w && w.values && w.values[idx-1]) || '';
+  const prevStored = (w && w.values && w.values[ekzSK(w,idx-1,cols)]) || '';
   // "/" nach einem einzelnen Zeichen → Bruch beginnen (Zähler + Balken)
   if (el.value === '/' && idx > 0) {
     const prevEl = document.getElementById(`${pfx}_${idx-1}`);
     const pv = prevStored || (prevEl ? prevEl.value : '');
     if (pv.length === 1 && pv !== '/') {
       el.value = '';
-      if (w) { if (!w.values) w.values = {}; w.values[idx-1] = pv + '/'; delete w.values[idx]; }
+      if (w) { if (!w.values) w.values = {}; w.values[ekzSK(w,idx-1,cols)] = pv + '/'; delete w.values[ekzSK(w,idx,cols)]; }
       if (prevEl) prevEl.value = '';
       ekzRedrawFracs(id);
       return;
@@ -157,7 +163,7 @@ function ekzInput(id, pfx, idx, cols, rows) {
   }
   // Vorzelle wartet auf Nenner ("1/") → dieses Zeichen vervollständigt den Bruch
   if (idx > 0 && /^.\/$/.test(prevStored) && el.value.length === 1 && el.value !== '/') {
-    if (w) { w.values[idx-1] = prevStored + el.value; delete w.values[idx]; }
+    if (w) { w.values[ekzSK(w,idx-1,cols)] = prevStored + el.value; delete w.values[ekzSK(w,idx,cols)]; }
     el.value = '';
     ekzRedrawFracs(id);
     return;
@@ -171,14 +177,14 @@ function ekzInput(id, pfx, idx, cols, rows) {
     if (prevEl && prevEl.value.length > 0 && !prevEl.value.includes(')')) {
       el.value = '';
       prevEl.value += ')';
-      if (w) { if (!w.values) w.values = {}; w.values[idx - 1] = prevEl.value; delete w.values[idx]; }
+      if (w) { if (!w.values) w.values = {}; w.values[ekzSK(w,idx-1,cols)] = prevEl.value; delete w.values[ekzSK(w,idx,cols)]; }
       const next = idx + 1;
       if (next < cols * rows) { const n = document.getElementById(`${pfx}_${next}`); if (n) { n.focus(); n.select(); } }
       return;
     }
   }
 
-  if (w) { if (!w.values) w.values = {}; w.values[idx] = val; }
+  if (w) { if (!w.values) w.values = {}; w.values[ekzSK(w,idx,cols)] = val; }
   ekzRedrawFracs(id); // falls ein Bruch in dieser Zelle überschrieben wurde
   if (val.length > 0) {
     const next = idx + 1;
@@ -212,7 +218,7 @@ function ekzRedrawFracs(id) {
   const svg = document.getElementById(`ekzsvg${id}`);
   const g = document.getElementById(`ekzfrac${id}`);
   if (!w || !svg || !g) return;
-  g.innerHTML = ekzFracSvg(w.values || {}, +svg.dataset.cols, +svg.dataset.cs, svg.dataset.font || 'inherit');
+  g.innerHTML = ekzFracSvg(ekzDisp(w, +svg.dataset.cols), +svg.dataset.cols, +svg.dataset.cs, svg.dataset.font || 'inherit');
 }
 
 function ekzKey(e, id, pfx, idx, cols, rows) {
@@ -227,15 +233,15 @@ function ekzKey(e, id, pfx, idx, cols, rows) {
     if (el && el.value === '') {
       e.preventDefault();
       const w = widgets.find(x => x.id === id);
-      const stored = (w && w.values && w.values[idx]) || '';
+      const stored = (w && w.values && w.values[ekzSK(w,idx,cols)]) || '';
       // Zelle enthält einen Bruch (Input ist optisch leer) → Bruch löschen, bleiben
       if (/^.\/.?$/.test(stored)) {
-        delete w.values[idx];
+        delete w.values[ekzSK(w,idx,cols)];
         ekzRedrawFracs(id);
         return;
       }
       next = idx - 1;
-      if (w && w.values) delete w.values[idx];
+      if (w && w.values) delete w.values[ekzSK(w,idx,cols)];
     }
   }
   if (next >= 0 && next < total) {
@@ -318,4 +324,49 @@ function ekzClear(id) {
   saveHistory();
   w.values = {};
   render(); renderProps(id);
+}
+
+// Nach dem Layout: so viele Kästchen pro Zeile, wie wirklich in die Breite passen
+// (gleiche Regel wie fitKaestchenSvg beim Kästchenfeld).
+function ekzFit(el) {
+  const id = +el.dataset.ekzFit;
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const host = el.parentElement; if (!host || !host.clientWidth) return;
+  const cs = Math.max(1, +el.dataset.cs || 20);
+  const st = getComputedStyle(host);
+  const avail = host.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight);
+  const fit  = Math.max(1, Math.floor((avail - 1) / cs));   // −1: linker Rand 0.7px
+  const maxC = +el.dataset.maxcols || 0;
+  const cols = maxC ? Math.min(maxC, fit) : fit;
+  if (cols === +el.dataset.cols) return;
+  w._ekzFit = { key: el.dataset.key, cols };
+  if (!(typeof patchWidget === 'function' && patchWidget(id))) render();
+}
+
+// ── Werte bleiben an ihrer Stelle, auch wenn sich die Spaltenzahl ändert ──
+// Gespeichert wird linear, aber in einem festen Raster mit w.valuesCols Spalten
+// (Schlüssel = Zeile·valuesCols + Spalte). Weniger Spalten → rechte Kästchen werden nur
+// ausgeblendet (Inhalt bleibt erhalten); mehr Spalten → Raster wird erweitert.
+function ekzVC(w, cols) {
+  if (!w.valuesCols) w.valuesCols = cols;             // ältere Blätter: aktuelles Raster
+  if (cols > w.valuesCols) {                           // breiter → Schlüssel umrechnen
+    const old = w.valuesCols, nv = {};
+    for (const k of Object.keys(w.values || {})) {
+      const n = +k; nv[Math.floor(n / old) * cols + (n % old)] = w.values[k];
+    }
+    w.values = nv; w.valuesCols = cols;
+  }
+  return w.valuesCols;
+}
+function ekzSK(w, idx, cols) {
+  const vc = ekzVC(w, cols);
+  return Math.floor(idx / cols) * vc + (idx % cols);
+}
+function ekzDisp(w, cols) {
+  const vc = ekzVC(w, cols), out = {};
+  for (const k of Object.keys(w.values || {})) {
+    const n = +k, r = Math.floor(n / vc), c = n % vc;
+    if (c < cols) out[r * cols + c] = w.values[k];
+  }
+  return out;
 }

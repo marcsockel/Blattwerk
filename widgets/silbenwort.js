@@ -18,8 +18,8 @@ function silbenbogenHTML(word, fontSize) {
   const spans = syllables.map(s =>
     `<span style="display:inline-block;position:relative;
                   border-bottom:2px solid #222;
-                  border-radius:0 0 50% 50% / 0 0 ${arcH}px ${arcH}px;
-                  padding:0 1px ${arcH + 2}px 1px;
+                  border-radius:0 0 50% 50% / 0 0 ${Math.round(fontSize * 0.6)}px ${Math.round(fontSize * 0.6)}px;
+                  padding:0 1px ${Math.round(fontSize * 0.5)}px 1px;
                   line-height:1;"
     >${esc(s)}</span>`
   ).join('');
@@ -97,7 +97,6 @@ WIDGETS.push({
     desc: "Wörter mit Silbenbögen",
     icon: "⌢",
     category: "deutsch",
-    itemsLayout: true,
   },
 
   createData: id => ({
@@ -107,8 +106,7 @@ WIDGETS.push({
     font: "inherit",
     modus: "gleichlang", // "wortform" | "gleichlang" | "zeichnen"
     arcWidth: 60,
-    itemGap: "normal",
-    align: "auto",
+    cols: 1,
     ausnahmen: "", aufgabenNr:0, aufgabenText:''
   }),
 
@@ -121,7 +119,7 @@ WIDGETS.push({
 
     window._silbenCustomText = d.ausnahmen || '';
 
-    const boxH = Math.round(fontSize * 1.4); // Kastenhöhe im Zeichnen-Modus
+    const boxH = 28; // Kastenhöhe im Zeichnen-Modus — fest, wächst NICHT mit der Schrift
     const clean = words.map(w => w.trim()).filter(Boolean);
 
     const items = clean.map((w, wi) => {
@@ -129,26 +127,32 @@ WIDGETS.push({
         const wordId = `silbwort-zeichnen-${d.id}-${wi}`;
         // Wort oben, darunter ein Kasten – Breite wird nach Render gemessen
         const box = `<div id="${wordId}-box"
-                          style="border:1.5px solid #333;border-radius:2px;
-                                 height:${boxH}px;margin-top:4px;border-color:#aaa;border-radius:3px;"></div>`;
+                          style="background:#e6e6e6;border-radius:3px;
+                                 height:${boxH}px;margin-top:3px;"></div>`;
         const wordSpan = `<div id="${wordId}"
                                data-zeichnen-widget="${d.id}"
                                style="font-size:${fontSize}px;font-family:${font};
-                                      line-height:1;white-space:nowrap;"
+                                      line-height:1.1;white-space:nowrap;"
                           >${esc(w)}</div>`;
-        return `<div style="display:inline-block;line-height:1.4;">${wordSpan}${box}</div>`;
+        return `<div style="display:inline-block;line-height:1.4;margin-bottom:${Math.round(fontSize * 0.6)}px;">${wordSpan}${box}</div>`;
       }
       const inner = modus === "gleichlang"
         ? silbenbogenGleichlangHTML(w, fontSize, arcWidth, d.id, wi)
         : silbenbogenHTML(w, fontSize);
-      return `<div style="display:inline-block;font-family:${font};line-height:1.4;">${inner}</div>`;
+      // white-space:nowrap → ein Wort wird NIE über zwei Zeilen getrennt
+      return `<div style="font-family:${font};line-height:1.4;white-space:nowrap;margin-bottom:${Math.round(fontSize * 0.6)}px;">${inner}</div>`;
     });
 
-    const avgLen = clean.length
-      ? clean.reduce((s, w) => s + w.length, 0) / clean.length
-      : 6;
-    const itemW = Math.ceil(avgLen * fontSize * 0.6 + (modus === "gleichlang" ? 24 : 12));
+    // Wörter untereinander; Spaltenzahl wie beim Multiple-Choice-Quiz (spaltenweise gefüllt).
+    // Jede Spalte ist so breit wie ihr längstes Wort. Passt die gewählte Spaltenzahl nicht
+    // in die Breite, nimmt silbenwortFitCols() nach dem Zeichnen automatisch weniger.
+    const want = Math.max(1, Math.min(4, d.cols || 1));
+    const fitKey = silbenwortFitKey(d);
+    const cols = (d._fit && d._fit.key === fitKey) ? Math.min(want, d._fit.cols) : want;
+    const colDivs = mcColumnChunks(items, cols)
+      .map(ch => `<div style="display:flex;flex-direction:column;align-items:flex-start;">${ch.join('')}</div>`).join('');
 
+    const fitTrigger = `<img src="" onerror="this.onerror=null;setTimeout(()=>silbenwortFitCols(${d.id}),0)" style="display:none">`;
     const trigger = modus === "gleichlang"
       ? `<img src="" onerror="this.onerror=null;silbenwortDrawGleichlang(${d.id})" style="display:none">`
       : modus === "zeichnen"
@@ -156,7 +160,7 @@ WIDGETS.push({
       : '';
 
     return atHtml(d) + (items.length
-      ? flexDistribute(items, { itemW, d }) + trigger
+      ? `<div data-silben-grid="${d.id}" style="display:grid;grid-template-columns:repeat(${cols},max-content);column-gap:32px;justify-content:space-between;align-items:start;">${colDivs}</div>` + trigger + fitTrigger
       : '') ;
   },
 
@@ -227,6 +231,11 @@ WIDGETS.push({
         style="width:100%;padding:5px;margin-bottom:10px;border:1.5px dashed #bbb;
                border-radius:4px;background:#fafafa;font-family:inherit;font-size:12px;
                color:#666;cursor:pointer;">+ Wort hinzufügen</button>
+      ${pr("Spalten", `<input type="number" min="1" max="4" value="${d.cols || 1}"
+        onclick="event.stopPropagation()"
+        onchange="upd(${d.id},'cols',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
+               font-family:inherit;font-size:12px;text-align:center;">`)}
       ${pr("Schriftgröße", sizeInput)}
       <div class="prow"><label>Schriftart</label>${fontSelect}</div>
       <div style="margin-top:10px;padding:7px 9px;background:#fffbea;border:1.5px solid #f0d060;
@@ -245,6 +254,20 @@ WIDGETS.push({
       >${esc(d.ausnahmen || '')}</textarea>` ;
   },
 });
+
+// ── Spalten automatisch reduzieren, wenn die Wörter nicht nebeneinander passen ──
+function silbenwortFitKey(d) {
+  return JSON.stringify([d.cols || 1, d.words, d.fontSize, d.font, d.modus, d.arcWidth, d.widthFraction]);
+}
+function silbenwortFitCols(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  const grid = document.querySelector(`[data-silben-grid="${id}"]`); if (!grid || !grid.clientWidth) return;
+  const cols = (grid.style.gridTemplateColumns.match(/repeat\((\d+)/) || [])[1] | 0;
+  if (cols > 1 && grid.scrollWidth > grid.clientWidth + 1) {
+    w._fit = { key: silbenwortFitKey(w), cols: cols - 1 };
+    if (!(typeof patchWidget === 'function' && patchWidget(id))) render();
+  }
+}
 
 // ── Kasten-Breite an Wort anpassen (Zeichnen-Modus) ──────────────
 function silbenwortSyncBoxen(widgetId) {

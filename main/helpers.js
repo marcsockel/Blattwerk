@@ -64,7 +64,8 @@ function atHtml(d) {
            width:22px;height:22px;border-radius:${radius};border:1.8px solid #222;
            background:${fill ? '#222' : 'transparent'};
            font-family:'DidactGothic7',sans-serif;font-size:13px;font-weight:700;
-           color:${fill ? '#fff' : '#222'};flex-shrink:0;line-height:1;">${nr}</span>`
+           color:${fill ? '#fff' : '#222'};flex-shrink:0;line-height:1;
+           box-sizing:border-box;padding-bottom:2px;">${nr}</span>`
       : ''}
     ${txt
       ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:18px;
@@ -344,7 +345,7 @@ function flexDistribute(innerHtmls, opts) {
   const cells = items.map(h => `<div class="series-item" style="${sz}">${h}</div>`).join('');
   const initial = perRow > 0 ? String(perRow) : 'auto-fill';
 
-  return `<div class="series" data-itemw="${itemW}"${opts.estimate ? ' data-estimate="1"' : ''} data-align="${layout.align}"`
+  return `<div class="series" data-itemw="${itemW}"${opts.estimate ? ' data-estimate="1"' : ''}${opts.lines ? ` data-lines="${esc(opts.lines)}"` : ''} data-align="${layout.align}"`
     + ` data-gapcol="${gapCol}" data-perrow="${perRow}" data-count="${items.length}"`
     + ` style="--s-col-gap:${gapCol}px;--s-row-gap:${gapRow}px;`
     + `grid-template-columns:repeat(${initial},${itemW}px);">${cells}</div>`;
@@ -449,7 +450,8 @@ function fitSeries(el) {
   } else {
     for (const c of el.children) itemW = Math.max(itemW, Math.ceil(c.scrollWidth));
   }
-  const minGap = +el.dataset.gapcol || 24;
+  const lines = el.dataset.lines || '';   // Trennlinien-Modus: Zellen ohne Lücke, Linien dazwischen
+  const minGap = lines ? 0 : (+el.dataset.gapcol || 24);
   const r = seriesResolve({
     width, itemW,
     count: +el.dataset.count || el.children.length,
@@ -459,19 +461,27 @@ function fitSeries(el) {
     widths,
   });
 
-  el.style.gridTemplateColumns = widths
-    ? r.colWidths.map(v => v + 'px').join(' ')
-    : `repeat(${r.cols}, ${itemW}px)`;
+  el.style.gridTemplateColumns = lines
+    ? r.colWidths.map(v => `minmax(${v}px, 1fr)`).join(' ')   // Zellen füllen die Breite, Linien stoßen an
+    : widths
+      ? r.colWidths.map(v => v + 'px').join(' ')
+      : `repeat(${r.cols}, ${itemW}px)`;
   el.style.justifyContent = r.jc;
   el.style.columnGap = r.gap != null ? r.gap + 'px' : '';
-  // Blocksatz: unterschiedlich breite Items in ihrer Spalte so ausrichten, dass sie
-  // außen bündig mit dem Rand abschließen (1. Spalte links, letzte rechts, Mitte zentriert).
-  // Sonst bleibt bei einem schmaleren Item in der letzten Spalte rechts mehr Luft als links.
-  [...el.children].forEach((c, i) => {
-    const col = i % r.cols;
-    c.style.justifySelf = (!r.spreizen || r.cols < 2) ? ''
-      : col === 0 ? 'start' : col === r.cols - 1 ? 'end' : 'center';
-  });
+  // Items füllen ihre Spalte (stretch), Inhalt beginnt links → in jeder Spalte stehen
+  // die Items exakt untereinander (z.B. Bilder bei Bild-Wort-Zuordnung), auch wenn sie
+  // unterschiedlich breit sind. Spaltenbreite = breitestes Item der Spalte (s.o.), daher
+  // schließt die letzte Spalte trotzdem bündig mit dem rechten Rand ab.
+  [...el.children].forEach(c => { c.style.justifySelf = ''; });
+  if (lines) {
+    el.style.columnGap = '0px'; el.style.rowGap = '0px';
+    const n = el.children.length;
+    [...el.children].forEach((c, i) => {
+      const col = i % r.cols;
+      c.style.borderRight  = (col < r.cols - 1 && i + 1 < n) ? lines : '';
+      c.style.borderBottom = (i + r.cols < n) ? lines : '';
+    });
+  }
   el.classList.toggle('is-stretched', r.spreizen);
   el.classList.toggle('is-overflow', r.ueberlauf);
   el.dataset.fit = String(r.cols);

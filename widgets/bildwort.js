@@ -113,37 +113,21 @@ function bwItemsGrid(d, cellHtmls) {
   const trenn = !!d.trennlinien;
   if (!trenn) {
     const { size } = bwSizeMetrics(d);
-    // Grobe Itembreite: Bild + Wortliste nebeneinander ≈ size + ~100
+    // Itembreite nur als Startwert (Bild + Wortliste ≈ size + ~110). estimate:true →
+    // fitSeries misst die ECHTE Breite jedes Items: wie viele pro Zeile passen, ergibt
+    // sich aus den tatsächlichen Wortlängen; jede Spalte wird so breit wie ihr breitestes
+    // Item (Zeilen bleiben untereinander ausgerichtet). „Pro Zeile" erzwingt eine Anzahl.
     const itemW = size + 110;
-    return flexDistribute(cellHtmls, { itemW, d });
+    return flexDistribute(cellHtmls, { itemW, d, estimate: true });
   }
-  const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
-  const proZeile = (L && L.itemsPerRow !== 'auto') ? L.itemsPerRow : bwProZeile(d);
-  const cellPad = "22px 14px";
-  const lineCss = bwTrenlinienCss(d);
-  const n = cellHtmls.length;
-  const rows = Math.max(1, Math.ceil(n / proZeile));
-
-  const wrap = (inner, i) => {
-    const col = i % proZeile;
-    const row = Math.floor(i / proZeile);
-    const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
-    const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
-    return `<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}">${inner}</div>`;
-  };
-
-  const cells = cellHtmls.map((html, i) => wrap(html, i));
-  while (cells.length < rows * proZeile) {
-    const i = cells.length;
-    const col = i % proZeile;
-    const row = Math.floor(i / proZeile);
-    const br = col < proZeile - 1 ? `border-right:${lineCss};` : "";
-    const bb = row < rows - 1 ? `border-bottom:${lineCss};` : "";
-    cells.push(`<div style="box-sizing:border-box;padding:${cellPad};${br}${bb}"></div>`);
-  }
-  const layout = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : { gap: 24, mb: 16 };
-  return `<div style="display:grid;grid-template-columns:repeat(${proZeile},1fr);column-gap:${layout.gap}px;row-gap:${layout.mb}px;">${cells.join("")}</div>`;
+  // Mit Trennlinien: dieselbe gemessene Verteilung wie ohne (echte Breiten, Bilder je
+  // Spalte untereinander), aber ohne Lücken; fitSeries zieht die Linien zwischen den
+  // Zellen (rechts nur, wenn daneben eine Zelle steht; unten nur, wenn darunter eine steht).
+  const { size } = bwSizeMetrics(d);
+  const cells = cellHtmls.map(inner => `<div style="box-sizing:border-box;padding:22px 10px;">${inner}</div>`);
+  return flexDistribute(cells, { itemW: size + 134, d, estimate: true, lines: bwTrenlinienCss(d) });
 }
+
 
 WIDGETS.push({
   meta: { type:"bildwort", label:"Bild-Wort-Zuordnung", desc:"Bild mit Wort verbinden", icon:"🖼↔", category:"deutsch", itemsLayout: true },

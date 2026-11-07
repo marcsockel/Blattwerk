@@ -12,7 +12,7 @@ WIDGETS.push({
     // SVG startet mit width:100% → erzwingt NIE eine größere Widgetbreite.
     // Das Gitter wird nach dem Layout per fitKaestchenSvg() an die echte
     // verfügbare Breite angepasst (siehe requestAnimationFrame-Hook in index.html).
-    return atHtml(d) + `<svg class="kaestchen-svg" data-cs="${cs}" data-rows="${rows}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:${h}px;"></svg>`;
+    return atHtml(d) + `<svg class="kaestchen-svg" data-cs="${cs}" data-rows="${rows}" data-maxcols="${d.spalten || 0}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:${h}px;"></svg>`;
   },
 
   renderProps: d => {
@@ -28,7 +28,8 @@ WIDGETS.push({
         ${btn("mittel","Mittel")}
         ${btn("gross","Groß")}
       </div></div>` +
-      pr("Zeilen", `<input type="number" min="2" max="50" value="${d.zeilen||8}" onchange="upd(${d.id},'zeilen',+this.value)">`) ;
+      pr("Zeilen", `<input type="number" min="2" max="50" value="${d.zeilen||8}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
+      kzSpaltenBlock(d) ;
   },
 });
 
@@ -41,7 +42,9 @@ function fitKaestchenSvg(svg) {
   const rows = +svg.dataset.rows;
   const avail = svg.clientWidth;            // = Inhaltsbreite des Containers (svg ist width:100%)
   if (!avail) return;
-  const cols = Math.max(1, Math.floor(avail / cs));
+  const maxCols = +svg.dataset.maxcols || 0;               // 0 = ganze Breite
+  const fit  = Math.max(1, Math.floor(avail / cs));
+  const cols = maxCols ? Math.min(maxCols, fit) : fit;
   const w = cols * cs, h = rows * cs;
   let g = '';
   for (let i = 1; i < cols; i++)
@@ -50,4 +53,28 @@ function fitKaestchenSvg(svg) {
     g += `<line x1="0" y1="${j*cs}" x2="${w}" y2="${j*cs}" stroke="#888" stroke-width="0.7"/>`;
   g += `<rect x="0.35" y="0.35" width="${w-0.7}" height="${h-0.7}" fill="none" stroke="#888" stroke-width="0.7"/>`;
   svg.innerHTML = g;
+}
+
+// Spalten-Option für Kästchenfeld und Eingabekästchen: „Ganze Breite" (Standard) oder
+// eine feste Anzahl (nie mehr, als in die Breite passt).
+function kzSpaltenBlock(d) {
+  const fest = (d.spalten || 0) > 0;
+  const btn = (label, on, onclick) => `<button onclick="event.stopPropagation();${onclick}"
+      style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};
+             background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;
+  return `<div class="prow"><label>Spalten</label>
+      <div style="display:flex;gap:4px;margin-bottom:${fest?4:0}px;">
+        ${btn('Ganze Breite', !fest, `upd(${d.id},'spalten',0)`)}
+        ${btn('Anzahl', fest, `upd(${d.id},'spalten',kzAktuelleSpalten(${d.id}))`)}
+      </div>
+      ${fest ? `<input type="number" min="1" max="60" value="${d.spalten}" onchange="upd(${d.id},'spalten',Math.max(1,+this.value||1))">` : ''}
+    </div>`;
+}
+// Sichtbare Spaltenzahl (Startwert beim Umschalten auf „Anzahl")
+function kzAktuelleSpalten(id) {
+  const svg = document.querySelector(`.wwrap[data-id="${id}"] svg.kaestchen-svg`);
+  if (svg) return Math.max(1, svg.querySelectorAll('line').length ? Math.round((+svg.querySelector('rect')?.getAttribute('width') || 0) / (+svg.dataset.cs) ) || 10 : 10);
+  const e = document.querySelector(`.wwrap[data-id="${id}"] [data-ekz-fit]`);
+  return e ? Math.max(1, +e.dataset.cols || 10) : 10;
 }

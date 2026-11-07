@@ -67,12 +67,12 @@ function aeueParseText(text) {
 
 // ── Widget ────────────────────────────────────────────────────────
 WIDGETS.push({
-  meta: { type:'aeue', label:'äu / ä', desc:'Wörter mit äu und ä', icon:'ä', category:'deutsch' },
+  meta: { type:'aeue', label:'Ableiten Tabelle', desc:'Wörter mit äu und ä', icon:'ä', category:'deutsch' },
 
   createData: id => {
     const modi = ['äu', 'ä'], anzahl = 6;
     return { id, type:'aeue', modi, anzahl,
-             font: "'Grundschrift', sans-serif", fontSize: 16,
+             font: "'Grundschrift', sans-serif", fontSize: 20,
              text: aeueGenText(modi, anzahl) , aufgabenNr:0, aufgabenText:''};
   },
 

@@ -186,6 +186,8 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
 .prop-fold[open]>.prop-fold-h{border-bottom:1px solid #e2e5ea;margin-bottom:0;}
 .prop-fold-b{padding:8px 9px 9px;}
 .std-footer .prop-fold{background:#faf8f3;border-color:#ccc8bc;}
+/* Aufgabentext-Widget: innere Elemente übernehmen die gewählte Schrift */
+.instr-box *{font-family:inherit!important;}
 /* Eigenschaften-Tabs „Inhalt" / „Box" */
 .ptabs{display:flex;gap:4px;margin:0 0 12px;padding:3px;background:#eef0f4;border-radius:8px;}
 .ptab{flex:1;padding:6px 4px;border:none;border-radius:6px;background:transparent;color:#7c828d;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
@@ -479,68 +481,69 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=24"></script>
+<script src="main/helpers.js?v=27"></script>
 <script src="main/img_picker.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
 <script src="widgets/text.js"></script>
 <script src="widgets/textfluss.js"></script>
-<script src="widgets/image.js"></script>
+<script src="widgets/image.js?v=3"></script>
 <script src="widgets/platzhalter.js"></script>
-<script src="widgets/namedate.js"></script>
-<script src="widgets/instruction.js"></script>
-<script src="widgets/divider.js"></script>
-<script src="widgets/linebox.js"></script>
-<script src="widgets/checkbox.js"></script>
-<script src="widgets/table.js"></script>
-<script src="widgets/gap_text.js?v=4"></script>
+<script src="widgets/namedate.js?v=3"></script>
+<script src="widgets/instruction.js?v=5"></script>
+<script src="widgets/divider.js?v=3"></script>
+<script src="widgets/linebox.js?v=3"></script>
+<script src="widgets/checkbox.js?v=4"></script>
+<script src="widgets/table.js?v=3"></script>
+<script src="widgets/gap_text.js?v=5"></script>
 <script src="widgets/wordsearch.js?v=3"></script>
-<script src="widgets/scramble.js"></script>
+<script src="widgets/scramble.js?v=3"></script>
 <script src="widgets/matching.js?v=3"></script>
-<script src="widgets/numbering.js"></script>
+<script src="widgets/numbering.js?v=4"></script>
 <script src="widgets/arithmetic.js?v=3"></script>
 <script src="widgets/ep_shared.js?v=4"></script>
 <script src="widgets/numberline.js"></script>
 <script src="widgets/geometry.js"></script>
-<script src="widgets/zahlenmauer.js?v=3"></script>
+<script src="widgets/zahlenmauer.js?v=4"></script>
 <script src="widgets/zahlenhaus.js?v=3"></script>
 <script src="widgets/uhr.js"></script>
 <script src="widgets/zeitspanne.js"></script>
-<script src="widgets/kaestchen.js"></script>
-<script src="widgets/eingabekaestchen.js"></script>
+<script src="widgets/kaestchen.js?v=3"></script>
+<script src="widgets/eingabekaestchen.js?v=5"></script>
 <script src="widgets/halbschriftlich.js?v=7"></script>
 <script src="widgets/schriftlich_addition.js?v=3"></script>
 <script src="widgets/schriftlich_subtraktion.js?v=3"></script>
 <script src="widgets/schriftlich_multiplikation.js?v=3"></script>
 <script src="widgets/schriftlich_division.js?v=4"></script>
-<script src="widgets/bildwort.js"></script>
+<script src="widgets/bildwort.js?v=7"></script>
 <script src="widgets/auslaut.js"></script>
 <script src="widgets/anlaut.js?v=7"></script>
 <script src="widgets/anlaut_zuordnung.js?v=3"></script>
 <script src="widgets/wort_schreiben.js?v=3"></script>
 <script src="widgets/wortchips.js?v=3"></script>
-<script src="widgets/buchstabensalat2.js?v=3"></script>
+<script src="widgets/buchstabensalat2.js?v=5"></script>
 <script src="widgets/geheimschrift.js"></script>
 <script src="widgets/bild_wort_zuordnung2.js"></script>
-<script src="widgets/aeue.js?v=3"></script>
+<script src="widgets/aeue.js?v=5"></script>
+<script src="widgets/verlaengern.js?v=2"></script>
 <script src="widgets/stop.js"></script>
 <script src="widgets/infobox.js"></script>
 <script src="widgets/silbentext.js"></script>
-<script src="widgets/silbenwort.js"></script>
+<script src="widgets/silbenwort.js?v=8"></script>
 <script src="widgets/crossword.js"></script>
-<script src="widgets/multiplechoice.js"></script>
-<script src="widgets/zahlenkette.js"></script>
+<script src="widgets/multiplechoice.js?v=5"></script>
+<script src="widgets/zahlenkette.js?v=4"></script>
 <script src="widgets/nachbarzahlen.js?v=3"></script>
 <script src="widgets/nachbarzahlen_tabelle.js"></script>
 <script src="widgets/stellenwert.js?v=3"></script>
-<script src="widgets/buendeln.js"></script>
+<script src="widgets/buendeln.js?v=3"></script>
 <script src="widgets/geld.js?v=3"></script>
 <script src="widgets/zwanzigerfeld.js?v=3"></script>
 <script src="widgets/zwanzigerrahmen.js?v=3"></script>
-<script src="widgets/rechendreiecke.js?v=3"></script>
-<script src="widgets/zahlenrad.js"></script>
-<script src="widgets/rechentabelle.js?v=3"></script>
+<script src="widgets/rechendreiecke.js?v=4"></script>
+<script src="widgets/zahlenrad.js?v=5"></script>
+<script src="widgets/rechentabelle.js?v=4"></script>
 <script src="widgets/groessen.js?v=3"></script>
 <script src="widgets/groessentafel.js"></script>
 <script src="widgets/hunderterfeld.js?v=3"></script>
@@ -884,6 +887,7 @@ function fitCanvasPostLayout(root, opts) {
     });
   }
   scope.querySelectorAll('svg.kaestchen-svg').forEach(svg => fitKaestchenSvg(svg));
+  if (typeof ekzFit === 'function') scope.querySelectorAll('[data-ekz-fit]').forEach(el => ekzFit(el));
   scope.querySelectorAll('svg.numberline-svg').forEach(svg => {
     if (typeof fitNumberlineSvg === 'function') fitNumberlineSvg(svg);
   });
@@ -1715,11 +1719,14 @@ function sfBgBlock(id,w){
   const bg=w.bgColor||'';
   const swatches=w.type==='infobox'
     ? [['','Kein'],['#000000',''],['#444444',''],['#777777','']]
-    : [['','✕'],['#f2f2f2',''],['#e0e0e0',''],['#cacaca','']];
+    : [['','✕'],['#ffffff',''],['#f2f2f2',''],['#e0e0e0',''],['#cacaca','']];
+  // ✕ = keine Farbe (durchsichtig, z.B. Gruppenfarbe scheint durch),
+  // Weiß = echtes Weiß (z.B. weißes Widget in einer gefärbten Gruppe).
+  const titles={'':'Keine Farbe','#ffffff':'Weiß'};
   const sw=swatches.map(([color,label])=>{
     const active=bg===color;
     return `<button onclick="event.stopPropagation();upd(${id},'bgColor','${color}')"
-      title="${color||'Kein Hintergrund'}"
+      title="${titles[color]||color}"
       style="width:24px;height:24px;border-radius:4px;flex-shrink:0;
              border:2px solid ${active?'#89b4fa':'#ddd'};
              background:${color||'#fff'};cursor:pointer;
@@ -1919,16 +1926,22 @@ function zmSetBase(id, col, val) {
   w.mauern[0].base = base;
   render(); renderProps(id);
 }
+// Kleinster Zahlenraum, in den eine Mauer mit n Basissteinen passt: Die Spitze ist
+// mindestens 2^(n-1) (alle Basissteine = 1), plus etwas Spielraum für Abwechslung.
+function zmMinZahlenraum(n) {
+  const need = Math.pow(2, (n || 4) - 1) + 2;
+  return [10, 20, 100].find(z => z >= need) || 100;
+}
 function zmResize(id, n) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
   saveHistory();
   n = Math.max(2, Math.min(6, n));
   w.rows_count = n;
+  // Zahlenraum zu klein für diese Mauergröße → automatisch anheben
+  const zrMin = zmMinZahlenraum(n);
+  if ((w.zahlenraum || 10) < zrMin) w.zahlenraum = zrMin;
   zmEnsureMauern(w);
-  w.mauern = w.mauern.map(m => ({
-    base: Array.from({length:n}, (_,c) => (m.base||[])[c] ?? Math.floor(Math.random()*8)+1),
-    shown: zmGenShown(n, w.fillMode || "basis")
-  }));
+  w.mauern = w.mauern.map(() => zmMakeMauer(n, w.fillMode || "basis", w.zahlenraum || 10));
   render(); renderProps(id);
 }
 function zmFillMode(id, mode) {
@@ -1950,8 +1963,9 @@ function zmRandomBase(id) {
 function zmSetZahlenraum(id, zr) {
   const w = widgets.find(x=>x.id===id); if(!w) return;
   saveHistory();
-  w.zahlenraum = zr;
   const n = w.rows_count || 4, fm = w.fillMode || "basis";
+  zr = Math.max(zr, zmMinZahlenraum(n));   // nie kleiner als für die Mauergröße nötig
+  w.zahlenraum = zr;
   zmEnsureMauern(w);
   w.mauern = w.mauern.map(() => zmMakeMauer(n, fm, zr));
   render(); renderProps(id);

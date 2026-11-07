@@ -103,18 +103,27 @@ function zrDoGenerate(w) {
 }
 
 // Zeichnet ein Rad als SVG.
+// Größen: klein = 4 pro Reihe, „gross" (heißt in der Oberfläche „Mittel", interner Wert
+// bleibt für ältere Blätter) = 3 pro Reihe, „xl" (Oberfläche „Groß") = genau 2 pro Reihe.
+const ZR_MASSE = {
+  klein: { S: 130, r0: 15, r1: 42, r2: 61,  fsC: 15, fsR: 12 },
+  gross: { S: 162, r0: 18, r1: 51, r2: 77,  fsC: 18, fsR: 16 },
+  xl:    { S: 250, r0: 28, r1: 79, r2: 119, fsC: 26, fsR: 22 },
+};
+function zrMasse(d) { return ZR_MASSE[d.groesse] || ZR_MASSE.gross; }
+
 function zrWheelSvg(wh, d) {
-  const big   = (d.groesse || 'gross') !== 'klein';
+  const Z = zrMasse(d);
   const blank = d.blank || 'innen';
   const isActive = d.id === selId || _solutionsMode;
 
-  const S = big ? 162 : 140;
+  const S = Z.S;
   const cx = S / 2, cy = S / 2;
-  const r0 = big ? 18 : 16;   // Mittelkreis (kleiner → mehr Platz für Innenring)
-  const r1 = big ? 51 : 45;   // Grenze Innen/Außen
-  const r2 = big ? 77 : 66;   // Außenrand
+  const r0 = Z.r0;   // Mittelkreis
+  const r1 = Z.r1;   // Grenze Innen/Außen
+  const r2 = Z.r2;   // Außenrand
   const rInn = (r0 + r1) / 2, rAus = (r1 + r2) / 2;
-  const fsC = big ? 18 : 15, fsR = big ? 16 : 13;
+  const fsC = Z.fsC, fsR = Z.fsR;
   const n = wh.segs.length, step = 2 * Math.PI / n, start = -Math.PI / 2;
   const ff = "'DidactGothic7',sans-serif";
 
@@ -167,10 +176,10 @@ WIDGETS.push({
 
   render: d => {
     const wheels = d.wheels || [];
-    const big = (d.groesse || 'gross') !== 'klein';
+
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Räder haben feste
     // Breite dia → alle gleich breit.
-    const dia = big ? 162 : 140;
+    const dia = zrMasse(d).S;
     return atHtml(d) + flexDistribute(
       wheels.map(wh => zrWheelSvg(wh, d)),
       { itemSize: `width:${dia}px;`, itemW: dia, d }
@@ -238,7 +247,8 @@ WIDGETS.push({
       <div class="prow"><label>Größe</label>
         <div style="display:flex;gap:4px;">
           ${tgl(size,'klein','Klein','groesse')}
-          ${tgl(size,'gross','Groß','groesse')}
+          ${tgl(size,'gross','Mittel','groesse')}
+          ${tgl(size,'xl','Groß','groesse')}
         </div>
       </div>` +
       (hasCenters ? '' : pr('Anzahl Räder',

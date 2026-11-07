@@ -16,8 +16,8 @@ WIDGETS.push({
 
   createData: id => ({
     id, type:"table", rows:3, cols:3, hasHeader:true, hasHeaderCol:false, fullWidth:true,
-    font: 'inherit',
-    cellStyles: {},   // sparse: {"r,c": {align, valign, fontSize}}
+    font: 'inherit', fontSize: 13,
+    cellStyles: {},   // sparse: {"r,c": {align, valign, fontSize, font}} — fehlt = von Tabelle
     colWidths: {},    // sparse: {c: px} — Breite gilt für die ganze Spalte
     data: tblResize([], 3, 3), aufgabenNr:0, aufgabenText:''
   }),
@@ -47,7 +47,7 @@ WIDGETS.push({
           <div contenteditable="true"
             onclick="event.stopPropagation()"
             onfocus="tblSelCell(${d.id},${r},${c})"
-            style="padding:7px 10px;font-family:${font};font-size:${st.fontSize || 13}px;min-height:22px;outline:none;word-break:break-word;
+            style="padding:7px 10px;font-family:${st.font || font};font-size:${st.fontSize || d.fontSize || 13}px;min-height:22px;outline:none;word-break:break-word;
                    ${st.align ? `text-align:${st.align};` : ''}
                    ${st.bold ? 'font-weight:700;' : ''}${st.italic ? 'font-style:italic;' : ''}
                    ${hdr ? 'font-weight:700;background:#d9d9d9;' : ''}"
@@ -85,7 +85,8 @@ WIDGETS.push({
           ${toggleBtn("Volle Breite", fw, `upd(${d.id},'fullWidth',true)`)}
           ${toggleBtn("Automatisch", !fw, `upd(${d.id},'fullWidth',false)`)}
         </div></div>` +
-      pr("Schrift", `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`);
+      pr("Schrift", `<select onchange="upd(${d.id},'font',this.value)">${fontOptions}</select>`) +
+      pr("Schriftgröße", `<input type="number" min="6" max="60" value="${d.fontSize || 13}" onchange="upd(${d.id},'fontSize',+this.value)"> px`);
 
     // ── Zellen-Parameter (sichtbar sobald eine Zelle angeklickt/fokussiert wurde) ──
     if (_tblSel && _tblSel.id === d.id && _tblSel.r < d.rows && _tblSel.c < d.cols) {
@@ -111,12 +112,22 @@ WIDGETS.push({
             ${toggleBtn("<b>Fett</b>",   !!st.bold,   `tblSetCellProp(${d.id},'bold',${!st.bold})`)}
             ${toggleBtn("<i>Kursiv</i>", !!st.italic, `tblSetCellProp(${d.id},'italic',${!st.italic})`)}
           </div></div>
-        ${pr("Fontgröße", `<input type="number" min="6" max="60" value="${st.fontSize || 13}" onchange="tblSetCellProp(${d.id},'fontSize',+this.value)"> px`)}
+        ${pr("Schrift", `<select onchange="tblSetCellProp(${d.id},'font',this.value)">
+            <option value="" ${!st.font ? 'selected' : ''}>von Tabelle</option>
+            ${GAP_FONTS.map(f => `<option value="${f.value}" ${st.font === f.value ? 'selected' : ''}>${f.label}</option>`).join('')}
+          </select>`)}
+        <div class="prow"><label>Schriftgröße</label>
+          <div style="display:flex;gap:4px;margin-bottom:4px;">
+            ${toggleBtn("von Tabelle (" + (d.fontSize || 13) + ")", !st.fontSize, `tblSetCellProp(${d.id},'fontSize',null)`)}
+            ${toggleBtn("eigene", !!st.fontSize, `tblSetCellProp(${d.id},'fontSize',${st.fontSize || d.fontSize || 13})`)}
+          </div>
+          ${st.fontSize ? `<input type="number" min="6" max="60" value="${st.fontSize}" onchange="tblSetCellProp(${d.id},'fontSize',+this.value)"> px` : ''}
+        </div>
         ${pr("Spaltenbreite", `<input type="number" min="0" max="700" value="${colW}" placeholder="auto" onchange="tblSetColWidth(${d.id},+this.value)"> px`)}
         <div style="font-size:10px;color:#aaa;margin-top:4px;">Breite gilt für die ganze Spalte, 0 = automatisch.</div>
       </div>`;
     } else {
-      html += `<div style="font-size:10px;color:#aaa;margin-top:10px;">Tipp: In eine Zelle klicken, um Ausrichtung, Fontgröße und Spaltenbreite der Zelle einzustellen.</div>`;
+      html += `<div style="font-size:10px;color:#aaa;margin-top:10px;">Tipp: In eine Zelle klicken, um Ausrichtung, Schrift, Schriftgröße und Spaltenbreite der Zelle einzustellen.</div>`;
     }
     return html;
   },
@@ -162,7 +173,9 @@ function tblSetCellProp(id, key, val) {
   if (!w.cellStyles) w.cellStyles = {};
   const k = `${_tblSel.r},${_tblSel.c}`;
   w.cellStyles[k] = w.cellStyles[k] || {};
-  w.cellStyles[k][key] = val;
+  // leer/null = „von Tabelle" → Eintrag entfernen, damit die Tabelleneinstellung gilt
+  if (val === '' || val == null) delete w.cellStyles[k][key];
+  else w.cellStyles[k][key] = val;
   _dirty = true; scheduleDraftSave();
   if (!patchWidget(id)) render();
   renderProps(id);

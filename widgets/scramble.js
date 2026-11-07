@@ -6,7 +6,7 @@ WIDGETS.push({
     id, type:"scramble",
     words: "SCHULE,KLASSE,LEHRER",
     cols: 1,
-    groesse: "klein",
+    groesse: "mittel",
     aufgabenNr: 0, aufgabenText: "",
   }),
 

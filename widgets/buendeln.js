@@ -187,7 +187,7 @@ function buNumberLine(count, isActive, lay) {
   const inner = isActive
     ? `<span style="color:#2563eb;font-weight:700;font-size:${fs}px;font-family:'DidactGothic7',sans-serif;">${count}</span>`
     : '&nbsp;';
-  return `<div style="display:flex;align-items:flex-end;min-width:${lineW}px;height:${lineH + 4}px;`
+  return `<div style="display:flex;align-items:flex-end;justify-content:center;min-width:${lineW}px;height:${lineH + 4}px;`
     + `padding-bottom:2px;border-bottom:1.6px solid #333;box-sizing:border-box;background:#fff;">${inner}</div>`;
 }
 

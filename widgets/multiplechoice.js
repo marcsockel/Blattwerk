@@ -24,8 +24,8 @@ WIDGETS.push({
     id, type:"multiplechoice",
     text: "Was ist die Hauptstadt von Deutschland?\nBerlin\nMünchen\nHamburg\nWien\n\nWelches Tier ist ein Säugetier?\nDelfin\nLachs\nAdler\nEidechse",
     cols: 1,
-    shuffle: false,
-    font: "inherit", fontSize: 13,
+    shuffle: true, mischSeed: mcNeuerSeed(),
+    font: "inherit", fontSize: 18,
     aufgabenNr:0, aufgabenText:''
   }),
 
@@ -42,7 +42,8 @@ WIDGETS.push({
     const qBlocks = questions.map((item, qi) => {
       // Antworten ggf. mischen (deterministisch per seed = widget-id + frage-index)
       let entries = item.answers.map((text, i) => ({ text, correct: i === item.correct }));
-      if (doShuffle) entries = mcShuffled(entries, d.id * 31 + qi);
+      // Seed pro Widget gespeichert → Reihenfolge bleibt stabil, bis neu gemischt wird
+      if (doShuffle) entries = mcShuffled(entries, (d.mischSeed || d.id) * 31 + qi);
 
       const answers = entries.map((entry, ai) => {
         const isCorrect = isActive && entry.correct;
@@ -119,7 +120,10 @@ WIDGETS.push({
         onchange="upd(${d.id},'cols',+this.value)"
         style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
                font-family:inherit;font-size:12px;text-align:center;">`)}
-      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="upd(${d.id},'shuffle',this.checked)">`)}` ;
+      ${pr('Antworten mischen', `<input type="checkbox" ${d.shuffle?'checked':''} onclick="event.stopPropagation()" onchange="mcSetShuffle(${d.id},this.checked)">`)}
+      ${d.shuffle ? `<button onclick="event.stopPropagation();mcNeuMischen(${d.id})"
+        style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;
+               color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🔀 Neu mischen</button>` : ''}` ;
   },
 });
 
@@ -140,12 +144,36 @@ function mcColumnChunks(items, cols) {
   return chunks;
 }
 
+// Zufälliger Misch-Seed — jedes Mischen ergibt eine neue Reihenfolge
+function mcNeuerSeed() { return 1 + Math.floor(Math.random() * 1e6); }
+
+// Neuer Seed, der garantiert eine ANDERE Reihenfolge ergibt als die aktuell sichtbare
+function mcAndererSeed(w) {
+  const qs = mcParseText(w.text || '');
+  const key = seed => qs.map((q, qi) => mcShuffled(q.answers.map((_, i) => i), seed * 31 + qi).join(',')).join('|');
+  const jetzt = w.shuffle ? key(w.mischSeed || w.id) : qs.map(q => q.answers.map((_, i) => i).join(',')).join('|');
+  for (let t = 0; t < 30; t++) { const s = mcNeuerSeed(); if (key(s) !== jetzt) return s; }
+  return mcNeuerSeed();
+}
+
+// Checkbox „Antworten mischen": beim Einschalten jedes Mal neu mischen
+function mcSetShuffle(id, on) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  if (on) { w.shuffle = false; w.mischSeed = mcAndererSeed(w); }
+  upd(id, 'shuffle', on);
+}
+
+function mcNeuMischen(id) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  upd(id, 'mischSeed', mcAndererSeed(w));
+}
+
 function mcShuffled(arr, seed) {
   const a = [...arr];
   let s = seed >>> 0;
   for (let i = a.length - 1; i > 0; i--) {
     s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
-    const j = s % (i + 1);
+    const j = (s >>> 16) % (i + 1);   // obere Bits — die unteren eines LCG wiederholen sich schnell
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;

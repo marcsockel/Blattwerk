@@ -112,14 +112,23 @@ function gapTokenize(html) {
       start,
       end: i,
       plain,
-      isGap: plain.startsWith('[') && plain.endsWith(']')
+      // Lücke auch mit Satzzeichen davor/dahinter erkennen: „[Dschungel]." ist eine Lücke
+      isGap: GAP_TOKEN_RE.test(plain)
     });
   }
   return tokens;
 }
 
+// Lückenwort mit optionalen Satzzeichen davor/dahinter: „[Wald]." / „([Elmar])"
+const GAP_TOKEN_RE = /^([^\[\]]*)\[([^\]]+)\]([^\[\]]*)$/;
+// Satzzeichen am Wortrand, die beim Markieren AUSSERHALB der Klammern bleiben
+const GAP_EDGE_RE = /^([„"'‚(«»]*)(.*?)([.,!?;:"“”'‘’)»«]*)$/;
+
+// Beschriftung der Wortkarte: immer ohne Klammern (Lücke = rot, nicht [ ])
 function gapTokenLabel(tok) {
-  return tok.isGap ? tok.plain.slice(1, -1) : tok.plain;
+  if (!tok.isGap) return tok.plain;
+  const m = tok.plain.match(GAP_TOKEN_RE);
+  return m[1] + m[2] + m[3];
 }
 
 function gapWordBtnsHtml(id, tokens, font) {
@@ -159,7 +168,15 @@ function gapToggle(id, idx) {
   if (idx >= tokens.length) return;
 
   const tok = tokens[idx];
-  const newPlain = tok.isGap ? tok.plain.slice(1, -1) : `[${tok.plain}]`;
+  let newPlain;
+  if (tok.isGap) {
+    const m = tok.plain.match(GAP_TOKEN_RE);
+    newPlain = m[1] + m[2] + m[3];
+  } else {
+    // Nur das Wort in Klammern, Satzzeichen bleiben draußen: „Wald." → „[Wald]."
+    const m = tok.plain.match(GAP_EDGE_RE);
+    newPlain = m && m[2] ? `${m[1]}[${m[2]}]${m[3]}` : `[${tok.plain}]`;
+  }
   let newRaw;
   if (tok.raw === tok.plain) {
     newRaw = newPlain;

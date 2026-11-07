@@ -59,7 +59,7 @@ WIDGETS.push({
     };
 
     const lines = Array.from({length: d.lines}, (_, i) => `
-      ${(d.label && i === 0) ? `<div style="font-size:11px;color:#888;font-weight:700;margin-bottom:2px;">${esc(d.label)}</div>` : ""}
+      ${(d.label && i === 0) ? `<div style="font-size:15px;color:#666;font-weight:700;margin-bottom:3px;">${esc(d.label)}</div>` : ""}
       ${renderLine(i)}
     `).join("");
 

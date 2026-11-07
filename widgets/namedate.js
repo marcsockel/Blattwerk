@@ -10,13 +10,15 @@ WIDGETS.push({
     if (d.showKlasse)          fields.push("Klasse");
     if (d.showDatum !== false) fields.push("Datum");
     if (!fields.length) return '';
+    const fs = d.fontSize || 13;                 // Schriftgröße (Standard wie bisher 13)
+    const lineH = Math.round(fs * 1.55);         // Schreiblinie wächst mit der Schrift
     const items = fields.map(label =>
-      `<div style="display:flex;align-items:flex-end;gap:5px;flex:1;">
+      `<div style="display:flex;align-items:flex-end;gap:${Math.round(fs * 0.4)}px;flex:1;">
         <strong>${label}:</strong>
-        <div style="flex:1;border-bottom:1.5px solid #999;height:20px;"></div>
+        <div style="flex:1;border-bottom:1.5px solid #999;height:${lineH}px;"></div>
       </div>`
     ).join('');
-    return `<div style="display:flex;gap:16px;font-size:13px;">${items}</div>`;
+    return `<div style="display:flex;gap:${Math.round(fs * 1.25)}px;font-size:${fs}px;">${items}</div>`;
   },
 
   renderProps: d => {
@@ -32,6 +34,11 @@ WIDGETS.push({
         ${tog('Name','showName')}
         ${tog('Klasse','showKlasse')}
         ${tog('Datum','showDatum')}
-      </div></div>`;
+      </div></div>` +
+      pr('Schriftgröße', `<input type="number" min="8" max="36" value="${d.fontSize || 13}"
+        onclick="event.stopPropagation()"
+        onchange="upd(${d.id},'fontSize',+this.value)"
+        style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
+               font-family:inherit;font-size:12px;text-align:center;">`);
   },
 });
