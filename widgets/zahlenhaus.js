@@ -30,11 +30,24 @@ function zhGen(count, summands, stockwerke, zahlenraum, leerfeld) {
   });
 }
 
-function zhSvg(house, summands, isActive=false, farbig=false) {
+// Größen: klein = ursprüngliche Maße, mittel = Standard (seit 2026-11), groß.
+// bw2/bw3 = Feldbreite bei 2/3 Feldern, bh = Feldhöhe, fs = Ziffern im Feld,
+// rh = Dachhöhe, nfs/nh = Dachzahl (Schrift/Kasten), cw = Breite je Ziffer im Kasten.
+const ZH_SIZES = {
+  klein:  { bw2: 48, bw3: 38, bh: 34, fs: 15, rh: 44, nfs: 15, nh: 19, cw: 11 },
+  mittel: { bw2: 60, bw3: 48, bh: 44, fs: 19, rh: 52, nfs: 18, nh: 23, cw: 13 },
+  gross:  { bw2: 74, bw3: 58, bh: 54, fs: 23, rh: 62, nfs: 22, nh: 28, cw: 15 },
+};
+// Ohne Angabe (ältere Blätter) = klein, also wie bisher.
+function zhSize(groesse) { return ZH_SIZES[groesse] || ZH_SIZES.klein; }
+function zhFeldW(summands, groesse) { const z = zhSize(groesse); return summands === 3 ? z.bw3 : z.bw2; }
+
+function zhSvg(house, summands, isActive=false, farbig=false, groesse) {
   const { dach, dachLeer, floors } = house;
-  const bw = summands === 3 ? 38 : 48;
-  const bh = 34;
-  const rh = 44;
+  const Z  = zhSize(groesse);
+  const bw = zhFeldW(summands, groesse);
+  const bh = Z.bh;
+  const rh = Z.rh;
   const W  = bw * summands + 4;
   const stockwerke = floors.length;
   const H  = rh + bh * stockwerke + 2;
@@ -52,13 +65,13 @@ function zhSvg(house, summands, isActive=false, farbig=false) {
   const roof = `<polygon points="${pts}" fill="${roofFill}" stroke="#555" stroke-width="1.5" stroke-linejoin="round"/>`;
 
   // Dachzahl in einem weißen Rechteck (gut lesbar auch auf farbigem Dach)
-  const numCY  = rh - 16;
+  const numCY  = rh - Math.round(Z.nh * 0.85);
   const digits = String(dach).length;
-  const rectW  = Math.max(24, digits * 11 + 8), rectH = 19;
-  const numRect = `<rect x="${(cx - rectW/2).toFixed(1)}" y="${numCY - 10}" width="${rectW}" height="${rectH}" rx="2" fill="#fff" stroke="#888" stroke-width="1"/>`;
+  const rectH  = Z.nh, rectW = Math.max(Math.round(Z.nh * 1.26), digits * Z.cw + 8);
+  const numRect = `<rect x="${(cx - rectW/2).toFixed(1)}" y="${(numCY - rectH/2).toFixed(1)}" width="${rectW}" height="${rectH}" rx="2" fill="#fff" stroke="#888" stroke-width="1"/>`;
   const showNum = !dachLeer || isActive;
   const numText = showNum
-    ? `<text x="${cx}" y="${numCY + 5}" text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="${dachLeer ? '#2563eb' : '#222'}">${dach}</text>`
+    ? `<text x="${cx}" y="${(numCY + Z.nfs * 0.35).toFixed(1)}" text-anchor="middle" font-family="'DidactGothic7',sans-serif" font-size="${Z.nfs}" font-weight="700" fill="${dachLeer ? '#2563eb' : '#222'}">${dach}</text>`
     : '';
   const dachEl = numRect + numText;
 
@@ -70,11 +83,11 @@ function zhSvg(house, summands, isActive=false, farbig=false) {
       floorsHtml += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}"
         fill="white" stroke="#555" stroke-width="1.5"/>`;
       if (!floor.leers[i]) {
-        floorsHtml += `<text x="${bx + bw/2}" y="${by + bh/2 + 6}" text-anchor="middle"
-          font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#222">${floor.felder[i]}</text>`;
+        floorsHtml += `<text x="${bx + bw/2}" y="${(by + bh/2 + Z.fs * 0.35).toFixed(1)}" text-anchor="middle"
+          font-family="'DidactGothic7',sans-serif" font-size="${Z.fs}" font-weight="700" fill="#222">${floor.felder[i]}</text>`;
       } else if (isActive) {
-        floorsHtml += `<text x="${bx + bw/2}" y="${by + bh/2 + 6}" text-anchor="middle"
-          font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${floor.felder[i]}</text>`;
+        floorsHtml += `<text x="${bx + bw/2}" y="${(by + bh/2 + Z.fs * 0.35).toFixed(1)}" text-anchor="middle"
+          font-family="'DidactGothic7',sans-serif" font-size="${Z.fs}" font-weight="700" fill="#2563eb">${floor.felder[i]}</text>`;
       }
     }
   });
@@ -88,7 +101,7 @@ WIDGETS.push({
   meta: { type:"zahlenhaus", group:"rechenformate", label:"Zahlenhaus", desc:"Dach & Stockwerke", icon:"🏠", category:"mathematik", itemsLayout: true },
 
   createData: id => {
-    const cfg = { summands:2, zahlenraum:10, haeuser:4, stockwerke:4, leerfeld:"links", farbe:"sw" , aufgabenNr:0, aufgabenText:''};
+    const cfg = { summands:2, zahlenraum:10, haeuser:4, stockwerke:4, leerfeld:"links", farbe:"sw", groesse:"mittel", aufgabenNr:0, aufgabenText:''};
     return { id, type:"zahlenhaus", ...cfg, houses: zhGen(cfg.haeuser, cfg.summands, cfg.stockwerke, cfg.zahlenraum, cfg.leerfeld) };
   },
 
@@ -98,10 +111,10 @@ WIDGETS.push({
     const houses = d.houses || zhGen(d.haeuser||3, s, st, d.zahlenraum||10, d.leerfeld||"links");
     const active = d.id === selId || _solutionsMode;
     const farbig = d.farbe === 'farbig';
-    const svgs   = houses.map(h => zhSvg(h, s, active, farbig));
+    const svgs   = houses.map(h => zhSvg(h, s, active, farbig, d.groesse));
 
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Hausbreite itemW.
-    const itemW = (s === 3 ? 38 : 48) * s + 4;
+    const itemW = zhFeldW(s, d.groesse) * s + 4;
     return atHtml(d) + flexDistribute(svgs, { itemSize: `width:${itemW}px;`, itemW, d });
   },
 
@@ -136,6 +149,9 @@ WIDGETS.push({
       pr("Leerfeld", `<select onchange="zhUpdProp(${d.id},'leerfeld',this.value)">${leerOpts}</select>`) +
       pr("Anzahl Häuser",
         `<input type="number" min="1" max="40" value="${haeuser}" onchange="zhUpdProp(${d.id},'haeuser',+this.value)">`) +
+      `<div class="prow"><label>Größe</label>
+        <div style="display:flex;gap:4px;">${[['klein','Klein'],['mittel','Mittel'],['gross','Groß']].map(([v,l]) => { const on = (d.groesse || 'klein') === v; return `<button onclick="event.stopPropagation();upd(${d.id},'groesse','${v}')" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${l}</button>`; }).join('')}</div>
+      </div>` +
       `<div class="prow"><label>Farbe</label>
         <div style="display:flex;gap:4px;">${ftgl('sw','S/W')}${ftgl('farbig','Farbig (Kaminrot)')}</div>
       </div>` +

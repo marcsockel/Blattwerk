@@ -380,20 +380,32 @@ function seriesFits(w, itemW, minGap) {
  */
 function seriesResolve(o) {
   const { width, itemW, count, perRow, minGap, align } = o;
-  let soll = Math.max(1, perRow > 0 ? perRow : seriesFits(width, itemW, minGap));
+  // Breite je Item. Ohne Messung: alle gleich itemW. Items gleicher Spalte teilen sich
+  // die Spaltenbreite (= breitestes Item der Spalte) → ein einzelnes breites Päckchen
+  // (z.B. mit einer 100) macht nicht gleich ALLE Spalten breiter.
+  const n0 = Math.max(1, count || 1);
+  const ws = (o.widths && o.widths.length) ? o.widths : Array(n0).fill(itemW);
+  const wMax = Math.max(...ws);
+  const colWidths = n => {
+    const c = Array(n).fill(0);
+    for (let i = 0; i < Math.max(ws.length, n); i++) c[i % n] = Math.max(c[i % n], ws[i] != null ? ws[i] : wMax);
+    return c;
+  };
+  const need = (n, g) => colWidths(n).reduce((a, b) => a + b, 0) + (n - 1) * g;
+  const fitsN = g => { let best = 1; for (let n = 2; n <= 12; n++) if (need(n, g) <= width + SERIES_EPS) best = n; return best; };
+
+  let soll = Math.max(1, perRow > 0 ? perRow : fitsN(minGap));
   let gap = null;   // null = Abstand aus den Props; Zahl = verkleinerter Abstand
   // Feste „Pro Zeile"-Zahl passt mit dem gewählten Abstand nicht in die Breite:
-  // erst den Abstand verkleinern (notfalls bis 0), und wenn selbst das nicht reicht,
-  // weniger Spalten nehmen. Nie über den Widgetrand hinaus.
-  if (perRow > 0 && soll * itemW + (soll - 1) * minGap > width + SERIES_EPS) {
-    // nie enger als SERIES_MIN_GAP — sonst kleben die Items aneinander
-    soll = Math.min(soll, seriesFits(width, itemW, SERIES_MIN_GAP));
-    if (soll > 1 && soll * itemW + (soll - 1) * minGap > width + SERIES_EPS) {
-      gap = Math.floor((width - soll * itemW) / (soll - 1));
+  // erst den Abstand verkleinern (nie unter SERIES_MIN_GAP), sonst weniger Spalten.
+  if (perRow > 0 && need(soll, minGap) > width + SERIES_EPS) {
+    soll = Math.min(soll, fitsN(SERIES_MIN_GAP));
+    if (soll > 1 && need(soll, minGap) > width + SERIES_EPS) {
+      gap = Math.floor((width - need(soll, 0)) / (soll - 1));
     }
   }
   const effGap = gap != null ? gap : minGap;
-  const passt = soll * itemW + (soll - 1) * effGap <= width + SERIES_EPS;
+  const passt = need(soll, effGap) <= width + SERIES_EPS;
 
   const volleZeile = count >= soll;
   const spreizen = soll > 1 && passt && (
@@ -410,7 +422,8 @@ function seriesResolve(o) {
     : align === 'right' ? 'end'
     : 'start';
 
-  return { cols, jc, spreizen, ueberlauf: !passt, gap };
+  return { cols, jc, spreizen, ueberlauf: !passt, gap, colWidths: colWidths(cols),
+           maxFit: fitsN(SERIES_MIN_GAP) };
 }
 
 /** Misst einen .series-Container und setzt die Spalten. Kein Re-Render. */
@@ -424,14 +437,15 @@ function fitSeries(el) {
   // echte Inhalt breiter als die Spalte, würde er in die Nachbarspalte bzw.
   // über den Widgetrand ragen → echte Breite messen und nur nach OBEN korrigieren.
   let itemW = +el.dataset.itemw || 0;
+  let widths = null;   // nur bei gemessenen (estimate-)Serien: Breite je Item
   if (el.dataset.estimate) {
     // Nur geschätzt → echte Inhaltsbreite messen (Spalten kurz auf max-content).
     // Sonst bleibt bei zu großer Schätzung rechts in jeder Spalte Leerraum, und der
     // Abstand zum rechten Widgetrand ist größer als zum linken.
     el.style.gridTemplateColumns = `repeat(${el.children.length || 1}, max-content)`;
-    let m = 0;
-    for (const c of el.children) m = Math.max(m, Math.ceil(c.getBoundingClientRect().width));
-    if (m) itemW = m;
+    widths = [...el.children].map(c => Math.ceil(c.getBoundingClientRect().width));
+    if (widths.some(v => v > 0)) itemW = Math.max(...widths);
+    else widths = null;
   } else {
     for (const c of el.children) itemW = Math.max(itemW, Math.ceil(c.scrollWidth));
   }
@@ -442,9 +456,12 @@ function fitSeries(el) {
     perRow: +el.dataset.perrow || 0,
     minGap,
     align: el.dataset.align || 'auto',
+    widths,
   });
 
-  el.style.gridTemplateColumns = `repeat(${r.cols}, ${itemW}px)`;
+  el.style.gridTemplateColumns = widths
+    ? r.colWidths.map(v => v + 'px').join(' ')
+    : `repeat(${r.cols}, ${itemW}px)`;
   el.style.justifyContent = r.jc;
   el.style.columnGap = r.gap != null ? r.gap + 'px' : '';
   // Blocksatz: unterschiedlich breite Items in ihrer Spalte so ausrichten, dass sie
@@ -459,7 +476,7 @@ function fitSeries(el) {
   el.classList.toggle('is-overflow', r.ueberlauf);
   el.dataset.fit = String(r.cols);
   el.dataset.mw = String(itemW);
-  el.dataset.maxfit = String(seriesFits(width, itemW, SERIES_MIN_GAP));
+  el.dataset.maxfit = String(widths ? r.maxFit : seriesFits(width, itemW, SERIES_MIN_GAP));
 }
 
 /** EIN ResizeObserver für die ganze App — feuert bei Orientierung, Breite,

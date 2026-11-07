@@ -138,7 +138,9 @@ function haRender(d, op) {
   // Größe: klein = 1x, mittel = 1.3x, groß = 1.6x (wie Rechenaufgaben)
   const S = d.groesse === 'gross' ? 1.6 : d.groesse === 'mittel' ? 1.3 : 1;
   const px = v => Math.round(v * S);
-  const FS = px(16), LH = px(20), ROWH = px(28), CW = px(16); // CW = Ziffernzellen-Breite
+  // CW = Ziffernzellen-Breite. Bei Mittel/Groß etwas schmaler als die Schrift skaliert
+  // (Ziffern sind nur ~0.55em breit) → 3 Päckchen passen auch, wenn eine 100 vorkommt.
+  const FS = px(16), LH = px(20), ROWH = px(28), CW = S === 1 ? 16 : px(14);
   // Breiten-Budget (klein, ZR 1000): 3 Spalten à 3×16+4=52px + 2 Zeichen à ~16px = 188px
   // → 3 Aufgaben: 3×188 + 2×24 gap = 612 ≤ 622px verfügbar (10px Luft, alles fixe px).
   const font = `font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`;
@@ -180,7 +182,16 @@ function haRender(d, op) {
   const sign = s => `<span style="margin:0 ${px(4)}px;color:#555;${font}">${s}</span>`;
 
   const items = aufgaben.map(([a, b]) => {
+    // Spaltenbreiten PRO PÄCKCHEN (nicht widget-weit): sonst bekommt jedes Päckchen eine
+    // leere Hunderter-Zelle, sobald irgendwo eine 100 vorkommt → links sichtbar mehr Luft,
+    // und alle Päckchen werden breiter. Stellengerecht bleibt es innerhalb des Päckchens.
+    // Breite jeder Spalte = längste Zahl, die dort WIRKLICH steht (Kopfzeile + Rechenschritte).
+    // Bei + erscheint z.B. die 100 nur im Ergebnis, nie links → links keine Hunderter-Stelle.
     const zeilen = haZeilen(a, b, methode, op);
+    const len  = v => String(v).length;
+    const lw   = Math.max(op === "·" ? 1 : 2, len(a), ...zeilen.map(z => len(z.l)));
+    const rw   = Math.max(2, len(b), ...zeilen.map(z => len(z.r)));
+    const resw = Math.max(2, len(op === "·" ? a * b : op === "-" ? a - b : a + b), ...zeilen.map(z => len(z.res)));
     const ergebnis = op === "·" ? a * b : op === "-" ? a - b : a + b;
     // Stellen an → Kästchen mit so vielen Zellen wie die erwartete Zahl Stellen hat;
     // Stellen aus → immer volle Spaltenbreite (alle Kästchen gleich groß)
@@ -221,7 +232,7 @@ function haRender(d, op) {
 
   // Echte Itembreite: 3 Slots ((n·CW)+4) + 2 Zeichen (Glyphe ~8·S + 2·4·S Margin)
   const itemW = (lw + rw + resw) * CW + 12 + 2 * (px(8) + 2 * px(4));
-  return atHtml(d) + flexDistribute(items, { itemW, d });
+  return atHtml(d) + flexDistribute(items, { itemW, d, estimate: true });
 }
 
 // Division: Karofeld. Oben die Aufgabe (eine Ziffer/Zeichen pro Kästchen), Strich
@@ -232,7 +243,9 @@ function haDivRender(d) {
   const zeilen   = Math.max(1, d.zeilen || 4);
   const S  = d.groesse === 'gross' ? 1.6 : d.groesse === 'mittel' ? 1.3 : 1;
   const px = v => Math.round(v * S);
-  const CS = px(20); // Karo-Kästchengröße
+  // Karo-Kästchengröße. Bei Mittel/Groß minimal kleiner als linear skaliert, damit drei
+  // 8-Kästchen-Aufgaben (z.B. 100 : 4 = 25) im 100er-Raum in eine Reihe passen.
+  const CS = S === 1 ? 20 : px(19);
   const FS = px(16);
   const font = `font-family:'DidactGothic7',sans-serif;font-size:${FS}px;`;
 
@@ -269,7 +282,7 @@ function haDivRender(d) {
   });
   // gap 16 statt 24: 4 Felder im 100er = 4×141 + 3×16 = 612 ≤ 622px (bei vollen
   // Reihen verteilt space-between ohnehin — gap ist nur Minimum/Umbruchschwelle).
-  return atHtml(d) + flexDistribute(items, { itemW: maxCols * CS + 1, d });
+  return atHtml(d) + flexDistribute(items, { itemW: maxCols * CS + 1, d, estimate: true });
 }
 
 function haProps(d, op) {
@@ -337,7 +350,7 @@ WIDGETS.push({
   meta: { type:"halbadd", group:"halbschriftlich", label:"Halbschriftlich +", desc:"Halbschriftliche Addition", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbadd", anzahl:3, methode:"schritte", zahlenraum:100,
-                uebergang:"gemischt", hilfe:false, groesse:"klein", stellen:true,
+                uebergang:"gemischt", hilfe:false, groesse:"mittel", stellen:true,
                 aufgabenNr:0, aufgabenText:"Rechne halbschriftlich." };
     haGen(w);
     return w;
@@ -349,8 +362,8 @@ WIDGETS.push({
 WIDGETS.push({
   meta: { type:"halbmul", group:"halbschriftlich", label:"Halbschriftlich ·", desc:"Halbschriftliche Multiplikation", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
-    const w = { id, type:"halbmul", anzahl:3, zahlenraum:1000,
-                hilfe:false, groesse:"klein", stellen:true,
+    const w = { id, type:"halbmul", anzahl:3, zahlenraum:100,
+                hilfe:false, groesse:"mittel", stellen:true,
                 aufgabenNr:0, aufgabenText:"Rechne halbschriftlich." };
     haGen(w);
     return w;
@@ -363,7 +376,7 @@ WIDGETS.push({
   meta: { type:"halbdiv", group:"halbschriftlich", label:"Halbschriftlich :", desc:"Halbschriftliche Division (Karofeld)", icon:"🪜", category:"mathematik", itemsLayout: true },
   createData: id => {
     const w = { id, type:"halbdiv", anzahl:3, zahlenraum:100, zeilen:4,
-                groesse:"klein", aufgabenNr:0, aufgabenText:"Rechne halbschriftlich in Schritten." };
+                groesse:"mittel", aufgabenNr:0, aufgabenText:"Rechne halbschriftlich in Schritten." };
     haGen(w);
     return w;
   },

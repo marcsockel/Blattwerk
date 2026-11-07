@@ -23,11 +23,13 @@ WIDGETS.push({
     const content = parts.map(part => {
       if (part.startsWith('[') && part.endsWith(']')) {
         const word = part.slice(1, -1).replace(/<[^>]+>/g, ''); // strip tags inside brackets
-        if (isActive) {
-          return `<span style="font-family:${font};color:#2563eb;font-weight:700;">${esc(word)}</span>`;
-        }
         const width = Math.max(66, word.length * 14);
-        return `<span style="display:inline-block;border-bottom:1.5px solid #555;min-width:${width}px;height:1.3em;margin:0 2px;vertical-align:baseline;"></span>`;
+        // Lösung (angewählt): GLEICHE Lücke mit Strich, das Wort liegt nur darüber
+        // (absolut positioniert) → Zeilen und Umbrüche bleiben identisch.
+        const sol = isActive
+          ? `<span style="position:absolute;left:0;right:0;bottom:-0.08em;line-height:1.2;text-align:center;white-space:nowrap;font-family:${font};color:#2563eb;font-weight:700;">${esc(word)}</span>`
+          : '';
+        return `<span style="position:relative;display:inline-block;border-bottom:1.5px solid #555;min-width:${width}px;height:1.3em;margin:0 2px;vertical-align:baseline;">${sol}</span>`;
       }
       return part; // already HTML – do not escape
     }).join('');

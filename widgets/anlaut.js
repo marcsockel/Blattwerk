@@ -8,9 +8,10 @@ WIDGETS.push({
       { anlaut:"A", src:anlautDefaultSrc("A"), choices:anlautShuffleOpts("A",null,"gross") },
       { anlaut:"B", src:anlautDefaultSrc("B"), choices:anlautShuffleOpts("B",null,"gross") },
       { anlaut:"C", src:anlautDefaultSrc("C"), choices:anlautShuffleOpts("C",null,"gross") },
+      { anlaut:"D", src:anlautDefaultSrc("D"), choices:anlautShuffleOpts("D",null,"gross") },
     ],
     schreibweise: "gross",
-    size: 80,
+    size: 130,
     itemGap: "normal",
     align: "auto",
     buchstabenAus: false,
@@ -40,13 +41,17 @@ WIDGETS.push({
       let opts = item.choices || anlautShuffleOpts(item.anlaut, null, schreibweise);
       // Legacy: ß wurde früher per toUpperCase zu „SS"
       opts = opts.map(o => anlautNormLetter(o) === 'ß' ? anlautApplyCase('ß', schreibweise) : o);
-      // richtige Antwort = Anlaut selbst (bei Digrafen der erste Buchstabe)
-      const base = anlautNormLetter(item.anlaut.length > 1 ? item.anlaut[0] : item.anlaut);
+      // richtige Antwort = ganzer Anlaut (bei Sp, Ei … beide Buchstaben)
+      const base = anlautNormLetter(item.anlaut);
+      // Steht in den Kästchen ein Zwei-Buchstaben-Anlaut, Schrift kleiner, damit er passt
+      const fsItem = opts.some(o => String(o).length > 1) ? Math.round(fs * 0.72) : fs;
 
       const cells = opts.map((opt, j) => {
         const correct = isActive && anlautNormLetter(opt) === base;
         const sol = correct ? "color:#2563eb;background:#dbeafe;border-radius:4px;" : "";
-        return `<div style="flex:1;text-align:center;padding:3px 0;font-size:${fs}px;font-weight:700;font-family:inherit;${j < 2 ? "border-right:1px solid #bbb;" : ""}${sol}">${esc(opt)}</div>`;
+        // Feste Kästchenhöhe (nach der normalen Schriftgröße) → bei Zweier-Anlauten wird nur
+        // die Schrift kleiner, die Kästchen behalten ihre Form.
+        return `<div style="flex:1;display:flex;align-items:center;justify-content:center;height:${Math.round(fs * 1.4) + 6}px;font-size:${fsItem}px;font-weight:700;font-family:inherit;${j < 2 ? "border-right:1px solid #bbb;" : ""}${sol}">${esc(opt)}</div>`;
       }).join("");
 
       const choiceBox = buchstabenAus ? "" :
@@ -63,7 +68,7 @@ WIDGETS.push({
     const schreibweise = d.schreibweise || "gross";
     const size       = d.size || 80;
 
-    const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß","Au","Ei","Eu","Sch","Sp","St"]);
+    const available = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","Au","Ei","Eu","Sp","St"]);
 
     const letterBtns = available.map(l => {
       const isLong = l.length > 1;
@@ -131,6 +136,9 @@ WIDGETS.push({
         style="margin-top:4px;width:100%;padding:5px;border:none;border-radius:4px;background:#313244;
                color:#cdd6f4;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;">
         🔀 Ablenker neu mischen</button>` +
+      // Größe: Klein = 80 px (5 pro Reihe), Groß = 130 px (4 pro Reihe). Feinjustierung
+      // weiter über den Regler darunter.
+      `<div class="prow"><label>Größe</label><div style="display:flex;gap:4px;">${[['Klein', ANLAUT_KLEIN], ['Groß', ANLAUT_GROSS]].map(([l, v]) => { const on = size === v; return `<button onclick="event.stopPropagation();upd(${d.id},'size',${v})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#a6e3a1':'#ddd'};background:${on?'#e8fdf0':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${l}</button>`; }).join('')}</div></div>` +
       pr("Bildgröße (px)",
         `<div style="display:flex;gap:6px;align-items:center;">
           <input type="range" min="40" max="200" value="${size}"
@@ -201,6 +209,8 @@ function anlautDefaultSrc(anlaut) {
   const variants = ANLAUT_BILDER[anlaut];
   return (variants && variants.length > 0) ? variants[0] : anlaut;
 }
+
+const ANLAUT_KLEIN = 80, ANLAUT_GROSS = 130;
 
 function anlautImg(src, size) {
   size = size || 80;
@@ -275,32 +285,33 @@ function anlautNormLetter(letter) {
 function anlautApplyCase(letter, schreibweise) {
   // ß hat in der Grundschule keine SS-Großform — toUpperCase() würde „SS" erzeugen
   if (anlautNormLetter(letter) === 'ß') return 'ß';
-  if (schreibweise === 'klein') return letter.toLowerCase();
-  if (schreibweise === 'gross') return letter.toUpperCase();
-  return Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase();
+  const s = String(letter);
+  // Zwei-Buchstaben-Anlaut: groß = „Sp", klein = „sp"
+  const up = s.length > 1 ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s.toUpperCase();
+  if (schreibweise === 'klein') return s.toLowerCase();
+  if (schreibweise === 'gross') return up;
+  return Math.random() < 0.5 ? s.toLowerCase() : up;
 }
 
+// Ablenker-Vorrat. Sch und ß gibt es bewusst nicht (mehr).
+const ANLAUT_EINZEL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü"]);
+const ANLAUT_ZWEIER = ["Au", "Ei", "Eu", "Sp", "St"];
+
 function anlautGenChoices(letters, schreibweise) {
-  const sw  = schreibweise || 'gross';
-  const ALL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß"]);
-  return letters.map(letter => anlautShuffleOpts(letter, ALL, sw));
+  return letters.map(letter => anlautShuffleOpts(letter, null, schreibweise || 'gross'));
 }
 
 function anlautShuffleOpts(letter, pool, schreibweise) {
-  const ALL = pool || "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü","ß"]);
-  const sw  = schreibweise || 'gross';
-  // Für Digrafen (Ei, Sch) den ersten Buchstaben als Kästchen-Buchstabe nehmen
-  const baseLetter = letter.length > 1 ? letter[0] : letter;
-  const baseNorm = anlautNormLetter(baseLetter);
-  const p = ALL.filter(l => anlautNormLetter(l) !== baseNorm);
-  for (let i = p.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [p[i], p[j]] = [p[j], p[i]];
+  const sw = schreibweise || 'gross';
+  const norm = anlautNormLetter(letter);
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  let ablenker;
+  if (String(letter).length > 1) {
+    // Zwei-Buchstaben-Anlaut (Sp, Ei …): Ablenker sind ebenfalls Zweier-Anlaute
+    ablenker = shuffle(ANLAUT_ZWEIER.filter(l => anlautNormLetter(l) !== norm)).slice(0, 2);
+  } else {
+    // Einzel-Anlaut: nur Einzelbuchstaben als Ablenker
+    ablenker = shuffle((pool || ANLAUT_EINZEL).filter(l => anlautNormLetter(l) !== norm && String(l).length === 1)).slice(0, 2);
   }
-  const opts = [anlautApplyCase(baseLetter, sw), anlautApplyCase(p[0], sw), anlautApplyCase(p[1], sw)];
-  for (let i = 2; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [opts[i], opts[j]] = [opts[j], opts[i]];
-  }
-  return opts;
+  return shuffle([letter, ...ablenker].map(l => anlautApplyCase(l, sw)));
 }

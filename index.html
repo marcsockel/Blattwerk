@@ -159,9 +159,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .gmbtn{font-size:10px;background:#e8e6e0;border:none;border-radius:4px;padding:2px 7px;cursor:pointer;font-family:inherit;font-weight:700;margin-top:4px;color:#555;}
 .ws-cell{width:24px;height:24px;background:none;border:1px solid #e0ddd6;border-radius:0;display:flex;align-items:center;justify-content:center;font-family:'Grundschrift',sans-serif;font-size:12px;font-weight:500;color:#333;}
 /* Props panel */
+#props-resizer{width:8px;margin:0 -4px;flex-shrink:0;cursor:col-resize;position:relative;z-index:5;touch-action:none;}
+#props-resizer::after{content:"";position:absolute;top:0;bottom:0;left:3px;width:2px;background:transparent;transition:background .15s;}
+#props-resizer:hover::after,#props-resizer.dragging::after{background:#3b6fd4;}
+body.props-resizing{cursor:col-resize;user-select:none;}
+body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;}
 #props{width:360px;background:#e7eaef;border-left:2px solid #d7dbe2;padding:14px;overflow-y:auto;flex-shrink:0;font-size:12px;}
-#props h3{font-size:12px;font-weight:600;color:#2a2e35;background:#fff;display:inline-block;margin:0 0 -1px;padding:8px 14px;border-radius:8px 8px 0 0;}
-#pi{background:#fff;border-radius:0 8px 8px 8px;padding:14px;}
+#pi{background:#fff;border-radius:8px;padding:14px;}
 .prow{margin-bottom:9px;}
 .prow label{display:block;font-size:11px;font-weight:700;color:#666;margin-bottom:2px;}
 .prow input:not([type=checkbox]):not([type=radio]),.prow select,.prow textarea{width:100%;border:1.5px solid #ddd;border-radius:4px;padding:3px 6px;font-size:12px;outline:none;background:#fff;font-family:inherit;}
@@ -182,6 +186,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .prop-fold[open]>.prop-fold-h{border-bottom:1px solid #e2e5ea;margin-bottom:0;}
 .prop-fold-b{padding:8px 9px 9px;}
 .std-footer .prop-fold{background:#faf8f3;border-color:#ccc8bc;}
+/* Eigenschaften-Tabs „Inhalt" / „Box" */
+.ptabs{display:flex;gap:4px;margin:0 0 12px;padding:3px;background:#eef0f4;border-radius:8px;}
+.ptab{flex:1;padding:6px 4px;border:none;border-radius:6px;background:transparent;color:#7c828d;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;}
+.ptab.on{background:#3b6fd4;color:#fff;}
+.ptab-box .std-footer{margin-top:0;border-top:none;}
 /* misc */
 *{user-select:none;}input,textarea,[contenteditable]{user-select:text;}
 @page{size:A4 portrait;margin:0;}
@@ -196,7 +205,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
   img.img-sw{filter:grayscale(100%)!important;} /* Schwarz-Weiß-Bildeffekt übersteht den globalen filter:none-Reset */
-  #toolbar,#sidebar,#props,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
+  #toolbar,#sidebar,#props,#props-resizer,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
   .tbl-selcell{outline:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
@@ -357,8 +366,8 @@ body.debug-series .series::after{content:attr(data-fit) " Spalten / " attr(data-
     <div id="wlist"></div>
   </div>
   <div id="canvas-area"><div id="canvas-zoom"></div></div>
+  <div id="props-resizer" title="Ziehen: Breite ändern · Doppelklick: zurücksetzen"></div>
   <div id="props">
-    <h3>Eigenschaften</h3>
     <div id="pi" style="color:#bbb;text-align:center;margin-top:20px;font-size:12px;">Widget auswählen</div>
   </div>
 </div>
@@ -470,7 +479,7 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=23"></script>
+<script src="main/helpers.js?v=24"></script>
 <script src="main/img_picker.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
@@ -485,13 +494,13 @@ const WIDGETS = [];
 <script src="widgets/linebox.js"></script>
 <script src="widgets/checkbox.js"></script>
 <script src="widgets/table.js"></script>
-<script src="widgets/gap_text.js"></script>
+<script src="widgets/gap_text.js?v=4"></script>
 <script src="widgets/wordsearch.js?v=3"></script>
 <script src="widgets/scramble.js"></script>
 <script src="widgets/matching.js?v=3"></script>
 <script src="widgets/numbering.js"></script>
 <script src="widgets/arithmetic.js?v=3"></script>
-<script src="widgets/ep_shared.js?v=3"></script>
+<script src="widgets/ep_shared.js?v=4"></script>
 <script src="widgets/numberline.js"></script>
 <script src="widgets/geometry.js"></script>
 <script src="widgets/zahlenmauer.js?v=3"></script>
@@ -500,21 +509,21 @@ const WIDGETS = [];
 <script src="widgets/zeitspanne.js"></script>
 <script src="widgets/kaestchen.js"></script>
 <script src="widgets/eingabekaestchen.js"></script>
-<script src="widgets/halbschriftlich.js?v=3"></script>
+<script src="widgets/halbschriftlich.js?v=7"></script>
 <script src="widgets/schriftlich_addition.js?v=3"></script>
 <script src="widgets/schriftlich_subtraktion.js?v=3"></script>
 <script src="widgets/schriftlich_multiplikation.js?v=3"></script>
-<script src="widgets/schriftlich_division.js?v=3"></script>
+<script src="widgets/schriftlich_division.js?v=4"></script>
 <script src="widgets/bildwort.js"></script>
 <script src="widgets/auslaut.js"></script>
-<script src="widgets/anlaut.js"></script>
-<script src="widgets/anlaut_zuordnung.js"></script>
-<script src="widgets/wort_schreiben.js"></script>
-<script src="widgets/wortchips.js"></script>
+<script src="widgets/anlaut.js?v=7"></script>
+<script src="widgets/anlaut_zuordnung.js?v=3"></script>
+<script src="widgets/wort_schreiben.js?v=3"></script>
+<script src="widgets/wortchips.js?v=3"></script>
 <script src="widgets/buchstabensalat2.js?v=3"></script>
 <script src="widgets/geheimschrift.js"></script>
 <script src="widgets/bild_wort_zuordnung2.js"></script>
-<script src="widgets/aeue.js"></script>
+<script src="widgets/aeue.js?v=3"></script>
 <script src="widgets/stop.js"></script>
 <script src="widgets/infobox.js"></script>
 <script src="widgets/silbentext.js"></script>
@@ -1794,8 +1803,62 @@ function renderProps(id){
   const p=document.getElementById("pi");
   if(!w){p.innerHTML='<span style="color:#bbb;">Widget auswählen</span>';return;}
   const def=WIDGET_MAP[w.type];
-  p.innerHTML=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>${def?def.renderProps(w):""}${standardFooter(id,w)}`;
+  const title=`<div style="font-weight:800;font-size:13px;margin-bottom:11px;color:#333;">${def?def.meta.label:w.type}</div>`;
+  const inhalt=def?def.renderProps(w):"";
+  const box=standardFooter(id,w);
+  // Zwei Tabs: „Inhalt" = was nur dieses Widget hat, „Box" = Aufgabentext, Punkte,
+  // Rahmen, Verteilung, Layout (bei allen Widgets gleich). Beide Bereiche werden
+  // gerendert, der inaktive nur ausgeblendet → Eingaben/Handler bleiben erhalten.
+  if(String(inhalt).trim()&&box){
+    const on=t=>_propTab===t?' on':'';
+    p.innerHTML=title
+      +`<div class="ptabs"><button class="ptab${on('inhalt')}" data-tab="inhalt" onclick="event.stopPropagation();setPropTab('inhalt')">Inhalt</button>`
+      +`<button class="ptab${on('box')}" data-tab="box" onclick="event.stopPropagation();setPropTab('box')">Box</button></div>`
+      +`<div class="ptab-pane" data-pane="inhalt"${_propTab==='inhalt'?'':' style="display:none"'}>${inhalt}</div>`
+      +`<div class="ptab-pane ptab-box" data-pane="box"${_propTab==='box'?'':' style="display:none"'}>${box}</div>`;
+  } else {
+    p.innerHTML=title+inhalt+box;
+  }
   enhanceNumberInputs(p);
+}
+
+// Eigenschaftenfeld in der Breite ziehbar (Trennlinie zum Dokumentbereich), wie ein
+// Fensterteiler im Betriebssystem. Breite wird pro Browser gemerkt; Doppelklick = Standard.
+(function initPropsResizer(){
+  const MIN=280, MAX=720, DEF=360, KEY='blattwerk-props-width';
+  const bar=document.getElementById('props-resizer'), props=document.getElementById('props');
+  if(!bar||!props) return;
+  const apply=w=>{ props.style.width=Math.max(MIN,Math.min(MAX,Math.round(w)))+'px'; };
+  const relayout=()=>window.dispatchEvent(new Event('resize'));
+  try{ const saved=+localStorage.getItem(KEY); if(saved) apply(saved); }catch(e){}
+  let startX=0, startW=0;
+  bar.addEventListener('pointerdown',e=>{
+    e.preventDefault(); bar.setPointerCapture(e.pointerId);
+    startX=e.clientX; startW=props.getBoundingClientRect().width;
+    bar.classList.add('dragging'); document.body.classList.add('props-resizing');
+  });
+  bar.addEventListener('pointermove',e=>{
+    if(!bar.hasPointerCapture(e.pointerId)) return;
+    apply(startW+(startX-e.clientX));   // nach links ziehen = breiter
+  });
+  const end=e=>{
+    if(!bar.hasPointerCapture(e.pointerId)) return;
+    bar.releasePointerCapture(e.pointerId);
+    bar.classList.remove('dragging'); document.body.classList.remove('props-resizing');
+    try{ localStorage.setItem(KEY,String(parseInt(props.style.width)||DEF)); }catch(err){}
+    relayout();
+  };
+  bar.addEventListener('pointerup',end); bar.addEventListener('pointercancel',end);
+  bar.addEventListener('dblclick',()=>{ apply(DEF); try{ localStorage.removeItem(KEY); }catch(e){} relayout(); });
+})();
+
+// Aktiver Eigenschaften-Tab — bleibt beim Wechsel zwischen Widgets erhalten.
+let _propTab='inhalt';
+function setPropTab(t){
+  _propTab=t;
+  const p=document.getElementById('pi'); if(!p)return;
+  p.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+  p.querySelectorAll('.ptab-pane').forEach(el=>{el.style.display=el.dataset.pane===t?'':'none';});
 }
 
 function enhanceNumberInputs(container) {

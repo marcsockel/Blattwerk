@@ -19,10 +19,10 @@ WIDGETS.push({
     return {
       id, type: "wortschreiben",
       items,
-      modus: "klein",
-      font: "'Grundschrift', sans-serif", fontSize: 16,
-      imgSize: 52,
-      lineatur: 1, lineaturGross: false,
+      modus: "gross",
+      font: "'Grundschrift', sans-serif", fontSize: 28,
+      imgSize: 66,
+      lineatur: 1, lineaturGross: true,
       beispiel: false, beispielText: anlautWortFromSrc(items[0].src) || items[0].anlaut,
       aufgabenNr: 0, aufgabenText: "",
     };

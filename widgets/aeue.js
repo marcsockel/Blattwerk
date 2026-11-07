@@ -86,28 +86,30 @@ WIDGETS.push({
     if (!eintraege.length)
       return `<div style="color:#aaa;font-size:13px;padding:8px;">Keine Wörter eingetragen.</div>`;
 
-    const thS = `padding:5px 10px;font-size:11px;font-weight:700;color:#888;
+    const thS = `padding:6px 10px;font-size:15px;font-weight:700;color:#666;
                  border-bottom:2px solid #ddd;text-align:left;white-space:nowrap;`;
     const tdS = `padding:9px 10px;border-bottom:1px solid #eee;vertical-align:middle;
                  font-family:${font};font-size:${fontSize}px;`;
-    const lineBase = `display:inline-block;border-bottom:2px solid #444;height:${Math.round(fontSize*0.5)}px;vertical-align:-${Math.round(fontSize*0.4)}px;`;
+    // Antwortlinien liegen GENAU auf der Zeilenlinie der Tabelle (Zelle ohne Polster
+    // unten, Linie überdeckt den hellen Zeilenstrich) und füllen die Spalte ganz aus.
+    const lh = Math.round(fontSize * 1.5);
+    const ansTd = `padding:0 10px;border-bottom:1px solid #eee;vertical-align:bottom;
+                   font-family:${font};font-size:${fontSize}px;`;
+    const line = content => `<div style="flex:1;min-width:0;border-bottom:2px solid #444;margin-bottom:-1px;
+                   height:${lh}px;line-height:${lh}px;white-space:nowrap;overflow:hidden;">${content}</div>`;
+    const sol = t => isActive ? `<span style="${solStyle}">${esc(t)}</span>` : '';
 
     const rows = eintraege.map(({ art, stem, alt, end, verwandt }) => {
       const richtig = alt.split('/').pop();               // Umlaut-Variante (z.B. 'ä', 'äu')
       const geloest = `${art ? art + ' ' : ''}${stem}${richtig}${end}`; // z.B. 'die Städte'
-      const verwandtCell = isActive
-        ? `<span style="${solStyle}">${esc(verwandt)}</span>`
-        : `<span style="${lineBase}min-width:100px;"></span>`;
-      const alsoCell = isActive
-        ? `also: <span style="${solStyle}margin-left:4px;">${esc(geloest)}</span>`
-        : `also: <span style="${lineBase}min-width:150px;margin-left:4px;"></span>`;
       return `<tr>
-        <td style="${tdS};white-space:nowrap;">
+        <td style="${tdS};padding-bottom:2px;line-height:${lh}px;vertical-align:bottom;white-space:nowrap;width:1%;">
           ${art ? art + ' ' : ''}${stem}<span style="background:#f0ede6;border-radius:3px;
             padding:1px 5px;font-weight:700;">${alt}</span>${end}
         </td>
-        <td style="${tdS};">${verwandtCell}</td>
-        <td style="${tdS};white-space:nowrap;">${alsoCell}</td>
+        <td style="${ansTd}width:30%;"><div style="display:flex;">${line(sol(verwandt))}</div></td>
+        <td style="${ansTd}"><div style="display:flex;align-items:flex-end;gap:6px;">
+          <span style="line-height:${lh}px;white-space:nowrap;">also:</span>${line(sol(geloest))}</div></td>
       </tr>`;
     }).join('');
 

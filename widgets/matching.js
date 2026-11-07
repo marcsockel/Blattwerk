@@ -7,7 +7,7 @@ WIDGETS.push({
     return { id, type:"matching", pairs, rightOrder: matchingShuffleIdx(pairs.length),
              rightOrder2: null, font:"inherit", fontSize:22, gap:24,
              layout:"vertikal",
-             schreiblinien:false, beispiel:false, beispielText:"Der Hund bellt.",
+             schreiblinien:true, beispiel:true, beispielText:"Der Hund bellt.",
              aufgabenNr:0, aufgabenText:''};
   },
 
@@ -112,7 +112,7 @@ WIDGETS.push({
       );
       return atHtml(d) +
         `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' data-azanchor="tb" style="position:relative;display:block;width:100%;">` +
-          `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
+          `<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">${lines}</svg>` +
           hHtml +
         `</div>`;
     }
@@ -169,7 +169,7 @@ WIDGETS.push({
     const boxDisplay = schreiblinien ? `display:block;width:100%;` : `display:inline-block;`;
     return atHtml(d) +
       `<div id="mbox-${d.id}" data-azsegs='${JSON.stringify(segArr)}' data-azanchor="lr" style="position:relative;${boxDisplay}">` +
-        `<svg style="position:absolute;top:0;left:0;width:0;height:0;pointer-events:none;overflow:visible;">${lines}</svg>` +
+        `<svg style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;">${lines}</svg>` +
         tableHtml +
       `</div>`;
   },

@@ -22,7 +22,7 @@ WIDGETS.push({
     type: "wortchips",
     wordsText: "Hund\nKatze\nMaus\nVogel\nFisch\nPferd\nApfel\nBirne\nKirsche",
     font: "'DidactGothic7', sans-serif",
-    fontSize: 16,
+    fontSize: 20,
     chipPadX: 12,
     chipPadY: 5,
     align: "auto",

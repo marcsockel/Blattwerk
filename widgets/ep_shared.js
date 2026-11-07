@@ -407,10 +407,17 @@ function epCollectAnswers(d, parsed, pairs, c) {
       if (ra != null) answers.push(ra);
     });
   } else if (d.type === 'ep_zehner_stop') {
-    pairs.forEach(({ row1, row2 }) => {
+    // Eine Lösung je leerem Kästchen: Ergebnis in Zeile 1 UND Zeile 2; Teile nur,
+    // wenn sie nicht als Hilfe vorgedruckt sind (gleiche Regel wie im Render).
+    const hilfe = d.hilfe !== false;
+    pairs.forEach(({ row1, row2 }, pairIdx) => {
       const rv = epComputeAns(row1);
       if (rv != null) answers.push(rv);
-      if (row2) { answers.push(row2.part1); answers.push(row2.part2); }
+      if (row2) {
+        if (rv != null) answers.push(rv);
+        if (!(hilfe && pairIdx <= 1)) answers.push(row2.part1);
+        if (!(hilfe && pairIdx === 0)) answers.push(row2.part2);
+      }
     });
   } else if (d.type === 'ep_analogie') {
     pairs.forEach(({ row1, row2 }) => {
@@ -420,7 +427,9 @@ function epCollectAnswers(d, parsed, pairs, c) {
       if (r2 != null) answers.push(r2);
     });
   } else if (d.type === 'ep_zerlegung') {
-    pairs.forEach(({ row1, row2 }) => {
+    const hilfe = d.hilfe !== false;
+    pairs.forEach(({ row1, row2 }, pairIdx) => {
+      if (hilfe && pairIdx === 0) return;   // 1. Aufgabe: fehlender Teil als Hilfe vorgedruckt
       const n = +row1.n;
       if (row2.miss1) answers.push(String(n - (+row2.part2)));
       if (row2.miss2) answers.push(String(n - (+row2.part1)));
@@ -738,8 +747,17 @@ function epRenderProps(d) {
     manual = ' (je 2 Zeilen: Plus, dann Minus)';
   }
 
+  // Lösungen (gemischte Ergebnisse unter den Päckchen) — wie bei Rechenaufgaben.
+  // Nicht bei Umkehraufgaben.
+  const sl = !!d.showLoesungen;
+  const loesungBlock = d.type === 'ep_umkehr' ? '' : `<div class="prow"><label>Lösungen anzeigen</label>
+      <div style="display:flex;gap:4px;">
+        ${tb('Ausblenden', !sl, `upd(${d.id},'showLoesungen',false)`)}
+        ${tb('Einblenden', sl, `upd(${d.id},'showLoesungen',true)`)}
+      </div></div>`;
+
   return top + epAnordnungBlock(d, epAnordnungOpts(d.type)) + epGroesseBlock(d)
-    + epGrauBlock(d) + hilfeBlock
+    + epGrauBlock(d) + hilfeBlock + loesungBlock
     + epWuerfelBtn(d) + epManualFold(d, manual);
 }
 
