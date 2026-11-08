@@ -210,6 +210,7 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
   #toolbar,#sidebar,#props,#props-resizer,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
   .tbl-selcell{outline:none!important;}
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
+  .lw-canvas{outline:none!important;} .lw-canvas .lw-ui,.lw-marquee{display:none!important;} /* Leinwand/Zeichenebene: Auswahl-Griffe nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
   .mt-cell,.mt-cell.mt-cell-sel{border:none!important;outline:none!important;padding:4px!important;}
   .mt-empty-hint,.mt-img-drop{display:none!important;}
@@ -249,6 +250,8 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
         max-height:var(--print-page-max-px,var(--prn-page-maxh));
         overflow:hidden;padding:var(--prn-pad);page-break-inside:avoid;break-inside:avoid;}
   /* Standard (einseitig + beidseitig-Vorderseiten): breiter Rand LINKS (25mm) zum Lochen. */
+  .page{--fb-pl:25mm;} /* linker Rand im Druck → schwebende Rahmen bleiben relativ zum Inhalt an ihrer Stelle (floatbox.js fbLeft) */
+  body.print-ds .page.page-back{--fb-pl:calc(15mm - var(--extra-w));}
   body.print-ds .page.page-back{padding-left:calc(15mm - var(--extra-w));padding-right:25mm;} /* beidseitig: Rückseiten (pageIdx ungerade) spiegeln → breiter Rand rechts (Bundsteg). Klasse statt :nth-of-type, da .page-spacer die Zählung verfälscht. */
   #canvas-area .page{page-break-after:always;break-after:page;}
   #canvas-area .page:last-of-type{page-break-after:auto;break-after:auto;}
@@ -482,7 +485,7 @@ const WIDGETS = [];
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
 <script src="main/helpers.js?v=27"></script>
-<script src="main/img_picker.js"></script>
+<script src="main/img_picker.js?v=3"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
@@ -552,8 +555,9 @@ const WIDGETS = [];
 <script src="widgets/kuchendiagramm.js"></script>
 <script src="widgets/strichliste.js"></script>
 <script src="widgets/multitool.js"></script>
-<script src="widgets/group.js"></script>
-<script src="widgets/floatbox.js"></script>
+<script src="widgets/group.js?v=2"></script>
+<script src="widgets/floatbox.js?v=4"></script>
+<script src="widgets/leinwand.js?v=20"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -679,7 +683,7 @@ function buildList(){
     const matchSearch=f&&(w.meta.label.toLowerCase().includes(f)||w.meta.desc.toLowerCase().includes(f));
     return matchCat||matchSearch;
   });
-  if(!toShow.length){list.innerHTML=`<div style="padding:16px 12px;color:#6c7086;font-size:12px;">Keine Widgets gefunden</div>`;return;}
+  if(!toShow.length){list.insertAdjacentHTML('beforeend',`<div style="padding:16px 12px;color:#6c7086;font-size:12px;">Keine Widgets gefunden</div>`);return;}
   if(f){
     const grouped={};
     toShow.forEach(w=>{(grouped[w.meta.category]=grouped[w.meta.category]||[]).push(w);});
@@ -701,6 +705,8 @@ function buildList(){
         const lbl=document.createElement("div");
         lbl.className="catlabel";lbl.style.marginTop="12px";lbl.textContent=w.meta.section;
         sec.appendChild(lbl);
+        // Zeichenebene an/aus: erster Eintrag unter „Profi-Tools" (Allgemein) — leinwand.js
+        if(w.meta.section==='Profi-Tools'&&w.meta.category==='allgemein'&&typeof zeSidebarEl==='function')sec.appendChild(zeSidebarEl());
       }
       if(w.meta.group){
         if(renderedGroups.has(w.meta.group))return;
@@ -1213,7 +1219,7 @@ function render(){
     ca.insertBefore(fab, zoomEl);
   }
   const ranges=getPageRanges();
-  const total=widgets.filter(w=>w.type!=='pagebreak'&&w.type!=='groupEnd').length;
+  const total=widgets.filter(w=>w.type!=='pagebreak'&&w.type!=='groupEnd'&&w.type!=='zeichenebene').length;
   ranges.forEach((range,pageIdx)=>{
     const pw=widgets.slice(range.start,range.end);
     // Textfluss-Umbrüche (flow) optisch wie automatische Overflow-Seiten behandeln
@@ -1224,10 +1230,12 @@ function render(){
   });
   // Schwebende Rahmen als Overlay auf ihrer Seite zeichnen (außerhalb des Flusses)
   const _pageEls=[...zoomEl.querySelectorAll('.page')];
-  widgets.filter(w=>w.floating).forEach(f=>{
+  widgets.filter(w=>w.floating&&w.type!=='zeichenebene').forEach(f=>{
     const pe=_pageEls[f.page||0];
     if(pe && typeof makeFloatEl==='function'){ pe.style.position='relative'; pe.appendChild(makeFloatEl(f)); }
   });
+  // Zeichenebenen (eine je Seite, über allem) — leinwand.js
+  if(typeof zeRenderLayers==='function') zeRenderLayers(_pageEls);
   document.getElementById("wcount").textContent=`${total} Widget${total!==1?"s":""}`;
   requestAnimationFrame(()=>{
     if(gen !== _renderGen || _printLock) return;
@@ -1511,14 +1519,14 @@ function checkOverflow(ranges){
     const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene'));
     const pageBottom=wraps.length?wrapFlowBottom(wraps[wraps.length-1]):0;
     // Höhe des ersten Widgets der nächsten Seite messen. WICHTIG: offsetTop abziehen —
     // wrapFlowBottom enthält sonst das Seiten-Padding (~49px) DOPPELT (einmal in
     // pageBottom, einmal hier) → Bedingung zu streng, Widgets fließen nie zurück,
     // obwohl sie passen würden.
     const nextPage=pages[pi+1];
-    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox')):[];
+    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene')):[];
     const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0])-nextWraps[0].offsetTop:Infinity;
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
@@ -1554,7 +1562,7 @@ function checkOverflow(ranges){
     const pxPerMm=pageEl.offsetWidth/geom().scrW;
     const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene'));
     for(let i=0;i<wraps.length;i++){
       if(wrapFlowBottom(wraps[i])>maxBottom){
         // Fließender Text: wortweise splitten statt komplett verschieben (textfluss.js)
@@ -2500,7 +2508,7 @@ function applyPrintLayoutFixes() {
   _printMarginBackup = [];
   document.querySelectorAll('#canvas-area .page').forEach(pageEl => {
     const wraps = [...pageEl.querySelectorAll('.wwrap')]
-      .filter(el => !el.closest('.group-frame') && !el.closest('.floatbox'));
+      .filter(el => !el.closest('.group-frame') && !el.closest('.floatbox,.zeichenebene'));
     if (!wraps.length) return;
     const last = wraps[wraps.length - 1];
     _printMarginBackup.push({ el: last, mb: last.style.marginBottom });
@@ -2743,6 +2751,27 @@ document.addEventListener('click', () => {
 document.addEventListener('keydown', e => {
   if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){e.preventDefault();undo();}
   if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){e.preventDefault();redo();}
+});
+// Einfache Tasten: Entf/⌫ löscht das Ausgewählte, Esc hebt die Auswahl auf.
+// Nicht während man tippt (Eingabefelder, Texteditoren) und nicht bei offenem Bild-Dialog.
+document.addEventListener('keydown', e => {
+  const t=e.target;
+  if(t&&t.closest&&t.closest('input,textarea,select,[contenteditable="true"],[contenteditable=""]'))return;
+  const ov=document.getElementById('img-picker-overlay');
+  if(ov&&ov.style.display==='flex')return;
+  // Leinwand: ausgewähltes Element hat Vorrang (Löschen, Pfeiltasten, Duplizieren, Esc)
+  if(typeof lwTaste==='function'&&lwTaste(e)){e.preventDefault();return;}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  if((e.key==='Delete'||e.key==='Backspace')&&selId!=null){
+    const w=widgets.find(x=>x.id===selId);if(!w)return;
+    if(w.type==='zeichenebene')return; // Zeichenebene nie per Taste löschen (nur ihre Elemente)
+    e.preventDefault();
+    if(w.type==='floatbox'&&typeof fbDelete==='function')fbDelete(w.id);
+    else if(w.type==='group'&&typeof groupDelete==='function')groupDelete(w.id);
+    else del(w.id);
+  }else if(e.key==='Escape'&&selId!=null){
+    desel();
+  }
 });
 
 // Warnung beim Neuladen/Schließen, wenn ungespeicherte Änderungen vorliegen.

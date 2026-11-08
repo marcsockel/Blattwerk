@@ -21,20 +21,15 @@ WIDGETS.push({
   renderProps: d => {
     const np = getPageRanges().length;
     const child = widgets.find(w => w.parent === d.id);
-    const opts = WIDGETS
-      .filter(w => !['group', 'floatbox'].includes(w.meta.type))
-      .map(w => `<option value="${w.meta.type}">${w.meta.icon} ${w.meta.label}</option>`).join('');
     const num = (label, key, val, min, max) =>
       pr(label, `<input type="number" min="${min}" max="${max}" value="${Math.round(val)}" onchange="fbSet(${d.id},'${key}',+this.value)">`);
 
-    return `<div class="prow"><label>${child ? 'Widget ersetzen' : 'Widget einsetzen'}</label>
-        <div style="display:flex;gap:4px;">
-          <select id="fb-add-${d.id}" onclick="event.stopPropagation()"
-            style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">${opts}</select>
-          <button onclick="event.stopPropagation();fbAddChild(${d.id},document.getElementById('fb-add-${d.id}').value)"
-            style="padding:4px 10px;border:none;border-radius:4px;background:#313244;color:#cdd6f4;
-                   font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">${child ? 'Ersetzen' : 'Einsetzen'}</button>
-        </div>
+    return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;padding:9px 10px;border-radius:6px;
+          background:#eef4ff;border:1.5px solid #c9dafc;font-size:12px;line-height:1.45;color:#2a3b5c;text-align:left;">
+        <span style="font-size:16px;line-height:1;">👈</span>
+        <span>${child
+          ? '<b>Widget ersetzen:</b> links in der Auswahl ein anderes Widget anklicken.'
+          : '<b>Widget einsetzen:</b> links in der Auswahl ein Widget anklicken – es landet in diesem Rahmen.'}</span>
       </div>` +
       (child
         ? `<button onclick="event.stopPropagation();fbRemoveChild(${d.id})"
@@ -51,6 +46,14 @@ WIDGETS.push({
   },
 });
 
+// Position/Größe in % der BILDSCHIRM-Seite, aber in mm umgerechnet und am linken Inhaltsrand
+// verankert: Im Druck ist die Seite breiter (210mm statt 190mm) und der linke Rand größer
+// (25mm Lochrand statt 10mm). Reine %-Werte würden dort verrutschen; so bleibt der Rahmen
+// exakt an derselben Stelle relativ zum Inhalt. --fb-pl = linkes Seiten-Padding (Druck-CSS).
+const fbLeft  = x => `calc(var(--fb-pl, 10mm) - 10mm + ${x} * var(--scr-page-w) / 100)`;
+const fbWidth = w => `calc(${w} * var(--scr-page-w) / 100)`;
+const fbTop   = y => `calc(${y} * var(--scr-page-h) / 100)`;
+
 // Baut das absolut positionierte Overlay-Element einer Box (inkl. Kind-Widget).
 function makeFloatEl(f) {
   const div = document.createElement('div');
@@ -58,8 +61,8 @@ function makeFloatEl(f) {
   // die im Druck ausgeblendet wird) — sonst druckt der gestrichelte groupBorderCss-Fallback mit.
   div.className = 'wwrap floatbox' + wrapEckenClass(f) + (frameBorder(f) ? '' : ' float-noborder') + (selId === f.id ? ' sel' : '');
   div.dataset.id = f.id;
-  div.style.cssText = `position:absolute;left:${f.x}%;top:${f.y}%;width:${f.w}%;`
-    + `min-height:${f.h}%;z-index:40;box-sizing:border-box;margin:0;`;
+  div.style.cssText = `position:absolute;left:${fbLeft(f.x)};top:${fbTop(f.y)};width:${fbWidth(f.w)};`
+    + `min-height:${fbTop(f.h)};z-index:40;box-sizing:border-box;margin:0;`;
 
   const frameStyle = frameDeco(f)
     + (f.bgColor ? `background:${f.bgColor};` : '')
@@ -79,7 +82,10 @@ function makeFloatEl(f) {
     <div class="winner${f.schatten?' fx-shadow':''}${frameInkInsert(f)?' frame-ink':''}" style="${frameStyle}">
       ${frameInkInsert(f)}
       ${atHtml(f)}
-      <div class="float-child">${child ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:10px;">Leerer Rahmen – rechts ein Widget einsetzen</div>`}</div>
+      <div class="float-child">${child ? '' : `<div style="color:#7a8599;font-size:13px;line-height:1.45;text-align:center;padding:14px 10px;
+          border:1.5px dashed #c3cad6;border-radius:6px;background:rgba(238,244,255,.6);">
+          <div style="font-weight:800;margin-bottom:3px;">Leerer Rahmen</div>
+          👈 Links in der Auswahl ein Widget anklicken,<br>um es hier einzusetzen.</div>`}</div>
     </div>
     <div class="float-resize" title="Größe ändern"
       style="position:absolute;right:-3px;bottom:-3px;width:15px;height:15px;cursor:nwse-resize;z-index:11;
@@ -192,7 +198,7 @@ function fbStartDrag(e, id) {
     const dx = (ev.clientX - sx) / pw * 100, dy = (ev.clientY - sy) / ph * 100;
     w.x = Math.max(0, Math.min(100 - w.w, ox + dx));
     w.y = Math.max(0, Math.min(100 - 1, oy + dy));
-    div.style.left = w.x + '%'; div.style.top = w.y + '%';
+    div.style.left = fbLeft(w.x); div.style.top = fbTop(w.y);
   };
   const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); renderProps(id); };
   document.addEventListener('mousemove', move);
@@ -211,7 +217,7 @@ function fbStartResize(e, id) {
     const dw = (ev.clientX - sx) / pw * 100, dh = (ev.clientY - sy) / ph * 100;
     w.w = Math.max(5, Math.min(100 - w.x, ow + dw));
     w.h = Math.max(3, Math.min(100, oh + dh));
-    div.style.width = w.w + '%'; div.style.minHeight = w.h + '%';
+    div.style.width = fbWidth(w.w); div.style.minHeight = fbTop(w.h);
   };
   const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); renderProps(id); };
   document.addEventListener('mousemove', move);

@@ -117,6 +117,7 @@ function imgPickerRenderHome() {
   body.innerHTML =
     `<div style="display:flex;flex-direction:column;gap:8px;">
       ${card("🔤", "Anlautbilder", "Cliparts nach Anfangsbuchstabe auswählen", "imgPickerShowAnlaut()")}
+      ${typeof LW_SYMBOLE !== "undefined" ? card("⭐", "Symbole", "Fertige Vektor-Symbole: Pfeile, Zeichen, Schule, Natur, Wetter …", "imgPickerShowSymbole()") : ""}
       ${card("🌐", "Wikimedia Commons", "Kostenlose Cliparts und Fotos online suchen", "imgPickerShowCommons()")}
       ${card("📷", "Pixabay", "Große Foto- und Clipart-Datenbank durchsuchen", "imgPickerShowPixabay()")}
       ${card("📁", "Von Festplatte", "Eigenes Bild von diesem Computer laden — oder Datei hierher ziehen", "imgPickerFromDisk()")}
@@ -172,6 +173,52 @@ function imgPickerShowAnlaut() {
       style="background:none;border:none;color:#89b4fa;font-family:inherit;font-size:11px;
              font-weight:700;cursor:pointer;padding:0;margin-bottom:10px;">← Zurück</button>
     <div style="max-height:380px;overflow-y:auto;padding-right:2px;">${sections}</div>`;
+}
+
+function imgPickerShowSymbole() {
+  _imgPickerView = "symbole";
+  const body = document.getElementById("img-picker-body");
+  const title = document.getElementById("img-picker-title");
+  if (title) title.textContent = "Symbole";
+  if (!body || typeof LW_SYMBOLE === "undefined") return;
+  const thumb = i => { const [n, t] = LW_SYMBOLE[i];
+    return `<div class="imgp-sym" onclick="event.stopPropagation();imgPickerSelectSymbol(${i})" title="${esc(t)}"
+        style="cursor:pointer;border:1.5px solid #313244;border-radius:6px;width:52px;height:52px;display:flex;
+               align-items:center;justify-content:center;background:#ffffff;transition:border-color .12s;flex-shrink:0;"
+        onmouseover="this.style.borderColor='#89b4fa'" onmouseout="this.style.borderColor='#313244'">
+        <img src="assets/symbole/${n}.svg" alt="" style="max-width:86%;max-height:86%;object-fit:contain;" loading="lazy">
+      </div>`; };
+  const gruppen = typeof LW_SYMBOL_GRUPPEN !== "undefined" ? LW_SYMBOL_GRUPPEN : [""];
+  const thumbs = gruppen.map((g, gi) => {
+    const ix = LW_SYMBOLE.map((s, i) => i).filter(i => (LW_SYMBOLE[i][3] || 0) === gi);
+    return `<div class="imgp-symgrp" style="margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:800;color:#a6adc8;margin-bottom:6px;letter-spacing:.3px;">${esc(g)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${ix.map(thumb).join("")}</div>
+      </div>`;
+  }).join("");
+  body.innerHTML =
+    `<button type="button" onclick="event.stopPropagation();imgPickerRenderHome()"
+      style="background:none;border:none;color:#89b4fa;font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;padding:0;margin-bottom:10px;">← Zurück</button>
+    <input type="search" placeholder="Symbol suchen …" oninput="imgPickerSymbolFilter(this.value)" onclick="event.stopPropagation()"
+      style="width:100%;box-sizing:border-box;border:1.5px solid #45475a;border-radius:6px;padding:7px 10px;font-size:13px;
+             font-family:inherit;outline:none;background:#11111b;color:#cdd6f4;margin-bottom:10px;">
+    <div style="max-height:380px;overflow-y:auto;padding-right:2px;">${thumbs}</div>`;
+}
+
+function imgPickerSymbolFilter(q) {
+  q = q.trim().toLowerCase();
+  document.querySelectorAll("#img-picker-body .imgp-symgrp").forEach(g => {
+    let n = 0;
+    g.querySelectorAll(".imgp-sym").forEach(el => { const ok = !q || el.title.toLowerCase().includes(q); el.style.display = ok ? "" : "none"; n += ok; });
+    g.style.display = n ? "" : "none";
+  });
+}
+
+function imgPickerSelectSymbol(i) {
+  const s = LW_SYMBOLE[i];
+  if (!s) return;
+  imgPickerApply(`assets/symbole/${s[0]}.svg`, { title: s[1], source: "symbol" });
 }
 
 function imgPickerSelectAnlaut(i) {

@@ -24,28 +24,17 @@ WIDGETS.push({
   render: () => '',
 
   renderProps: d => {
-    const opts = WIDGETS
-      .filter(w => w.meta.type !== 'group')
-      .map(w => `<option value="${w.meta.type}">${w.meta.icon} ${w.meta.label}</option>`)
-      .join('');
     const flush = !!d.flush;
     const tgl = (label, active, val) =>
       `<button onclick="event.stopPropagation();upd(${d.id},'flush',${val})"
         style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${active?'#89b4fa':'#ddd'};
                background:${active?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
-    return `<div class="prow"><label>Widget hinzufügen</label>
-      <div style="display:flex;gap:4px;">
-        <select id="grp-add-${d.id}" onclick="event.stopPropagation()"
-          style="flex:1;border:1.5px solid #ddd;border-radius:4px;padding:4px 6px;font-family:inherit;font-size:12px;">
-          ${opts}
-        </select>
-        <button onclick="event.stopPropagation();groupAddChild(${d.id},document.getElementById('grp-add-${d.id}').value)"
-          style="padding:4px 10px;border:none;border-radius:4px;background:#313244;color:#cdd6f4;
-                 font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">+ Einfügen</button>
-      </div>
-      <div style="font-size:11px;color:#aaa;margin-top:6px;">
-        Oder ein Widget vom Blatt in den Rahmen ziehen. Rahmen (inkl. Hintergrund) &amp; Aufgabentext unten.</div>
+    return `<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:10px;padding:9px 10px;border-radius:6px;
+        background:#eef4ff;border:1.5px solid #c9dafc;font-size:12px;line-height:1.45;color:#2a3b5c;text-align:left;">
+      <span style="font-size:16px;line-height:1;">👈</span>
+      <span><b>Widget hinzufügen:</b> links in der Auswahl ein Widget anklicken – es landet in dieser Gruppe.
+        Oder ein Widget vom Blatt in den Rahmen ziehen.</span>
     </div>
     <div class="prow"><label>Innenabstand</label>
       <div style="display:flex;gap:4px;">
@@ -109,8 +98,10 @@ function makeGroupWrap(g, gIdx, kids, kidBase) {
       ${frameInkInsert(g)}
       ${taskRendered ? `<div data-grp-task="1" style="padding:10px 10px 0 10px;">${taskRendered}</div>` : ''}
       <div class="group-kids" style="padding:${kidsTop}px ${ip}px ${ip}px ${ip}px;"></div>
-      ${kids.length ? '' : `<div style="color:#bbb;font-size:11px;text-align:center;padding:6px;">
-        Leerer Rahmen – Widget rechts hinzufügen oder hereinziehen</div>`}
+      ${kids.length ? '' : `<div style="color:#7a8599;font-size:13px;line-height:1.45;text-align:center;padding:14px 10px;margin:0 10px 10px;
+          border:1.5px dashed #c3cad6;border-radius:6px;background:rgba(238,244,255,.6);">
+          <div style="font-weight:800;margin-bottom:3px;">Leere Gruppe</div>
+          👈 Links in der Auswahl ein Widget anklicken<br>oder ein Widget vom Blatt hier hereinziehen.</div>`}
     </div>`;
 
   // Kinder einlayouten (gleiche Reihen-/Breitenlogik wie auf der Seite)
