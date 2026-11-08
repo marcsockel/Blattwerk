@@ -29,6 +29,8 @@ const LW_SYMBOLE = [
   ['pflanze','Pflanze',1.03,6], ['setzling','Setzling',0.89,6], ['baum','Baum',0.99,6], ['blatt','Blatt',0.91,6], ['erde','Erde',1.01,6], ['recycling','Recycling',1.04,6], ['tropfen','Tropfen',0.76,6], ['feuer','Feuer',0.81,6], ['schneeflocke','Schneeflocke',0.92,6], ['sonne','Sonne',0.98,6], ['regen','Regen',1.01,6]];
 const lwSymbolSrc = n => `assets/symbole/${n}.svg`;
 let _lwSymbolWahl = null;   // Widget-ID, deren Symbol-Auswahl offen ist
+// ◐ neben „Symbol suchen": Symbole schwarz-weiß einfügen (pro Browser gemerkt)
+let _lwSymbolGrau = (() => { try { return !!localStorage.getItem('blattwerk-lw-symgrau'); } catch (e) { return false; } })();
 
 const lwIstLinie = it => it.kind === 'line' || it.kind === 'arrow';
 const lwClamp = v => Math.max(0, Math.min(100, v));
@@ -123,8 +125,8 @@ function lwElementHtml(it, d, aktiv) {
   } else if (it.kind === 'image') {
     const rahmen = sw ? `border:${sw}px solid ${it.stroke};` : '';
     inner = it.src
-      ? `<img src="${it.src}" draggable="false" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
-           ${rahmen}box-sizing:border-box;border-radius:${it.rund ? 6 : 0}px;pointer-events:none;user-select:none;">`
+      ? `<img src="${it.src}" draggable="false" alt=""${it.grau ? ' class="img-sw"' : ''} style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+           ${it.grau ? 'filter:grayscale(100%);' : ''}${rahmen}box-sizing:border-box;border-radius:${it.rund ? 6 : 0}px;pointer-events:none;user-select:none;">`
       : `<div style="position:absolute;inset:0;border:1.5px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;">Bild</div>`;
   }
   const gewaehlt = aktiv && _lwSel && _lwSel.id === d.id && _lwSel.item === it.id;
@@ -193,15 +195,21 @@ WIDGETS.push({
         <div style="display:flex;gap:4px;margin-top:4px;">
           ${knopf('★ Symbol', `lwSymbolWahl(${d.id})`, _lwSymbolWahl === d.id ? 'border-color:#3b6fd4;background:#e8f0ff;color:#1e1e2e;' : '')}
         </div>
-        ${_lwSymbolWahl === d.id ? `<input type="search" placeholder="Symbol suchen …" onclick="event.stopPropagation()" oninput="lwSymbolFilter(this.value)"
-            style="width:100%;box-sizing:border-box;margin-top:6px;padding:5px 8px;border:1.5px solid #ddd;border-radius:5px;font-family:inherit;font-size:12px;">
+        ${_lwSymbolWahl === d.id ? `<div style="display:flex;gap:4px;margin-top:6px;">
+            <input type="search" placeholder="Symbol suchen …" onclick="event.stopPropagation()" oninput="lwSymbolFilter(this.value)"
+              style="flex:1;min-width:0;box-sizing:border-box;padding:5px 8px;border:1.5px solid #ddd;border-radius:5px;font-family:inherit;font-size:12px;">
+            <button onclick="event.stopPropagation();lwSymbolGrauUmschalten(${d.id})"
+              title="${_lwSymbolGrau ? 'Symbole werden schwarz-weiß eingefügt – klicken für Farbe' : 'Symbole schwarz-weiß einfügen'}"
+              style="flex-shrink:0;padding:0 9px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:800;
+                     border:1.5px solid ${_lwSymbolGrau ? '#333' : '#ddd'};background:${_lwSymbolGrau ? '#333' : '#fff'};color:${_lwSymbolGrau ? '#fff' : '#666'};">◐ S/W</button>
+          </div>
           <div class="lw-symgrid" style="margin-top:4px;max-height:340px;overflow-y:auto;border:1.5px solid #e5e5e5;border-radius:6px;padding:5px 6px;background:#fafafa;">
           ${LW_SYMBOL_GRUPPEN.map((g, gi) => `<div class="lw-symgrp">
             <div style="font-size:10px;font-weight:800;color:#888;text-transform:uppercase;letter-spacing:.4px;margin:6px 0 4px;text-align:left;">${g}</div>
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:4px;">
             ${LW_SYMBOLE.filter(x => x[3] === gi).map(([n, t]) => `<button title="${t}" onclick="event.stopPropagation();lwSymbolEinfuegen(${d.id},'${n}')"
               style="aspect-ratio:1;border:1.5px solid #e5e5e5;border-radius:5px;background:#fff;cursor:pointer;padding:3px;">
-              <img src="${lwSymbolSrc(n)}" alt="${t}" loading="lazy" style="width:100%;height:100%;object-fit:contain;pointer-events:none;"></button>`).join('')}
+              <img src="${lwSymbolSrc(n)}" alt="${t}" loading="lazy" style="width:100%;height:100%;object-fit:contain;pointer-events:none;${_lwSymbolGrau ? 'filter:grayscale(100%);' : ''}"></button>`).join('')}
             </div></div>`).join('')}
         </div>` : ''}
         ${_lwZeichne && _lwZeichne.id === d.id ? `<div style="font-size:11px;color:#3b6fd4;margin-top:5px;line-height:1.4;">
@@ -260,6 +268,10 @@ WIDGETS.push({
     }
     if (it.kind === 'image' && !it.symbol) {
       html += `<div style="display:flex;gap:4px;margin-bottom:8px;">${knopf('🖼 Bild ändern', `lwBildAendern(${d.id})`)}</div>`;
+    }
+    if (it.kind === 'image') {
+      html += `<div class="prow"><label>Farbe</label><div style="display:flex;gap:4px;">
+          ${tgl('Farbig', !it.grau, `lwSet(${d.id},'grau',false)`)}${tgl('◐ Schwarz-Weiß', !!it.grau, `lwSet(${d.id},'grau',true)`)}</div></div>`;
     }
     if (it.kind === 'text') {
       const font = it.font || 'inherit';
@@ -681,7 +693,15 @@ function lwSymbolFilter(q) {
 }
 function lwSymbolEinfuegen(id, name) {
   const s = LW_SYMBOLE.find(x => x[0] === name); if (!s) return;
-  lwBildEinfuegen(id, lwSymbolSrc(name), null, null, { ar: s[2], breite: 14, symbol: name });
+  lwBildEinfuegen(id, lwSymbolSrc(name), null, null, { ar: s[2], breite: 14, symbol: name, grau: _lwSymbolGrau });
+}
+function lwSymbolGrauUmschalten(id) {
+  _lwSymbolGrau = !_lwSymbolGrau;
+  try { localStorage.setItem('blattwerk-lw-symgrau', _lwSymbolGrau ? '1' : ''); } catch (e) {}
+  // ausgewähltes Symbol gleich mit umstellen
+  const w = lwW(id), it = lwItem(w);
+  if (it && it.symbol && !!it.grau !== _lwSymbolGrau) { saveHistory(); it.grau = _lwSymbolGrau; lwPatch(id); }
+  renderProps(id);
 }
 function lwBildEinfuegen(id, src, px, py, opt = {}) {
   const weiter = fertig => opt.ar ? fertig(opt.ar) : lwBildLaden(src, fertig);
@@ -693,6 +713,7 @@ function lwBildEinfuegen(id, src, px, py, opt = {}) {
     const [bw, bh] = lwBildMasse(id, ar, opt.breite || 30);
     Object.assign(it, { src, ar, w: bw, h: bh });
     if (opt.symbol) it.symbol = opt.symbol;
+    if (opt.grau) it.grau = true;
     if (px != null) { it.x = Math.max(0, Math.min(100 - bw, px - bw / 2)); it.y = Math.max(0, Math.min(100 - bh, py - bh / 2)); }
     else { it.x = Math.min(it.x, 100 - bw); it.y = Math.min(it.y, 100 - bh); }
     w.items = [...(w.items || []), it];
@@ -1064,6 +1085,25 @@ function zeBearbeiten(an) {
   render();
   if (selId != null) renderProps(selId); else document.getElementById('pi').innerHTML = '<span style="color:#bbb;">Widget auswählen</span>';
   buildList();
+}
+// Seitenwechsel (Scrollen) beim Bearbeiten: Ebene der neuen Seite auswählen (fehlt sie, z. B. bei
+// einer neu entstandenen Seite, wird sie angelegt)
+function zeSeiteGewechselt(seite) {
+  if (!_zeBearbeiten || _lwDrag) return;
+  let f = zeEbenen().find(w => (w.page || 0) === seite);
+  if (!f) {
+    const ranges = getPageRanges(); if (!ranges[seite]) return;
+    f = WIDGET_MAP.zeichenebene.createData(++idC);
+    f.page = seite;
+    widgets.splice(ranges[seite].end, 0, f);
+    _lwSel = null; _lwZeichne = null; _lwSymbolWahl = null;
+    selId = f.id;
+    render(); renderProps(f.id);
+    return;
+  }
+  if (selId === f.id) return;
+  _lwSel = null; _lwZeichne = null;
+  sel(f.id);
 }
 function zeSichtbarkeit() {
   const ebenen = zeEbenen(); if (!ebenen.length) return;

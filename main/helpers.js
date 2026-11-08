@@ -96,7 +96,7 @@ function ptHtml(d) {
 function widgetIsActive(d) {
   if (_solutionsMode) return true;
   if (d._mtCell != null && d._mtParent != null) {
-    return selId === d._mtParent && _mtSel
+    return selId === d._mtParent && typeof _mtSel !== 'undefined' && _mtSel
       && _mtSel.id === d._mtParent && _mtSel.idx === d._mtCell;
   }
   return d.id === selId;

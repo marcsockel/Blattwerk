@@ -74,6 +74,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .sb-search{padding:10px 12px 6px;position:sticky;top:0;background:var(--sb);z-index:2;}
 .sb-search input{width:100%;background:#24262c;border:none;border-radius:5px;padding:6px 9px;color:var(--sbt);font-family:inherit;font-size:12px;outline:none;}
 .sb-search input::placeholder{color:#6c7086;}
+
 /* Category tabs */
 .cat-tabs{display:flex;gap:0;border-bottom:2px solid #24262c;flex-shrink:0;}
 .cat-tab{flex:1;background:transparent;border:none;color:#6c7086;padding:7px 4px;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;transition:color .15s,background .15s;border-bottom:2px solid transparent;margin-bottom:-2px;}
@@ -148,8 +149,6 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .float-noborder.sel > .winner{outline:1px dashed #cfcfcf;outline-offset:-2px;}
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
 /* Multitool: Zellrahmen nur im Editor, nicht im Druck */
-.mt-cell{border:1px solid #e0ddd6;border-radius:6px;padding:8px;box-sizing:border-box;}
-.mt-cell.mt-cell-sel{outline:2px solid #89b4fa;outline-offset:1px;}
 .winner{padding:7px 9px;flex:1 1 auto;}
 /* Platzhalter: unsichtbar (nur Abstand), Auswahl über .wwrap-Outline */
 .ph-spacer{border:none;background:transparent;box-sizing:border-box;}
@@ -212,8 +211,6 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .lw-canvas{outline:none!important;} .lw-canvas .lw-ui,.lw-marquee{display:none!important;} /* Leinwand/Zeichenebene: Auswahl-Griffe nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
-  .mt-cell,.mt-cell.mt-cell-sel{border:none!important;outline:none!important;padding:4px!important;}
-  .mt-empty-hint,.mt-img-drop{display:none!important;}
   .frame-noborder{outline:none!important;}
   #layout{display:block;overflow:visible;}
   #canvas-area{padding:0;background:#fff;display:block;overflow:visible!important;}
@@ -484,7 +481,7 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=27"></script>
+<script src="main/helpers.js?v=28"></script>
 <script src="main/img_picker.js?v=3"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
@@ -530,7 +527,6 @@ const WIDGETS = [];
 <script src="widgets/bild_wort_zuordnung2.js"></script>
 <script src="widgets/aeue.js?v=5"></script>
 <script src="widgets/verlaengern.js?v=2"></script>
-<script src="widgets/stop.js"></script>
 <script src="widgets/infobox.js"></script>
 <script src="widgets/silbentext.js"></script>
 <script src="widgets/silbenwort.js?v=8"></script>
@@ -554,10 +550,9 @@ const WIDGETS = [];
 <script src="widgets/diagramm.js"></script>
 <script src="widgets/kuchendiagramm.js"></script>
 <script src="widgets/strichliste.js"></script>
-<script src="widgets/multitool.js"></script>
 <script src="widgets/group.js?v=2"></script>
 <script src="widgets/floatbox.js?v=4"></script>
-<script src="widgets/leinwand.js?v=20"></script>
+<script src="widgets/leinwand.js?v=22"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -1696,7 +1691,7 @@ function sfTaskBlock(id,w){
 const PUNKTE_EXCLUDE=new Set([
   'diagramm','kuchendiagramm',                                  // Mathe: Diagramme
   'heading','subheading','image','platzhalter','namedate',      // Allgemein: Struktur/Deko
-  'divider','stop','infobox','floatbox','group','textfluss'
+  'divider','infobox','floatbox','group','textfluss'
 ]);
 function widgetHasPunkte(w){
   if(PUNKTE_EXCLUDE.has(w.type))return false;
@@ -2834,7 +2829,10 @@ if (document.fonts && document.fonts.ready) {
         const px=Math.max(0,Math.min(r.bottom,caRect.bottom)-Math.max(r.top,caRect.top));
         if(px>bestPx){bestPx=px;best=i;}
       });
+      const vorher=activePage;
       activePage=best;
+      // Zeichenebene: beim Bearbeiten die Ebene der sichtbaren Seite auswählen — leinwand.js
+      if(best!==vorher&&typeof zeSeiteGewechselt==='function')zeSeiteGewechselt(best);
     });
   },{passive:true});
   applyViewZoom();
