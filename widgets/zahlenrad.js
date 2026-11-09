@@ -19,10 +19,24 @@ function zrShuffle(a) {
   return r;
 }
 
-// Kein Zehnerübergang (analog arithmetic.js noCarry)
+// Kein Zehnerübergang.
+// Plus: Ergänzen GENAU bis zum vollen Zehner/Hunderter (7+3=10, 23+7=30, 30+70=100) zählt NICHT als
+// Übergang – sonst hätte eine Mitte wie 10, 20, 100 nur Zerlegungen mit 0 (0+10, 10+0).
+// Erlaubt ist eine Summe von genau 10 nur an der untersten Stelle, an der überhaupt Ziffern stehen;
+// Überschreiten (8+5) und Weitertragen (55+45) bleiben ausgeschlossen.
 function zrNoCarry(a, b, op) {
   let aa = a, bb = b;
-  if (op === '+') { while (aa > 0 || bb > 0) { if ((aa % 10) + (bb % 10) >= 10) return false; aa = Math.floor(aa / 10); bb = Math.floor(bb / 10); } return true; }
+  if (op === '+') {
+    let uebertrag = 0, bisherNull = true;
+    while (aa > 0 || bb > 0) {
+      const da = aa % 10, db = bb % 10, s = da + db + uebertrag;
+      if (s > 10 || (s === 10 && (!bisherNull || uebertrag))) return false;
+      uebertrag = s === 10 ? 1 : 0;
+      bisherNull = bisherNull && da === 0 && db === 0;
+      aa = Math.floor(aa / 10); bb = Math.floor(bb / 10);
+    }
+    return true;
+  }
   if (op === '-') { while (aa > 0 || bb > 0) { if ((aa % 10) < (bb % 10)) return false; aa = Math.floor(aa / 10); bb = Math.floor(bb / 10); } return true; }
   return true;
 }
@@ -63,6 +77,9 @@ function zrMakeWheel(op, zr, n, ue, forcedCenter) {
   let pairs = zrPairsForCenter(op, zr, center, ue);
   // Rückfall (z.B. vorgegebene Mitte > Zahlenraum): op-abhängig gültig halten.
   if (!pairs.length) pairs = (op === '*' || op === '/') ? [{ innen: 1, aussen: center }] : [{ innen: 0, aussen: center }];
+  // Aufgaben mit 0 (0+10, 10−0) nur, wenn es sonst nicht genug verschiedene gibt
+  const ohneNull = pairs.filter(p => p.innen !== 0 && p.aussen !== 0);
+  if (ohneNull.length >= n) pairs = ohneNull;
   pairs = zrShuffle(pairs);
   const segs = [];
   for (let i = 0; i < n; i++) segs.push(pairs[i % pairs.length]); // zyklisch auffüllen, falls zu wenige
@@ -112,7 +129,7 @@ const ZR_MASSE = {
 };
 function zrMasse(d) { return ZR_MASSE[d.groesse] || ZR_MASSE.gross; }
 
-function zrWheelSvg(wh, d) {
+function zrWheelSvg(wh, d, wi) {
   const Z = zrMasse(d);
   const blank = d.blank || 'innen';
   const isActive = d.id === selId || _solutionsMode;
@@ -156,6 +173,18 @@ function zrWheelSvg(wh, d) {
     g += put(rInn, seg.innen, blankInnen);
     g += put(rAus, seg.aussen, blankAussen);
   }
+  // Ausgewählt: Zahlen anklicken → direkt ändern (Klickflächen über den Zahlen)
+  if (d.id === selId && !_solutionsMode && wi != null) {
+    const hit = (x, y, r, kind, si) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="transparent" style="cursor:text;"
+      onclick="zrEdit(event,${d.id},${wi},'${kind}',${si})"><title>Zahl ändern</title></circle>`;
+    g += hit(cx, cy, r0, 'center', -1);
+    const rh = Math.min((r1 - r0) / 2, (r2 - r1) / 2) * 0.95;
+    for (let i = 0; i < n; i++) {
+      const ac = start + (i + 0.5) * step;
+      g += hit(cx + rInn * Math.cos(ac), cy + rInn * Math.sin(ac), rh, 'innen', i);
+      g += hit(cx + rAus * Math.cos(ac), cy + rAus * Math.sin(ac), rh, 'aussen', i);
+    }
+  }
   return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${g}</svg>`;
 }
 
@@ -181,7 +210,7 @@ WIDGETS.push({
     // Breite dia → alle gleich breit.
     const dia = zrMasse(d).S;
     return atHtml(d) + flexDistribute(
-      wheels.map(wh => zrWheelSvg(wh, d)),
+      wheels.map((wh, wi) => zrWheelSvg(wh, d, wi)),
       { itemSize: `width:${dia}px;`, itemW: dia, d }
     );
   },
@@ -256,7 +285,8 @@ WIDGETS.push({
       `<button onclick="event.stopPropagation();zrGenerate(${d.id})"
         style="margin-top:6px;width:100%;padding:6px;border:none;border-radius:5px;
                background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;
-               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>`;
+               font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>
+      <div style="font-size:10.5px;color:#999;margin-top:6px;line-height:1.4;">Tipp: Zahl im Rad anklicken (Doppelklick, wenn nicht ausgewählt) und ändern. Die passende Gegenzahl wird automatisch nachgerechnet.</div>`;
   },
 });
 
@@ -277,4 +307,47 @@ function zrGenerate(id) {
   saveHistory();
   zrDoGenerate(w);
   render(); renderProps(id);
+}
+
+// ── Zahlen direkt im Rad ändern ──────────────────────────────────
+// Klick auf eine Zahl (Widget ausgewählt) → Eingabefeld an der Stelle. Die zugehörige
+// Zahl wird passend nachgerechnet, damit die Aufgabe stimmt:
+//   Mitte geändert  → Außenring neu (Innenring bleibt)
+//   Innen geändert  → Außen neu      ·   Außen geändert → Innen neu
+// Ergibt sich keine natürliche Zahl (z. B. 7 ÷ 2), wird die Eingabe nicht übernommen.
+function zrAussenAus(op, c, i) {
+  if (op === '+') return c - i;
+  if (op === '-') return c + i;
+  if (op === '*') return i ? c / i : NaN;
+  return c * i;                       // '/' und '1x1'
+}
+function zrInnenAus(op, c, a) {
+  if (op === '+') return c - a;
+  if (op === '-') return a - c;
+  if (op === '*') return a ? c / a : NaN;
+  return c ? a / c : NaN;             // '/' und '1x1'
+}
+const zrGanz = v => Number.isInteger(v) && v >= 0;
+
+function zrEdit(e, id, wi, kind, si) {
+  const w = widgets.find(x => x.id === id); if (!w || !w.wheels || !w.wheels[wi]) return;
+  const wh = w.wheels[wi];
+  const alt = kind === 'center' ? wh.center : wh.segs[si][kind];
+  bwZahlEingabe(e, alt, v => {
+    const op = wh.op || w.op || '/';
+    let neu = null;
+    if (kind === 'center') {
+      const segs = wh.segs.map(sg => ({ innen: sg.innen, aussen: zrAussenAus(op, v, sg.innen) }));
+      if (v >= 0 && segs.every(sg => zrGanz(sg.aussen))) neu = () => { wh.center = v; wh.segs = segs; };
+    } else if (kind === 'innen') {
+      const a = zrAussenAus(op, wh.center, v);
+      if (zrGanz(v) && zrGanz(a)) neu = () => { wh.segs[si] = { innen: v, aussen: a }; };
+    } else {
+      const i = zrInnenAus(op, wh.center, v);
+      if (zrGanz(v) && zrGanz(i)) neu = () => { wh.segs[si] = { innen: i, aussen: v }; };
+    }
+    if (!neu) return false;
+    saveHistory(); neu(); render();
+    return true;
+  }, 'Mit dieser Zahl geht die Aufgabe nicht auf (keine natürliche Zahl).');
 }

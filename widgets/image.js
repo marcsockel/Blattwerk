@@ -27,9 +27,18 @@ WIDGETS.push({
       if (d.flipH)  tfa.push('scaleX(-1)');
       if (d.flipV)  tfa.push('scaleY(-1)');
       const tf = tfa.length ? `transform:${tfa.join(' ')};` : '';
+      const quer = (d.rotate === 90 || d.rotate === 270) && d.ar > 0;
+      // Um 90°/270° gedreht: CSS-transform ändert das Layout nicht → ein Rahmen mit den
+      // GEDREHTEN Maßen (Breite/Höhe vertauscht) nimmt den Platz ein, das Bild liegt gedreht darin.
+      const bild = quer
+        ? `<div style="position:relative;width:min(100%,${(d.height / d.ar).toFixed(1)}px);aspect-ratio:${(1 / d.ar).toFixed(4)};flex-shrink:0;">
+             <img src="${d.src}"${filCls} style="position:absolute;left:50%;top:50%;width:${(d.ar * 100).toFixed(3)}%;height:${(100 / d.ar).toFixed(3)}%;
+               transform:translate(-50%,-50%) ${tfa.join(' ')};border-radius:${d.rund ? 6 : 0}px;display:block;${fil}"
+               ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)"></div>`
+        : `<img src="${d.src}"${filCls} onload="imgMerkeAr(${d.id},this)" style="max-width:100%;max-height:${d.height}px;width:auto;height:auto;object-fit:contain;border-radius:${d.rund ? 6 : 0}px;display:block;${fil}${tf}"
+          ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">`;
       return `<div style="${boxStyle}">
-        <img src="${d.src}"${filCls} style="max-width:100%;max-height:${d.height}px;width:auto;height:auto;object-fit:contain;border-radius:${d.rund ? 6 : 0}px;display:block;${fil}${tf}"
-          ondragover="event.preventDefault()" ondrop="event.stopPropagation();imgDrop(${d.id},event)">
+        ${bild}
         ${d.caption ? `<div style="font-size:11px;color:#888;margin-top:4px;text-align:${align};">${esc(d.caption)}</div>` : ''}
       </div>`;
     }
@@ -127,7 +136,21 @@ function imgRotate(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
   w.rotate = ((w.rotate || 0) + 90) % 360;
-  render(); renderProps(id);
+  const weiter = () => { render(); renderProps(id); };
+  // Für 90°/270° wird das Seitenverhältnis gebraucht (Platz mit vertauschten Maßen)
+  if (w.ar > 0 || !w.src) return weiter();
+  const im = new Image();
+  im.onload = () => { if (im.naturalWidth && im.naturalHeight) w.ar = im.naturalWidth / im.naturalHeight; weiter(); };
+  im.onerror = weiter;
+  im.src = w.src;
+}
+// Seitenverhältnis merken (für gedrehte Darstellung); neu zeichnen nur, wenn gerade quer gedreht
+function imgMerkeAr(id, el) {
+  const w = widgets.find(x => x.id === id); if (!w || !el.naturalWidth || !el.naturalHeight) return;
+  const ar = el.naturalWidth / el.naturalHeight;
+  if (Math.abs((w.ar || 0) - ar) < 0.001) return;
+  w.ar = ar;
+  if ((w.rotate === 90 || w.rotate === 270) && !(typeof patchWidget === 'function' && patchWidget(id))) render();
 }
 
 function imgOpenPicker(id) {
@@ -138,7 +161,7 @@ function imgOpenPicker(id) {
     onPick: (src, meta) => {
       const ww = widgets.find(x => x.id === id); if (!ww) return;
       saveHistory();
-      ww.src = src;
+      ww.src = src; delete ww.ar;
       if (!ww.caption && meta && meta.title) ww.caption = meta.title;
       render(); renderProps(id);
     },
@@ -152,11 +175,11 @@ function imgDrop(id, e) {
   window._imgDropGuard = true;
   setTimeout(() => { window._imgDropGuard = false; }, 200);
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = ev => bwBildVerkleinern(ev.target.result).then(src => {
     const w = widgets.find(x => x.id === id); if (!w) return;
     saveHistory();
-    w.src = ev.target.result;
+    w.src = src; delete w.ar;
     render(); renderProps(id);
-  };
+  });
   reader.readAsDataURL(file);
 }

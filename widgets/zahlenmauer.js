@@ -83,7 +83,7 @@ function zmMakeMauer(n, fillMode, zahlenraum) {
   return { base, shown: zmGenShown(n, fillMode) };
 }
 
-function zmSvg(mauer, n, fillMode, isActive=false) {
+function zmSvg(mauer, n, fillMode, isActive=false, edit=null) {
   const base = (mauer.base || []).slice(0, n);
   while (base.length < n) base.push(1);
   const shown = mauer.shown || zmGenShown(n, fillMode);
@@ -97,9 +97,10 @@ function zmSvg(mauer, n, fillMode, isActive=false) {
   }
 
   const cw = 54, ch = 34, stroke = 1.5;
+  const fs = 21, ty = Math.round(fs * 0.36);   // Schriftgröße der Zahlen (vorher 14) + Grundlinien-Versatz
   const svgW = n * cw + stroke;
   const svgH = n * ch + stroke;
-  let rects = "", texts = "";
+  let rects = "", texts = "", klick = "";
 
   for (let visualRow = 0; visualRow < n; visualRow++) {
     const gridRow = n - 1 - visualRow;
@@ -114,15 +115,17 @@ function zmSvg(mauer, n, fillMode, isActive=false) {
       const val = grid[gridRow][col];
       rects += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}"
         fill="#ffffff" stroke="#999" stroke-width="${stroke}"/>`;
+      if (edit) klick += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}" fill="transparent" style="cursor:text;"
+        onclick="zmEdit(event,${edit.id},${edit.mi},${gridRow},${col})"><title>Zahl ändern</title></rect>`;
       if (isShown)
-        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
-          font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#222">${val}</text>`;
+        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+ty}" text-anchor="middle"
+          font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#222">${val}</text>`;
       else if (isActive)
-        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+5}" text-anchor="middle"
-          font-family="'Grundschrift',sans-serif" font-size="14" font-weight="700" fill="#2563eb">${val}</text>`;
+        texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+ty}" text-anchor="middle"
+          font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${val}</text>`;
     }
   }
-  return `<svg width="${svgW}" height="${svgH}" style="display:block;" xmlns="http://www.w3.org/2000/svg">${rects}${texts}</svg>`;
+  return `<svg width="${svgW}" height="${svgH}" style="display:block;" xmlns="http://www.w3.org/2000/svg">${rects}${texts}${klick}</svg>`;
 }
 
 WIDGETS.push({
@@ -141,7 +144,8 @@ WIDGETS.push({
     // backward compat: if no mauern array, build from old base/shown
     const mauern = d.mauern || [{ base: d.base || [], shown: d.shown }];
     const active = d.id === selId || _solutionsMode;
-    const svgs = mauern.slice(0, anzahl).map(m => zmSvg(m, n, fillMode, active));
+    const edit = d.id === selId && !_solutionsMode;
+    const svgs = mauern.slice(0, anzahl).map((m, mi) => zmSvg(m, n, fillMode, active, edit ? { id: d.id, mi } : null));
     const itemW   = Math.round(n * 54 + 2);
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js).
     return atHtml(d) + flexDistribute(svgs, { itemSize: `width:${itemW}px;`, itemW, d });
@@ -184,6 +188,33 @@ WIDGETS.push({
       (basisInputs ? pr("Basissteine (von links)", `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;">${basisInputs}</div>`) : "") +
       `<button onclick="zmRandomBase(${d.id})"
         style="margin-top:8px;width:100%;background:#313244;color:#cdd6f4;border:none;border-radius:4px;padding:5px;cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;">
-        🎲 Zufällige Basiszahlen</button>` ;
+        🎲 Zufällige Basiszahlen</button>
+      <div style="font-size:10.5px;color:#999;margin-top:6px;line-height:1.4;">Tipp: Stein in der Mauer anklicken (Doppelklick, wenn nicht ausgewählt) und Zahl ändern. Bei oberen Steinen wird ein äußerer Basisstein passend angepasst, der Rest rechnet sich nach.</div>` ;
   },
 });
+
+// ── Stein direkt in der Mauer ändern ─────────────────────────────
+// Basisstein → direkt. Oberer Stein (Zeile r, Spalte c) = Σ C(r,k)·base[c+k]: der linke
+// (sonst der rechte) äußere Basisstein darunter geht mit Gewicht 1 ein → um die Differenz
+// ändern, dann stimmt die ganze Mauer wieder. Basissteine dürfen nicht negativ werden.
+function zmEdit(e, id, mi, r, c) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  if (typeof zmEnsureMauern === 'function') zmEnsureMauern(w);
+  const m = w.mauern[mi]; if (!m) return;
+  const n = w.rows_count || 4;
+  const base = (m.base || []).slice(0, n).map(v => +v);
+  while (base.length < n) base.push(1);
+  const wert = (b, rr, cc) => { let s = 0, bin = 1; for (let k = 0; k <= rr; k++) { s += bin * b[cc + k]; bin = bin * (rr - k) / (k + 1); } return s; };
+  const alt = wert(base, r, c);
+  bwZahlEingabe(e, alt, v => {
+    if (v < 0) return false;
+    const diff = v - alt, nb = base.slice();
+    if (base[c] + diff >= 0) nb[c] += diff;
+    else if (base[c + r] + diff >= 0) nb[c + r] += diff;
+    else return false;
+    saveHistory();
+    m.base = nb;
+    render(); renderProps(id);
+    return true;
+  }, 'So klein geht dieser Stein nicht – die Steine darunter ergeben schon mehr.');
+}

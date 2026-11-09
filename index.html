@@ -132,6 +132,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wwrap{position:relative;margin-bottom:14px;border-radius:6px;outline:2px solid transparent;transition:outline-color .15s;display:flex;flex-direction:column;}
 .wwrap.ecke-eckig{border-radius:0;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
+/* Zeichenebene im Bearbeiten-Modus: doppelt dicker grüner Rahmen (Grün wie Ω-Knopf oben rechts) */
+.wwrap.zeichenebene.sel,.wwrap.zeichenebene.sel:hover{outline:none;}
+.wwrap.zeichenebene.sel::after{content:'';position:absolute;inset:0;border:4px solid var(--acc2);pointer-events:none;z-index:100;}
+@media print{.wwrap.zeichenebene::after{display:none!important;}}
 .wacts{display:none;position:absolute;top:-13px;gap:3px;z-index:10;}
 .wacts.wacts-right{right:3px;left:auto;}
 .wacts.wacts-left{left:3px;right:auto;}
@@ -197,6 +201,8 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
 @page{size:A4 portrait;margin:0;}
 .pg-num{display:none;position:absolute;bottom:8mm;right:10mm;font-size:10px;color:#333;}
 /* Dezente Marke mittig im Footer (Höhe der Seitenzahl) — nur im Druck sichtbar. */
+/* Unsichtbares Kürzel unten rechts (weiß auf weiß) — nur im Druck */
+.pg-sig{display:none;position:absolute;bottom:5mm;right:5mm;font-size:7px;font-weight:700;color:#fff;font-family:'Nunito',sans-serif;pointer-events:none;}
 .pg-brand{display:none;position:absolute;bottom:8mm;left:0;right:0;text-align:center;font-size:8px;font-weight:600;letter-spacing:1px;color:#b8b4aa;font-family:'Nunito',sans-serif;pointer-events:none;}
 @media print{
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -208,6 +214,7 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
   img.img-sw{filter:grayscale(100%)!important;} /* Schwarz-Weiß-Bildeffekt übersteht den globalen filter:none-Reset */
   #toolbar,#sidebar,#props,#props-resizer,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
   .tbl-selcell{outline:none!important;}
+  input,textarea,[contenteditable]{caret-color:transparent!important;} /* blinkender Cursor eines fokussierten Felds (z. B. Eingabekästchen) nicht mitdrucken */
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
   .lw-canvas{outline:none!important;} .lw-canvas .lw-ui,.lw-marquee{display:none!important;} /* Leinwand/Zeichenebene: Auswahl-Griffe nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
@@ -266,6 +273,7 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
      abgerundete Rechteck; .empty-del der ✕-Button der leeren Seite. */
   .page-hint,.empty-del{display:none!important;}
   .pg-brand{display:block;}
+  .pg-sig{display:block;}
   .page-end,.page-spacer{display:none;}
   body{background:#fff;height:auto;}
   .wwrap{outline:none!important;margin-bottom:14px;} /* = Bildschirm-Abstand → WYSIWYG (war 12px, Druck dadurch enger) */
@@ -481,17 +489,17 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=28"></script>
-<script src="main/img_picker.js?v=3"></script>
+<script src="main/helpers.js?v=30"></script>
+<script src="main/img_picker.js?v=4"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
-<script src="widgets/text.js"></script>
+<script src="widgets/text.js?v=7"></script>
 <script src="widgets/textfluss.js"></script>
-<script src="widgets/image.js?v=3"></script>
+<script src="widgets/image.js?v=5"></script>
 <script src="widgets/platzhalter.js"></script>
 <script src="widgets/namedate.js?v=3"></script>
-<script src="widgets/instruction.js?v=5"></script>
+<script src="widgets/instruction.js?v=6"></script>
 <script src="widgets/divider.js?v=3"></script>
 <script src="widgets/linebox.js?v=3"></script>
 <script src="widgets/checkbox.js?v=4"></script>
@@ -505,18 +513,17 @@ const WIDGETS = [];
 <script src="widgets/ep_shared.js?v=4"></script>
 <script src="widgets/numberline.js"></script>
 <script src="widgets/geometry.js"></script>
-<script src="widgets/zahlenmauer.js?v=4"></script>
+<script src="widgets/zahlenmauer.js?v=6"></script>
 <script src="widgets/zahlenhaus.js?v=3"></script>
 <script src="widgets/uhr.js"></script>
 <script src="widgets/zeitspanne.js"></script>
-<script src="widgets/kaestchen.js?v=3"></script>
-<script src="widgets/eingabekaestchen.js?v=5"></script>
-<script src="widgets/halbschriftlich.js?v=7"></script>
-<script src="widgets/schriftlich_addition.js?v=3"></script>
-<script src="widgets/schriftlich_subtraktion.js?v=3"></script>
-<script src="widgets/schriftlich_multiplikation.js?v=3"></script>
-<script src="widgets/schriftlich_division.js?v=4"></script>
-<script src="widgets/bildwort.js?v=7"></script>
+<script src="widgets/eingabekaestchen.js?v=9"></script>
+<script src="widgets/halbschriftlich.js?v=8"></script>
+<script src="widgets/schriftlich_addition.js?v=4"></script>
+<script src="widgets/schriftlich_subtraktion.js?v=4"></script>
+<script src="widgets/schriftlich_multiplikation.js?v=4"></script>
+<script src="widgets/schriftlich_division.js?v=5"></script>
+<script src="widgets/bildwort.js?v=8"></script>
 <script src="widgets/auslaut.js"></script>
 <script src="widgets/anlaut.js?v=7"></script>
 <script src="widgets/anlaut_zuordnung.js?v=3"></script>
@@ -532,7 +539,7 @@ const WIDGETS = [];
 <script src="widgets/silbenwort.js?v=8"></script>
 <script src="widgets/crossword.js"></script>
 <script src="widgets/multiplechoice.js?v=5"></script>
-<script src="widgets/zahlenkette.js?v=5"></script>
+<script src="widgets/zahlenkette.js?v=8"></script>
 <script src="widgets/nachbarzahlen.js?v=3"></script>
 <script src="widgets/nachbarzahlen_tabelle.js?v=3"></script>
 <script src="widgets/stellenwert.js?v=4"></script>
@@ -541,18 +548,18 @@ const WIDGETS = [];
 <script src="widgets/zwanzigerfeld.js?v=4"></script>
 <script src="widgets/zwanzigerrahmen.js?v=3"></script>
 <script src="widgets/rechendreiecke.js?v=4"></script>
-<script src="widgets/zahlenrad.js?v=5"></script>
+<script src="widgets/zahlenrad.js?v=8"></script>
 <script src="widgets/rechentabelle.js?v=4"></script>
 <script src="widgets/groessen.js?v=3"></script>
 <script src="widgets/groessentafel.js"></script>
 <script src="widgets/hunderterfeld.js?v=3"></script>
-<script src="widgets/zahlentafel.js"></script>
+<script src="widgets/zahlentafel.js?v=20"></script>
 <script src="widgets/diagramm.js"></script>
 <script src="widgets/kuchendiagramm.js"></script>
 <script src="widgets/strichliste.js"></script>
 <script src="widgets/group.js?v=2"></script>
 <script src="widgets/floatbox.js?v=4"></script>
-<script src="widgets/leinwand.js?v=22"></script>
+<script src="widgets/leinwand.js?v=27"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -887,7 +894,6 @@ function fitCanvasPostLayout(root, opts) {
       ta.style.height = ta.scrollHeight + 'px';
     });
   }
-  scope.querySelectorAll('svg.kaestchen-svg').forEach(svg => fitKaestchenSvg(svg));
   if (typeof ekzFit === 'function') scope.querySelectorAll('[data-ekz-fit]').forEach(el => ekzFit(el));
   scope.querySelectorAll('svg.numberline-svg').forEach(svg => {
     if (typeof fitNumberlineSvg === 'function') fitNumberlineSvg(svg);
@@ -1012,7 +1018,11 @@ function makeWrap(w, idx, rowCtx) {
       <button class="wa del" onclick="event.stopPropagation();del(${w.id})" title="Löschen">✕</button>
     </div>`)+`
     <div class="${winnerClass(sw)}" style="${winnerStyle(sw)}">${frameInkInsert(sw)}${def.render(w)}${ptHtml(w)}</div>`;
-  div.addEventListener('click',()=>sel(w.id),true); // capture: feuert vor innerem stopPropagation
+  div.addEventListener('click',e=>{
+    // Klick in einen gerade direkt bearbeiteten Text (text.js) → nicht neu zeichnen, sonst ist der Editor weg
+    if(typeof _inlineEd!=='undefined'&&_inlineEd&&_inlineEd.el.contains(e.target))return;
+    sel(w.id);
+  },true); // capture: feuert vor innerem stopPropagation
   div.onclick=e=>e.stopPropagation();               // bubble: verhindert page-desel
   div.ondragstart=e=>{if(isFlowCont){e.preventDefault();return;}dragSrc=idx;e.dataTransfer.effectAllowed="move";};
   div.ondragover=e=>{
@@ -1168,6 +1178,7 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
   }
   const pgNumEl=document.createElement("div");pgNumEl.className="pg-num"+(pageIdx%2===1?" pg-left":"");pgNumEl.textContent=pageIdx+1;pageDiv.appendChild(pgNumEl);
   const brandEl=document.createElement("div");brandEl.className="pg-brand";brandEl.textContent="Blattwerkstatt";pageDiv.appendChild(brandEl);
+  const sigEl=document.createElement("div");sigEl.className="pg-sig";sigEl.textContent="BWS";pageDiv.appendChild(sigEl);
   if(pageWidgets.length===0){
     const hint=document.createElement("div");hint.className="page-hint";
     hint.textContent="← Widget aus der Liste wählen und einfügen";
@@ -1610,7 +1621,8 @@ function sel(id){
     // selSafe-Widgets (z.B. eingabekaestchen) NICHT neu rendern: ihr Inhalt
     // hängt nicht von der Auswahl ab, und ein innerHTML-Re-Render würde dem
     // gerade bearbeiteten Eingabefeld den Fokus/Cursor stehlen.
-    if(def.meta&&def.meta.selSafe)return;
+    // selRender: nur beim WECHSEL der Auswahl neu zeichnen (z. B. Kästchenfeld: Bild ↔ Eingabefelder)
+    if(def.meta&&def.meta.selSafe&&!(def.meta.selRender&&prevId!==id))return;
     const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
     if(winner) winnerInnerRefresh(w, winner);
   });
@@ -1624,7 +1636,7 @@ function desel(){
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
     const w=widgets.find(x=>x.id===prevId);
-    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&!(def.meta&&def.meta.selSafe))winnerInnerRefresh(w,winner);}
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&(!(def.meta&&def.meta.selSafe)||def.meta.selRender))winnerInnerRefresh(w,winner);}
   }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }

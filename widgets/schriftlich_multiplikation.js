@@ -201,3 +201,17 @@ function smUpdProp(id, key, val) {
   w.aufgaben = smGen(w.anzahl||4, w.zahlenraum||100, w.modus||"einstellig", w.uebertrag||false);
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.schriftlich_multiplikation = {
+  text: (w, i) => (w.aufgaben[i] || []).join(' · '),
+  setzen: (w, i, txt) => {
+    const z = bwAufgabeZahlen(txt, /[·×xX*]/);
+    if (!z || z.length !== 2 || z.some(v => v < 1)) return 'Bitte so eingeben: 234 · 6';
+    const zwei = (w.modus || 'einstellig') === 'zweistellig';
+    if (!zwei && z[1] > 9) return 'Einstellig: die zweite Zahl darf nur eine Ziffer haben.';
+    if (zwei && (z[1] < 10 || z[1] > 99)) return 'Zweistellig: die zweite Zahl muss zweistellig sein.';
+    w.aufgaben[i] = z;
+    return true;
+  },
+};

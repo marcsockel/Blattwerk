@@ -246,3 +246,16 @@ function ssSetLuecken(id, val) {
   }
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.schriftlich_subtraktion = {
+  text: (w, i) => (w.aufgaben[i] || []).join(' − '),
+  setzen: (w, i, txt) => {
+    const z = bwAufgabeZahlen(txt, /[-−–]/);
+    if (!z || z.length !== 2) return 'Bitte so eingeben: 534 − 278';
+    if (z[0] <= z[1]) return 'Die erste Zahl muss größer sein als die zweite.';
+    w.aufgaben[i] = z;
+    if (w.luecken) { const cols = ssCalcCols(w.aufgaben); w.aufgabenGaps = w.aufgaben.map(a => ssGenGaps(a, cols, 3)); }
+    return true;
+  },
+};

@@ -113,7 +113,11 @@ WIDGETS.push({
     const ketten       = d.ketten || [];
     const ops          = d.ops || [];
     const ks           = d.kastenGroesse || 34;
-    const fs           = Math.round(ks * 0.42);
+    const fs           = Math.round(ks * 0.42);   // Pfeil-Beschriftung (bestimmt die Kettenbreite → zkPasst)
+    // Zahlen in den Kästen: so groß, wie es die längste Zahl des Zahlenraums zulässt
+    // (bis 20: 2 Stellen → deutlich größer; bis 1000: 4 Stellen → kleiner), nie kleiner als bisher.
+    const stellen      = String(d.zahlenraum || 20).length;
+    const fsBox        = Math.max(fs, Math.round(Math.min(ks * 0.62, (ks - 7) / (stellen * 0.56))));
     const zeigeStart   = d.zeigeStart   !== false;
     const zeigeZwischen= d.zeigeZwischen|| false;
     const zeigeEnde    = d.zeigeEnde    || false;
@@ -121,9 +125,9 @@ WIDGETS.push({
 
     const box = (val, show) => {
       const inner = show
-        ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;color:#222;">${val}</span>`
+        ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fsBox}px;color:#222;">${val}</span>`
         : isActive
-          ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fs}px;color:#2563eb;font-weight:700;">${val}</span>`
+          ? `<span style="font-family:'DidactGothic7',sans-serif;font-size:${fsBox}px;color:#2563eb;font-weight:700;">${val}</span>`
           : '';
       return `<div style="width:${ks}px;height:${ks}px;border:1.5px solid #555;border-radius:3px;
                            display:inline-flex;align-items:center;justify-content:center;
@@ -160,7 +164,7 @@ WIDGETS.push({
         const isLast = i === chainOps.length - 1;
         html += box(vals[i+1], isLast ? zeigeEnde : zeigeZwischen);
       });
-      return `<div style="display:flex;align-items:center;margin-bottom:10px;flex-wrap:nowrap;">${html}</div>`;
+      return `<div data-zk-kette="1" style="display:flex;align-items:center;margin-bottom:10px;flex-wrap:nowrap;">${html}</div>`;
     });
 
     return atHtml(d) + `<div>${rows.join('')}</div>`;
@@ -285,15 +289,17 @@ function zkWuerfelnOps(id) {
 
 // Passt eine Kette mit diesen Einstellungen in die Zeile? Optionen, die über den Rand
 // führen würden, werden in den Eigenschaften gesperrt (es wird NICHT verkleinert).
-// Breite ≈ (Schritte+1)·Kasten + Schritte·(Pfeil ≈ 0,357·Kasten·(Stellen+0,5) + 4).
+// Breite exakt wie im Render: (Schritte+1)·Kasten + Schritte·(Pfeilbreite + 4px Abstand),
+// Pfeilbreite = round(0,85·round(0,42·Kasten))·(Stellen+0,5). Nutzbare Breite (volle Zeile) ≈ 625px.
 function zkPasst(d, o = {}) {
   const ks = o.ks ?? (d.kastenGroesse || 34);
   const zr = o.zr ?? (d.zahlenraum || 20);
   const n  = o.n  ?? (d.nSchritte || 4);
   const valDigits = zr >= 1000 ? 3 : zr >= 100 ? 2 : 1;
   const frac = ({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1})[d.widthFraction || (d.halfWidth ? '1/2' : 'full')] || 1;
-  const breite = ks * ((n + 1) + n * 0.357 * (valDigits + 0.5)) + 4 * n;
-  return breite <= 615 * frac;
+  const pfeil = Math.round(Math.round(ks * 0.42) * 0.85) * (valDigits + 0.5);
+  const breite = (n + 1) * ks + n * (pfeil + 4);
+  return breite <= 623 * frac;
 }
 // Größter noch passender Wert (für max-Attribute der Zahlenfelder)
 function zkMax(d, key, lo, hi) {
@@ -301,3 +307,29 @@ function zkMax(d, key, lo, hi) {
   for (let v = lo; v <= hi; v++) if (zkPasst(d, { [key]: v })) best = v;
   return best;
 }
+
+// Kette direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Text: "5 +3 −2 ×4 :2"
+BW_AUFGABE.zahlenkette = {
+  ziel: '[data-zk-kette]',
+  text: (w, i) => {
+    const k = (w.ketten || [])[i]; if (!k) return null;
+    return [k.vals[0], ...(k.ops || []).map(o => `${o.op === '-' ? '−' : o.op}${o.val}`)].join(' ');
+  },
+  setzen: (w, i, txt) => {
+    const t = String(txt).replace(/[−–]/g, '-').replace(/[x*·]/g, '×').replace(/÷/g, ':').replace(/\s+/g, '');
+    const m = t.match(/^(\d+)((?:[-+×:]\d+)+)$/);
+    if (!m) return 'Bitte so eingeben: 5 +3 −2 ×4 :2';
+    const start = +m[1];
+    const ops = [...m[2].matchAll(/([-+×:])(\d+)/g)].map(x => ({ op: x[1], val: +x[2] }));
+    let cur = start;
+    for (const o of ops) {
+      if (o.op === '+') cur += o.val;
+      else if (o.op === '-') cur -= o.val;
+      else if (o.op === '×') cur *= o.val;
+      else { if (!o.val || cur % o.val) return `${cur} : ${o.val} geht nicht auf.`; cur /= o.val; }
+      if (cur < 0) return 'Unterwegs darf keine Zahl kleiner als 0 werden.';
+    }
+    w.ketten[i] = { start, ops, vals: zkCompute(start, ops) };
+    return true;
+  },
+};

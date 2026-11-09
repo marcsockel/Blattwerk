@@ -275,3 +275,16 @@ function sdUpdProp(id, key, val) {
   w.aufgaben = sdGen(w.anzahl || 4, w.zahlenraum || 1000, w.teiler ?? 0, w.mitRest || false);
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.schriftlich_division = {
+  text: (w, i) => (w.aufgaben[i] || []).join(' : '),
+  setzen: (w, i, txt) => {
+    const z = bwAufgabeZahlen(txt, /[:÷]/);
+    if (!z || z.length !== 2 || z[1] < 1) return 'Bitte so eingeben: 852 : 4';
+    if (!w.mitRest && z[0] % z[1] !== 0) return 'Ohne Rest: die Aufgabe muss aufgehen.';
+    if (!sdCalcSteps(z[0], z[1]).length) return 'Diese Aufgabe lässt sich nicht schriftlich teilen.';
+    w.aufgaben[i] = z;
+    return true;
+  },
+};

@@ -251,3 +251,15 @@ function saSetLuecken(id, val) {
   }
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.schriftlich_addition = {
+  text: (w, i) => (w.aufgaben[i] || []).join(' + '),
+  setzen: (w, i, txt) => {
+    const z = bwAufgabeZahlen(txt, /[+]/);
+    if (!z || z.length > 3 || z.some(v => v < 1)) return 'Bitte so eingeben: 345 + 278 (2 oder 3 Zahlen)';
+    w.aufgaben[i] = z;
+    if (w.luecken) { const cols = saCalcCols(w.aufgaben); w.aufgabenGaps = w.aufgaben.map(a => saGenGaps(a, cols, 3)); }
+    return true;
+  },
+};

@@ -79,6 +79,41 @@ function closeImgPicker() {
   if (file) file.value = "";
 }
 
+// ── Bilder beim Einfügen verkleinern (Arbeitsspeicher / Dateigröße) ───────────────
+// Eingebettete Rasterbilder (data:-URLs) werden auf höchstens BW_BILD_MAX px (längste Seite)
+// verkleinert: Fotos ohne Transparenz → JPEG, mit Transparenz → PNG. SVG, GIF und
+// Web-Adressen bleiben unverändert. 2000 px reichen für ~17 cm Bildbreite in 300 dpi.
+const BW_BILD_MAX = 2000;
+function bwBildVerkleinern(src) {
+  return new Promise(resolve => {
+    if (typeof src !== 'string' || !/^data:image\/(png|jpe?g|webp|bmp)/i.test(src)) return resolve(src);
+    const im = new Image();
+    im.onload = () => {
+      try {
+        const w0 = im.naturalWidth, h0 = im.naturalHeight;
+        if (!w0 || !h0) return resolve(src);
+        const k = Math.min(1, BW_BILD_MAX / Math.max(w0, h0));
+        if (k === 1 && src.length < 1.5e6) return resolve(src);       // klein genug → unverändert
+        const w = Math.max(1, Math.round(w0 * k)), h = Math.max(1, Math.round(h0 * k));
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        const g = c.getContext('2d');
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(im, 0, 0, w, h);
+        // Transparenz vorhanden? (nur bei Formaten, die sie haben können)
+        let transparent = false;
+        if (!/^data:image\/jpe?g/i.test(src)) {
+          const px = g.getImageData(0, 0, w, h).data;
+          for (let i = 3; i < px.length; i += 16) if (px[i] < 250) { transparent = true; break; }
+        }
+        const out = transparent ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.88);
+        resolve(out.length < src.length ? out : src);
+      } catch (e) { resolve(src); }
+    };
+    im.onerror = () => resolve(src);
+    im.src = src;
+  });
+}
+
 function imgPickerApply(src, meta) {
   const cb = _imgPickerCb;
   _imgPickerFilePending = false;
@@ -90,7 +125,7 @@ function imgPickerApply(src, meta) {
   _imgPickerPrefill = "";
   const file = document.getElementById("img-picker-file");
   if (file) file.value = "";
-  if (cb) cb(src, meta || {});
+  if (cb) bwBildVerkleinern(src).then(s => cb(s, meta || {}));
 }
 
 function imgPickerRenderHome() {
@@ -292,7 +327,7 @@ async function imgPickerCommonsLoad() {
   try {
     let url = `https://commons.wikimedia.org/w/api.php?action=query`
       + `&generator=search&gsrsearch=${encodeURIComponent(_imgPickerComQuery)}&gsrnamespace=6&gsrlimit=24`
-      + `&prop=imageinfo&iiprop=url&iiurlwidth=120&format=json&origin=*`;
+      + `&prop=imageinfo&iiprop=url|size&iiurlwidth=120&format=json&origin=*`;
 
     // Fortsetzungs-Parameter der vorigen Seite anhängen
     if (_imgPickerComContinue) {
@@ -307,11 +342,18 @@ async function imgPickerCommonsLoad() {
 
     const newItems = Object.values(data.query?.pages || {})
       .sort((a, b) => (a.index || 0) - (b.index || 0))
-      .map(p => ({
-        thumb: p.imageinfo?.[0]?.thumburl,
-        url:   p.imageinfo?.[0]?.url,
+      .map(p => {
+        // Eingefügt wird höchstens eine BW_BILD_MAX px breite Fassung (Wikimedia-Thumbnail),
+        // nicht die oft riesige Originaldatei. Kleinere Bilder und SVG (Vektor) bleiben Original.
+        const ii = p.imageinfo?.[0] || {};
+        const svg = /\.svg$/i.test(ii.url || '');
+        const gross = !svg && ii.width > BW_BILD_MAX && ii.thumburl && ii.thumburl.includes('/120px-')
+          ? ii.thumburl.replace('/120px-', `/${BW_BILD_MAX}px-`) : ii.url;
+        return {
+        thumb: ii.thumburl,
+        url:   gross,
         title: p.title?.replace(/^File:/i, "").replace(/\.\w+$/, "") || "",
-      }))
+      }; })
       .filter(p => p.thumb && p.url && /\.(png|jpg|jpeg|svg|gif|webp)/i.test(p.url));
 
     if (!_imgPickerResults.length && !newItems.length) {

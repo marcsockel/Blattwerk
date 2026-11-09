@@ -442,3 +442,19 @@ function haRoll(id) {
   haGen(w);
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+['halbadd', 'halbsub', 'halbmul', 'halbdiv'].forEach(typ => {
+  BW_AUFGABE[typ] = {
+    text: (w, i) => { const a = w.aufgaben[i]; if (!a) return null; const op = haOp(w); return `${a[0]} ${op === '-' ? '−' : op} ${a[1]}`; },
+    setzen: (w, i, txt) => {
+      const op = haOp(w);
+      const z = bwAufgabeZahlen(txt, op === '-' ? /[-−–]/ : op === '·' ? /[·×xX*]/ : op === ':' ? /[:÷]/ : /[+]/);
+      if (!z || z.length !== 2) return `Bitte so eingeben: 47 ${op === '-' ? '−' : op} 25`;
+      if (op === '-' && z[0] <= z[1]) return 'Die erste Zahl muss größer sein als die zweite.';
+      if (op === ':' && (z[1] < 1 || z[0] % z[1] !== 0)) return 'Die Division muss aufgehen.';
+      w.aufgaben[i] = z;
+      return true;
+    },
+  };
+});

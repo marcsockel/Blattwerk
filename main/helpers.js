@@ -717,3 +717,112 @@ function screenToElLocal(clientX, clientY, el) {
   const z = viewZoomScale();
   return { x: (clientX - r.left) / z, y: (clientY - r.top) / z };
 }
+
+// ── Zahl direkt im Blatt ändern (Zahlenrad, Zahlenmauer …) ─────────
+// Öffnet an der Klickstelle ein kleines Eingabefeld. Enter übernimmt, Esc bricht ab.
+// uebernehmen(zahl) → true = übernommen (Feld schließt), false = passt nicht (Feld wird rot,
+// bleibt offen; meldung als Tooltip). Klick daneben verwirft eine ungültige Eingabe.
+function bwZahlEingabe(e, alt, uebernehmen, meldung) {
+  e.stopPropagation();
+  document.getElementById('bw-zahl-edit')?.remove();
+  const inp = document.createElement('input');
+  inp.id = 'bw-zahl-edit'; inp.type = 'text'; inp.inputMode = 'numeric'; inp.value = alt;
+  inp.style.cssText = `position:fixed;left:${e.clientX - 32}px;top:${e.clientY - 16}px;width:64px;height:32px;z-index:9999;
+    box-sizing:border-box;text-align:center;font:700 17px 'DidactGothic7',sans-serif;border:2px solid #3b6fd4;border-radius:6px;
+    outline:none;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.25);`;
+  document.body.appendChild(inp);
+  inp.focus(); inp.select();
+  let fertig = false;
+  const schliessen = () => { fertig = true; inp.remove(); };
+  const pruefen = () => {
+    if (fertig) return;
+    const v = parseInt(inp.value.trim(), 10);
+    if (!Number.isFinite(v) || v === alt) { schliessen(); return; }
+    if (uebernehmen(v)) { schliessen(); return; }
+    inp.style.borderColor = '#e64553';
+    inp.title = meldung || 'Diese Zahl passt hier nicht.';
+    inp.focus(); inp.select();
+  };
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); pruefen(); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); schliessen(); }
+  };
+  inp.onblur = () => { if (!fertig) { pruefen(); if (!fertig) schliessen(); } };
+  inp.oninput = () => { inp.style.borderColor = '#3b6fd4'; inp.title = ''; };
+}
+
+// ── Aufgabe direkt im Blatt ändern (Schriftlich, Halbschriftlich, Zahlenkette …) ──
+// Widgets melden sich in BW_AUFGABE an: { text(w,i) → "345 + 278", setzen(w,i,text) → true |
+// Fehlertext, ziel: CSS-Selektor eines Aufgaben-Elements (Standard: .series-item) }.
+// Ist das Widget ausgewählt, öffnet ein Klick auf eine Aufgabe ein Eingabefeld (sonst Doppelklick).
+const BW_AUFGABE = {};
+function bwAufgabeEingabe(e, alt, uebernehmen) {
+  document.getElementById('bw-zahl-edit')?.remove();
+  const inp = document.createElement('input');
+  inp.id = 'bw-zahl-edit'; inp.type = 'text'; inp.value = alt;
+  const w = Math.max(120, Math.min(320, alt.length * 11 + 30));
+  inp.style.cssText = `position:fixed;left:${e.clientX - w / 2}px;top:${e.clientY - 17}px;width:${w}px;height:34px;z-index:9999;
+    box-sizing:border-box;text-align:center;font:700 17px 'DidactGothic7',sans-serif;border:2px solid #3b6fd4;border-radius:6px;
+    outline:none;background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.25);`;
+  document.body.appendChild(inp);
+  inp.focus(); inp.select();
+  let fertig = false;
+  const schliessen = () => { fertig = true; inp.remove(); };
+  const pruefen = () => {
+    if (fertig) return;
+    const t = inp.value.trim();
+    if (!t || t === alt) { schliessen(); return; }
+    const r = uebernehmen(t);
+    if (r === true) { schliessen(); return; }
+    inp.style.borderColor = '#e64553';
+    inp.title = typeof r === 'string' ? r : 'So geht die Aufgabe nicht.';
+    inp.focus();
+  };
+  inp.onkeydown = ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); pruefen(); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); schliessen(); }
+  };
+  inp.onblur = () => { if (!fertig) { pruefen(); if (!fertig) schliessen(); } };
+  inp.oninput = () => { inp.style.borderColor = '#3b6fd4'; inp.title = ''; };
+}
+let _bwAufgabeKlick = null;
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'bw-zahl-edit') return;
+  if (typeof _solutionsMode !== 'undefined' && _solutionsMode) return;
+  const t = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+  const wrap = t.closest && t.closest('.wwrap[data-id]');
+  const id = wrap ? +wrap.dataset.id : null;
+  const w = id != null ? widgets.find(x => x.id === id) : null;
+  const A = w && BW_AUFGABE[w.type];
+  const sel = A ? (A.ziel || '.series-item') : null;
+  const item = sel ? t.closest(sel) : null;
+  if (!item || !wrap.contains(item)) { _bwAufgabeKlick = null; return; }
+  const i = [...wrap.querySelectorAll(sel)].indexOf(item);
+  const jetzt = Date.now(), L = _bwAufgabeKlick;
+  const kurzDavor = L && L.id === id && L.i === i && jetzt - L.t < 450;
+  if (kurzDavor || selId === id) {
+    _bwAufgabeKlick = null;
+    const alt = A.text(w, i); if (alt == null) return;
+    const ev = { clientX: e.clientX, clientY: e.clientY };
+    setTimeout(() => {
+      if (selId !== id) sel(id);
+      bwAufgabeEingabe(ev, alt, txt => {
+        const vorher = _snap();
+        const r = A.setzen(w, i, txt);
+        if (r !== true) return r;
+        saveHistory(vorher);
+        render(); renderProps(id);
+        return true;
+      });
+    }, 0);
+    return;
+  }
+  _bwAufgabeKlick = { id, i, t: jetzt };
+}, true);
+// "345 + 278 =" → [345, 278], wenn nur das erlaubte Rechenzeichen vorkommt (zeichenRe: z. B. /[+]/)
+function bwAufgabeZahlen(txt, zeichenRe) {
+  const t = String(txt).replace(/=\s*$/, '').trim();
+  const teile = t.split(zeichenRe).map(v => v.trim());
+  if (teile.length < 2 || !teile.every(v => /^\d+$/.test(v))) return null;
+  return teile.map(v => parseInt(v, 10));
+}

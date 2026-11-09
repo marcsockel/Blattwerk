@@ -320,6 +320,8 @@
      der nächsten Seite weiterfließen – die Fortsetzung gehört weiter zum selben Text und wird mit ihm
      bearbeitet. Ist die Option aus, bleibt der Text ein Block und wandert als Ganzes auf die nächste Seite.
      Zusätzlich gibt es eine Zeilenbeschriftung (Zeilennummern alle 5 Zeilen) für Lesetexte.</p>
+  <div class="tip"><b>Schnell ändern:</b> Doppelklick auf den Text im Blatt – er wird direkt dort editierbar.
+     Klick daneben oder <b>Esc</b> beendet die Bearbeitung. (Bei „Über Seiten fließen" nur rechts im Editor.)</div>
 </article>
 
 <article id="w-instruction" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Aufgabentext">
@@ -327,6 +329,7 @@
   <span class="cattag allgemein">Allgemein</span>
   <p>Eine hervorgehobene Aufgabenstellung mit farbiger Markierung am linken Rand – z. B. <i>„Lies den Text und
      beantworte die Fragen."</i> Gut als Anweisung über mehreren zusammengehörigen Widgets.</p>
+  <p><b>Schnell ändern:</b> Doppelklick auf den Text im Blatt – er wird direkt dort editierbar; Klick daneben oder <b>Esc</b> beendet.</p>
   <div class="tip"><b>Hinweis:</b> Für eine nummerierte Anweisung direkt über <i>einem</i> Widget reicht meist
      dessen eingebauter <a href="#standardoptionen">Aufgabentext</a> im Eigenschaften-Panel.</div>
 </article>
@@ -744,19 +747,13 @@
      <a href="#standardoptionen">Verteilung</a> an. Neue Aufgaben per <b>Würfeln 🎲</b>.</p>
 </article>
 
-<article id="w-kaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Kästchenfeld">
+<article id="w-eingabekaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Kästchenfeld">
   <h1><span class="wicon">⊞</span>Kästchenfeld</h1>
   <span class="cattag mathematik">Mathematik</span>
-  <p>Ein leeres kariertes Rechenfeld – wie Mathe-Heftpapier auf dem Arbeitsblatt. Kästchengröße (klein, mittel,
-     groß) und Zeilenzahl sind einstellbar. Ideal als Platz für Nebenrechnungen.</p>
-</article>
-
-<article id="w-eingabekaestchen" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Eingabekästchen">
-  <h1><span class="wicon">⊡</span>Eingabekästchen</h1>
-  <span class="cattag mathematik">Mathematik</span>
-  <p>Ein Kästchenraster, das du direkt am Bildschirm beschriften kannst – ein Zeichen pro Kästchen, wie im
-     Matheheft. So bereitest du Rechnungen, Zahlenfolgen oder Kästchen-Vorgaben zeichengenau vor; die Kinder
-     ergänzen auf dem Papier. Kästchengröße und Zeilenzahl sind einstellbar.</p>
+  <p>Ein kariertes Feld wie Mathe-Heftpapier – leer als Platz für Nebenrechnungen, oder direkt am Bildschirm
+     beschriftet: ein Zeichen pro Kästchen. So bereitest du Rechnungen, Zahlenfolgen oder Kästchen-Vorgaben
+     zeichengenau vor; die Kinder ergänzen auf dem Papier. Kästchengröße (Klein 31, Mittel 22, Groß 15 Kästchen pro Reihe – eine volle Reihe füllt die Breite genau aus), Zeilen und Spalten sind einstellbar.
+     Zum Schreiben das Feld anklicken – das angeklickte Kästchen ist gleich bereit für die Eingabe.</p>
   <p>Ein paar Eingaben werden dabei automatisch schön gesetzt: Tippst du <code>1</code> <code>/</code>
      <code>2</code>, entsteht ein gestapelter <b>Bruch</b> mit Bruchstrich in einem einzigen Kästchen. Eine
      schließende Klammer rückt zum vorigen Zeichen ins selbe Kästchen (aus <code>a</code> + <code>)</code> wird
@@ -856,15 +853,15 @@
 <article id="w-zahlentafel" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlentafel (Hundertertafel)">
   <h1><span class="wicon">🔢</span>Zahlentafel</h1>
   <span class="cattag mathematik">Mathematik</span>
-  <p>Die Hundertertafel von 1 bis 100 in vier Modi:</p>
+  <p>Die Hundertertafel in vier Modi. Oben wählt man den <b>Zahlenraum</b>: 1–100, 101–200 … bis 901–1000 – alle Modi darunter rechnen dann in diesem Hunderter.</p>
   <ul>
-    <li><b>Lücken:</b> zufällige Felder sind leer und werden ergänzt (Anzahl einstellbar).</li>
-    <li><b>Einkreisen:</b> vorgegebene Zahlen sollen in der Tafel gefunden und eingekreist werden.</li>
-    <li><b>Stücke:</b> ausgestanzte Tafel-Ausschnitte (Plus-, L-, T-Formen …) mit einer vorgegebenen Zahl –
+    <li><b>Lücken:</b> die Tafel ist nur teilweise ausgefüllt. Wie viel vorgegeben ist, stellt ein Schieberegler ein (0 = keine Hilfe, 1 = nur 1 und 100, 3 = linke Spalte, 5 = Diagonale … 10 = ca. 40 Felder). An einigen Stellen steht ein Symbol (Kreis mit Buchstabe). Rechts daneben steht jedes Symbol noch einmal mit einem Schreibfeld – dort wird die Zahl eingetragen, die an der Stelle des Symbols steht (1–8 Symbole).</li>
+    <li><b>Eintragen:</b> vorgegebene Zahlen werden an der richtigen Stelle in die Tafel geschrieben. Die Zielfelder sind immer leer; wie viel sonst vorgegeben ist, stellt derselbe Hilfe-Regler wie bei Lücken ein.</li>
+    <li><b>Ausschnitte:</b> ausgestanzte Teile der Tafel (Plus-, L-, T-Formen …) mit einer vorgegebenen Zahl –
         die Nachbarfelder werden logisch ergänzt. Optional mit gezeichnetem Schatten.</li>
-    <li><b>Voll:</b> die komplette Tafel zum Anschauen.</li>
+    <li><b>Eigene:</b> die Tafel selbst gestalten – sie startet vollständig; ist das Widget ausgewählt, blendet ein Klick auf eine Zahl sie aus oder wieder ein (beim Bearbeiten blass, in der Lösung blau).</li>
   </ul>
-  <p>Größe ist einstellbar; Anordnung und Ausrichtung mehrerer Tafeln über
+  <p>Größe: <b>Klein</b> (feste Kästchen), <b>Mittel</b> (bei Lücken füllen Tafel und Eintrag-Spalte zusammen die Breite) und <b>Groß</b> (Tafel über die ganze Breite, bei Lücken stehen die Eintragfelder darunter). Anordnung und Ausrichtung mehrerer Tafeln über
      <a href="#standardoptionen">Verteilung</a>. Neue Aufgaben per <b>Würfeln 🎲</b>, Lösungen blau.</p>
 </article>
 

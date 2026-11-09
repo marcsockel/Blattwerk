@@ -118,10 +118,12 @@ function lwElementHtml(it, d, aktiv) {
     inner = `<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;overflow:visible;">${shape}</svg>`;
   } else if (it.kind === 'text') {
     const rahmen = sw ? `border:${sw}px solid ${it.stroke};` : '';
-    inner = `<div class="lw-text" data-lw-text="${it.id}" ${aktiv ? `ondblclick="lwTextEdit(event,${d.id},${it.id})"` : ''}
-        style="position:absolute;inset:0;${rahmen}background:${it.fill || 'transparent'};padding:4px 6px;box-sizing:border-box;
+    // Text vertikal mittig: äußere Box = Flex, innerer Block mit margin:auto 0
+    // (zu viel Text läuft dann nach unten über statt oben abgeschnitten zu werden)
+    inner = `<div class="lw-text" ${aktiv ? `ondblclick="lwTextEdit(event,${d.id},${it.id})"` : ''}
+        style="position:absolute;inset:0;display:flex;flex-direction:column;${rahmen}background:${it.fill || 'transparent'};padding:4px 6px;box-sizing:border-box;
                font-family:${it.font || 'inherit'};font-size:${it.fontSize || 20}px;line-height:1.3;color:${it.color || '#000000'};
-               text-align:${it.align || 'left'};white-space:pre-wrap;word-break:break-word;overflow:hidden;border-radius:${it.rund ? 6 : 0}px;">${lwTextHtml(it)}</div>`;
+               text-align:${it.align || 'left'};white-space:pre-wrap;word-break:break-word;overflow:hidden;border-radius:${it.rund ? 6 : 0}px;"><div data-lw-text="${it.id}" style="margin:auto 0;width:100%;">${lwTextHtml(it)}</div></div>`;
   } else if (it.kind === 'image') {
     const rahmen = sw ? `border:${sw}px solid ${it.stroke};` : '';
     inner = it.src
@@ -743,7 +745,7 @@ function lwDrop(e, id) {
   const r = e.currentTarget.getBoundingClientRect();
   const px = (e.clientX - r.left) / r.width * 100, py = (e.clientY - r.top) / r.height * 100;
   const reader = new FileReader();
-  reader.onload = ev => lwBildEinfuegen(id, ev.target.result, px, py);
+  reader.onload = ev => bwBildVerkleinern(ev.target.result).then(src => lwBildEinfuegen(id, src, px, py));
   reader.readAsDataURL(file);
 }
 
@@ -756,11 +758,29 @@ function lwSnap(ox, oy, px, py, cw, ch, shift) {
   if (!shift && Math.abs(a - s) > 4 * Math.PI / 180) return [px, py];
   return [ox + Math.cos(s) * len / cw * 100, oy + Math.sin(s) * len / ch * 100];
 }
+// Endpunkt-Magnet: liegt ein Punkt näher als LW_FANG px an einem Endpunkt einer anderen Linie/eines
+// Pfeils, wird exakt dieser Endpunkt übernommen (Linien schließen lückenlos aneinander an).
+const LW_FANG = 9;
+function lwFangPunkt(w, px, py, cw, ch, ohneId) {
+  let best = null, bd = LW_FANG;
+  (w.items || []).forEach(i => {
+    if (i.id === ohneId || !lwIstLinie(i)) return;
+    lwPunkte(i);
+    [[i.x1, i.y1], [i.x2, i.y2]].forEach(([x, y]) => {
+      const d = Math.hypot((x - px) * cw / 100, (y - py) * ch / 100);
+      if (d < bd) { bd = d; best = [x, y]; }
+    });
+  });
+  return best;
+}
+
 function lwZeichnenStart(e, id) {
   e.preventDefault(); e.stopPropagation();
   const w = lwW(id); if (!w) return;
   const r = e.currentTarget.getBoundingClientRect();
-  const px = lwClamp((e.clientX - r.left) / r.width * 100), py = lwClamp((e.clientY - r.top) / r.height * 100);
+  let px = lwClamp((e.clientX - r.left) / r.width * 100), py = lwClamp((e.clientY - r.top) / r.height * 100);
+  const fang = lwFangPunkt(w, px, py, r.width, r.height, null);   // am Endpunkt einer Linie starten
+  if (fang) [px, py] = fang;
   saveHistory();
   const it = lwNeuesElement(_lwZeichne.kind, w);
   Object.assign(it, { x1: px, y1: py, x2: px, y2: py });
@@ -780,6 +800,7 @@ function lwDown(e, id, itemId, mode) {
   let canvas = lwCanvas(id); if (!canvas) return;
   if (mode === 'msize' || mode === 'mrot') { lwMultiStart(e, w, canvas.getBoundingClientRect(), mode); return; }
   const it = w.items.find(i => i.id === itemId); if (!it) return;
+  let shiftAbwaehlen = null;
   if (mode === 'move' && !e.shiftKey) {
     // Doppelklick selbst erkennen (das Element wird beim ersten Klick neu gezeichnet → kein natives dblclick)
     const jetzt = Date.now(), l = _lwLetzterKlick;
@@ -792,10 +813,17 @@ function lwDown(e, id, itemId, mode) {
   }
   if (mode === 'move') {
     const ids = lwSelIds(w);
-    if (e.shiftKey) {                              // Shift+Klick: zur Auswahl hinzufügen / entfernen
+    if (e.shiftKey) {
+      // Shift: Klick fügt hinzu bzw. nimmt (beim Loslassen ohne Bewegung) wieder heraus;
+      // Ziehen mit Shift verschiebt die Auswahl nur waagerecht oder senkrecht.
       const neu = lwMitGruppe(w, [itemId]), drin = neu.every(i => ids.includes(i));
-      lwSetzeAuswahl(id, drin ? ids.filter(i => !neu.includes(i)) : [...ids, ...neu]);
-      lwRefresh(id); return;
+      if (!drin) { lwSetzeAuswahl(id, [...ids, ...neu]); lwRefresh(id); canvas = lwCanvas(id); }
+      if (drin) shiftAbwaehlen = neu;
+      if (lwSelIds(w).length > 1) {
+        lwMultiStart(e, w, canvas.getBoundingClientRect(), 'mmove');
+        if (_lwDrag) _lwDrag.abwaehlen = shiftAbwaehlen;
+        return;
+      }
     }
     if (ids.length > 1 && ids.includes(itemId)) { lwMultiStart(e, w, canvas.getBoundingClientRect(), 'mmove'); return; }
     const u = lwEinheit(w, it, 0);
@@ -812,7 +840,7 @@ function lwDown(e, id, itemId, mode) {
   lwPunkte(it);
   _lwDrag = { id, itemId, mode, sx: e.clientX, sy: e.clientY, x: it.x, y: it.y, w: it.w, h: it.h,
               x1: it.x1, y1: it.y1, x2: it.x2, y2: it.y2,
-              rl: r.left, rt: r.top, cw: r.width, ch: r.height, moved: false };
+              rl: r.left, rt: r.top, cw: r.width, ch: r.height, moved: false, abwaehlen: shiftAbwaehlen };
   if (mode === 'rot') {
     const el = canvas.querySelector(`[data-lw-item="${itemId}"]`), b = el.getBoundingClientRect();
     _lwDrag.cx = b.left + b.width / 2; _lwDrag.cy = b.top + b.height / 2;
@@ -891,6 +919,10 @@ document.addEventListener('pointermove', e => {
   if (!g.moved && Math.abs(e.clientX - g.sx) + Math.abs(e.clientY - g.sy) < 3) return;
   if (g.mode === 'marquee') { g.moved = true; lwMarquee(g, e); return; }
   if (!g.moved) { g.moved = true; saveHistory(); }
+  // Shift beim Verschieben: nur waagerecht ODER senkrecht (größere Bewegungsrichtung gewinnt)
+  if (e.shiftKey && (g.mode === 'move' || g.mode === 'mmove')) {
+    if (Math.abs(e.clientX - g.sx) >= Math.abs(e.clientY - g.sy)) dy = 0; else dx = 0;
+  }
   if (g.multi) { lwMultiMove(g, e, dx, dy); return; }
   const w = lwW(g.id), it = w && w.items.find(i => i.id === g.itemId); if (!it) return;
   if (lwIstLinie(it)) {
@@ -902,7 +934,9 @@ document.addEventListener('pointermove', e => {
     } else {
       let px = lwClampWeit((e.clientX - g.rl) / g.cw * 100), py = lwClampWeit((e.clientY - g.rt) / g.ch * 100);
       const p1 = g.mode === 'p1';
-      [px, py] = lwSnap(p1 ? it.x2 : it.x1, p1 ? it.y2 : it.y1, px, py, g.cw, g.ch, e.shiftKey);
+      const fang = lwFangPunkt(lwW(g.id), px, py, g.cw, g.ch, it.id);   // Endpunkt-Magnet hat Vorrang
+      if (fang) [px, py] = fang;
+      else [px, py] = lwSnap(p1 ? it.x2 : it.x1, p1 ? it.y2 : it.y1, px, py, g.cw, g.ch, e.shiftKey);
       px = lwClampWeit(px); py = lwClampWeit(py);
       if (p1) { it.x1 = px; it.y1 = py; } else { it.x2 = px; it.y2 = py; }
     }
@@ -950,6 +984,11 @@ document.addEventListener('pointerup', () => {
     const treffer = w.items.filter(i => { const b = lwBox(i, [g.cw, g.ch]); return b.x < r.x2 && b.x2 > r.x && b.y < r.y2 && b.y2 > r.y; }).map(i => i.id);
     const ids = lwMitGruppe(w, treffer);
     lwSetzeAuswahl(g.id, g.shift ? [...g.vorher, ...ids] : ids);
+    lwRefresh(g.id);
+    return;
+  }
+  if (!g.moved && g.abwaehlen) {               // Shift-Klick ohne Ziehen auf Ausgewähltes → abwählen
+    lwSetzeAuswahl(g.id, lwSelIds(lwW(g.id)).filter(i => !g.abwaehlen.includes(i)));
     lwRefresh(g.id);
     return;
   }
@@ -1122,10 +1161,10 @@ function zeSidebarEl() {
   el.innerHTML = `<div style="display:flex;gap:6px;align-items:stretch;margin:0 0 4px;">
       <button onclick="zeBearbeiten(${!an})" title="Zeichenebene über der ganzen Seite bearbeiten"
         style="flex:1;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;cursor:pointer;font-family:inherit;
-               border:1.5px solid ${an ? '#89b4fa' : '#3a3d45'};background:${an ? '#1c2c42' : '#24262c'};color:#c7cad1;text-align:left;">
+               border:1.5px solid ${an ? '#a6e3a1' : '#3a3d45'};background:${an ? '#a6e3a1' : '#24262c'};color:${an ? '#1c1e23' : '#c7cad1'};text-align:left;">
         <span style="font-size:16px;">✏️</span>
-        <span style="flex:1;font-size:12px;font-weight:700;">Zeichenebene<span style="display:block;font-size:10px;font-weight:600;color:#8a8f99;">${an ? 'Bearbeiten – darunter gesperrt' : 'Über die ganze Seite zeichnen'}</span></span>
-        <span style="width:30px;height:17px;border-radius:9px;background:${an ? '#3b6fd4' : '#4a4d55'};position:relative;flex-shrink:0;">
+        <span style="flex:1;font-size:12px;font-weight:700;">Zeichenebene<span style="display:block;font-size:10px;font-weight:600;color:${an ? '#2f5530' : '#8a8f99'};">${an ? 'Bearbeiten – darunter gesperrt' : 'Über die ganze Seite zeichnen'}</span></span>
+        <span style="width:30px;height:17px;border-radius:9px;background:${an ? '#3d8b40' : '#4a4d55'};position:relative;flex-shrink:0;">
           <span style="position:absolute;top:2px;left:${an ? 15 : 2}px;width:13px;height:13px;border-radius:50%;background:#fff;transition:left .15s;"></span></span>
       </button>
       ${hat ? `<button onclick="zeSichtbarkeit()" title="${sicht ? 'Zeichnungen ausblenden (auch im Druck)' : 'Zeichnungen wieder einblenden'}"

@@ -337,11 +337,11 @@ function bwDrop(id, idx, e) {
   window._imgDropGuard = true;
   setTimeout(() => { window._imgDropGuard = false; }, 200);
   const reader = new FileReader();
-  reader.onload = ev => {
+  reader.onload = ev => bwBildVerkleinern(ev.target.result).then(src => {
     const w = widgets.find(x => x.id === id); if (!w) return;
     saveHistory();
-    w.aufgaben[idx].src = ev.target.result;
+    w.aufgaben[idx].src = src;
     render(); renderProps(id);
-  };
+  });
   reader.readAsDataURL(file);
 }

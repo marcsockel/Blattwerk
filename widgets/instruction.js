@@ -23,6 +23,7 @@ WIDGETS.push({
       style="width:46px;padding:3px 5px;border:1.5px solid #ddd;border-radius:4px;
              font-family:inherit;font-size:12px;text-align:center;">`;
     return `<div class="prow"><label>Text</label></div>` +
-      makeRichEditorBox(d.id, 'html', html, font, sizeInput, fontOptions);
+      makeRichEditorBox(d.id, 'html', html, font, sizeInput, fontOptions) +
+      `<div style="font-size:10.5px;color:#999;margin:-4px 0 8px;">Tipp: Doppelklick auf den Text im Blatt – dort direkt ändern.</div>`;
   },
 });

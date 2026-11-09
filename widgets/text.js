@@ -214,7 +214,8 @@ WIDGETS.push({
                font-weight:700;cursor:pointer;color:${active?'#1e1e2e':'#999'};">${label}</button>`;
 
     return propFold('text-editor', 'Text',
-        makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions), true) +
+        makeRichEditorBox(d.id, 'html', d.html, font, sizeInput, fontOptions)
+        + (d.fliessen && (d.splits || []).length ? '' : `<div style="font-size:10.5px;color:#999;margin:-4px 0 8px;">Tipp: Doppelklick auf den Text im Blatt – dort direkt ändern.</div>`), true) +
       innerPadPropsControl(d) +
       alignToggle(d.id, d.align, true) +
       `<div class="prow"><label>Zeilenbeschriftung (alle 5 Zeilen)</label>
@@ -231,3 +232,98 @@ WIDGETS.push({
       </div>`;
   },
 });
+
+// ── Direkt im Blatt bearbeiten (Text + Aufgabentext) ─────────────────
+// Doppelklick auf den Text im Blatt → wird an Ort und Stelle editierbar.
+// Tippen schreibt sofort in die Daten (und in den Editor in den Eigenschaften);
+// Klick daneben oder Esc beendet die Bearbeitung.
+const INLINE_EDIT_TARGETS = { text: '[data-flowtext]', instruction: '.instr-box' };
+let _inlineEd = null;
+
+function inlineEditStart(e, id) {
+  const w = widgets.find(x => x.id === id); if (!w) return false;
+  const selector = INLINE_EDIT_TARGETS[w.type]; if (!selector) return false;
+  // Fließender Text über mehrere Seiten: nur im Eigenschaften-Editor (Teilstücke)
+  if (w.type === 'text' && w.fliessen && (w.splits || []).length) return false;
+  if (typeof _solutionsMode !== 'undefined' && _solutionsMode) return false;
+  // Läuft schon eine Bearbeitung dieses Widgets (z. B. Doppelklick = zwei Starts) → weiter so
+  if (_inlineEd && _inlineEd.id === id && document.contains(_inlineEd.el)) return true;
+  if (_inlineEd) inlineEditEnd();                // erst beenden (zeichnet neu) …
+  const wrap = document.querySelector(`.wwrap[data-id="${id}"]`); if (!wrap) return false;
+  const el = wrap.querySelector(selector); if (!el) return false;   // … dann frisches Element holen
+
+  _inlineEd = { id, el, wrap, drag: wrap.draggable };
+  wrap.draggable = false;                       // sonst lässt sich im Text nichts markieren
+  edFocus();                                    // Vorher-Zustand für Rückgängig
+  el.contentEditable = 'true';
+  el.style.outline = '2px solid #89b4fa';
+  el.style.outlineOffset = '2px';
+  el.style.cursor = 'text';
+  el.onclick = ev => ev.stopPropagation();      // Klick im Text darf das Widget nicht neu zeichnen
+  el.onmousedown = ev => ev.stopPropagation();
+  el.onpaste = ev => {
+    ev.preventDefault();
+    document.execCommand('insertText', false, (ev.clipboardData || window.clipboardData).getData('text/plain'));
+  };
+  el.onkeydown = ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); document.execCommand('insertLineBreak'); inlineEditSave(); }
+    else if (ev.key === 'Escape') { ev.preventDefault(); el.blur(); }
+  };
+  el.oninput = inlineEditSave;
+  el.onblur = () => setTimeout(() => { if (_inlineEd && _inlineEd.el === el) inlineEditEnd(); }, 0);
+  el.focus();
+  // Cursor an die Klickstelle setzen
+  const r = document.caretRangeFromPoint ? document.caretRangeFromPoint(e.clientX, e.clientY) : null;
+  if (r && el.contains(r.startContainer)) { const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  return true;
+}
+
+function inlineEditSave() {
+  if (!_inlineEd) return;
+  const w = widgets.find(x => x.id === _inlineEd.id); if (!w) return;
+  w.html = richHtml(_inlineEd.el);
+  _dirty = true;
+  // Eigenschaften-Editor mitziehen (falls offen)
+  const ed = document.getElementById(`txted-${w.id}`);
+  if (ed && document.activeElement !== ed) ed.innerHTML = w.html;
+  if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
+}
+
+function inlineEditEnd() {
+  if (!_inlineEd) return;
+  const { id, el, wrap, drag } = _inlineEd;
+  inlineEditSave();
+  _inlineEd = null;
+  el.contentEditable = 'false';
+  el.style.outline = ''; el.style.outlineOffset = ''; el.style.cursor = '';
+  el.onclick = el.onmousedown = el.onpaste = el.onkeydown = el.oninput = el.onblur = null;
+  wrap.draggable = drag;
+  edBlur();
+  const w = widgets.find(x => x.id === id);
+  const winner = wrap.querySelector('.winner');
+  if (w && winner) winnerInnerRefresh(w, winner);
+  if (typeof schedulePatchOverflow === 'function') schedulePatchOverflow();
+}
+
+// Doppelklick selbst erkennen: Der erste Klick wählt das Widget aus und zeichnet seinen
+// Inhalt neu – dann feuert der Browser kein „dblclick" mehr (Ziel-Element hat gewechselt).
+let _inlineLetzterKlick = null;
+document.addEventListener('click', e => {
+  if (_inlineEd && _inlineEd.el.contains(e.target)) return;      // Klick im laufenden Editor
+  const t = document.elementFromPoint(e.clientX, e.clientY) || e.target;
+  const wrap = t.closest && t.closest('.wwrap[data-id]');
+  const id = wrap ? +wrap.dataset.id : null;
+  const w = id != null ? widgets.find(x => x.id === id) : null;
+  const passt = w && INLINE_EDIT_TARGETS[w.type] && t.closest(INLINE_EDIT_TARGETS[w.type]);
+  const jetzt = Date.now(), L = _inlineLetzterKlick;
+  const doppel = L && L.id === id && jetzt - L.t < 450 && Math.abs(L.x - e.clientX) < 6 && Math.abs(L.y - e.clientY) < 6;
+  // Starten bei Doppelklick ODER bei einfachem Klick auf den Text eines schon ausgewählten Widgets
+  // (robuster, z. B. in Safari, wo der Doppelklick nach dem Neuzeichnen manchmal verloren geht)
+  if (passt && (doppel || (selId === id && !(L && L.id === id && jetzt - L.t < 450)))) {
+    _inlineLetzterKlick = null;
+    // nach dem Auswahl-Klick des Widgets starten (dessen Neuzeichnen abwarten)
+    setTimeout(() => { if (selId !== id) sel(id); inlineEditStart(e, id); }, 0);
+    return;
+  }
+  _inlineLetzterKlick = passt ? { id, t: jetzt, x: e.clientX, y: e.clientY } : null;
+}, true);

@@ -1,14 +1,18 @@
-// Widget: Eingabekästchen (ein Zeichen pro Zelle)
+// Widget: Kästchenfeld (intern 'eingabekaestchen'; ein Zeichen pro Kästchen)
+// Nicht ausgewählt: EIN SVG (Gitter + eingetippte Zeichen als Text) → leicht, auch bei vielen Kästchen.
+// Ausgewählt: ein Eingabefeld pro Kästchen zum Tippen. Gewechselt wird nur bei Auswahl/Abwahl
+// (meta.selRender, s. sel()/desel() in index.html) – nicht bei jedem Klick, sonst ginge der Fokus verloren.
+// Das frühere eigene Widget „Kästchenfeld" (type 'kaestchen') wird beim ersten Zeichnen umgewandelt.
 
 WIDGETS.push({
-  meta: { type:'eingabekaestchen', label:'Eingabekästchen', desc:'Ein Zeichen pro Kästchen', icon:'⊡', category:'mathematik', selSafe:true },
+  meta: { type:'eingabekaestchen', label:'Kästchenfeld', desc:'Kariertes Feld – auch zum Hineinschreiben', icon:'⊞', category:'mathematik', selSafe:true, selRender:true },
 
-  createData: id => ({ id, type:'eingabekaestchen', groesse:'mittel', zeilen:4, values:{}, lines:[], mode:'schreiben', font:'inherit' , aufgabenNr:0, aufgabenText:''}),
+  createData: id => ({ id, type:'eingabekaestchen', groesse:'klein', kgV:2, zeilen:4, values:{}, lines:[], mode:'schreiben', font:'inherit' , aufgabenNr:0, aufgabenText:''}),
 
   render: d => {
-    const sizes  = { klein: 15, mittel: 20, gross: 40 };
-    const cs     = sizes[d.groesse || 'mittel'];
-    const fullCols = { klein: 42, mittel: 31, gross: 15 }[d.groesse || 'mittel'];
+    ekzGroesseMigrieren(d);
+    const fullCols = EKZ_PRO_REIHE[d.groesse] || EKZ_PRO_REIHE.klein;
+    const cs     = ekzZellgroesse(fullCols);
     const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
     // Spaltenzahl wie beim Kästchenfeld aus der ECHTEN verfügbaren Breite (ekzFit misst
     // nach dem Layout, z.B. bei „Bündig" mehr Platz). Bis dahin: Schätzwert.
@@ -25,7 +29,35 @@ WIDGETS.push({
     const linien = d.lines  || [];
     const isLinien = d.mode === 'linien';
 
-    // Eingabe-Zellen
+    // Gitter + gespeicherte Linien (für beide Darstellungen)
+    let gitter = '';
+    for (let i = 1; i < cols; i++) gitter += `<line x1="${i*cs}" y1="0" x2="${i*cs}" y2="${h}" stroke="#888" stroke-width="0.7"/>`;
+    for (let j = 1; j < rows; j++) gitter += `<line x1="0" y1="${j*cs}" x2="${w}" y2="${j*cs}" stroke="#888" stroke-width="0.7"/>`;
+    gitter += `<rect x="0.35" y="0.35" width="${w-0.7}" height="${h-0.7}" fill="none" stroke="#888" stroke-width="0.7"/>`;
+    const linienSvg = linien.map(l =>
+      `<line x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>`).join('');
+    const fitAttrs = `data-ekz-fit="${d.id}" data-cs="${cs}" data-maxcols="${maxC}" data-cols="${cols}" data-key="${fitKey}"`;
+
+    // Beide Darstellungen als display:block (nicht inline-block): sonst hängt die Höhe an der
+    // Grundlinie des Inhalts (Bild vs. Eingabefelder) und der Abstand unten springt beim Auswählen.
+    // ── Nicht ausgewählt: alles als EIN Bild ──
+    if (d.id !== selId || _solutionsMode) {
+      let texte = '';
+      for (const k of Object.keys(vals)) {
+        const idx = +k, raw = vals[k];
+        if (!raw || /^.\/.?$/.test(raw)) continue;          // Brüche zeichnet ekzFracSvg
+        const r = Math.floor(idx / cols), c = idx % cols; if (r >= rows) continue;
+        texte += `<text x="${c*cs + cs/2}" y="${r*cs + cs/2}" text-anchor="middle" dominant-baseline="central"
+          style="font-family:${d.font||'inherit'};font-size:${fs}px;font-weight:700;" fill="#000">${esc(raw)}</text>`;
+      }
+      return atHtml(d) + `<div ${fitAttrs} onpointerdown="ekzMerkeZelle(event,${d.id},${cs},${cols})"
+          onclick="event.stopPropagation();ekzFokusNachKlick(${d.id})"
+          style="position:relative;display:block;width:fit-content;line-height:0;cursor:text;">
+        <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;">
+          ${gitter}${linienSvg}<g>${ekzFracSvg(vals, cols, cs, d.font||'inherit')}</g>${texte}</svg></div>`;
+    }
+
+    // ── Ausgewählt: Eingabe-Zellen ──
     let inputs = '';
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
@@ -36,18 +68,15 @@ WIDGETS.push({
         const val = esc(/^.\/.?$/.test(raw) ? '' : raw);
         inputs += `<input id="${pfx}_${idx}" maxlength="1" value="${val}"
           ${isLinien ? 'tabindex="-1"' : `oninput="ekzInput(${d.id},'${pfx}',${idx},${cols},${rows})" onkeydown="ekzKey(event,${d.id},'${pfx}',${idx},${cols},${rows})"`}
-          style="width:${cs}px;height:${cs}px;border:none;border-right:0.7px solid #888;
-                 border-bottom:0.7px solid #888;outline:none;text-align:center;
+          style="width:${cs}px;height:${cs}px;border:none;outline:none;text-align:center;
                  font-family:${d.font||'inherit'};font-size:${fs}px;font-weight:700;
                  background:transparent;padding:0;margin:0;box-sizing:border-box;
                  cursor:${isLinien?'crosshair':'text'};">`;
       }
     }
 
-    // Gespeicherte Linien als SVG-Pfade
-    let svgContent = linien.map(l =>
-      `<line x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>`
-    ).join('');
+    // Gitter als Vektorgrafik (gleichmäßig dünne Linien; CSS-Ränder < 1px würden gerundet)
+    const svgContent = linienSvg;
 
     // Im Linien-Modus: SVG fängt Mausereignisse ab
     const dataAttrs = `data-cs="${cs}" data-cols="${cols}" data-font="${d.font||'inherit'}"`;
@@ -62,22 +91,23 @@ WIDGETS.push({
 
     const svg = `<svg ${svgAttrs} width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
       <rect width="${w}" height="${h}" fill="${isLinien?'rgba(137,180,250,0.06)':'none'}"/>
+      ${gitter}
       ${svgContent}
       <g id="ekzfrac${d.id}">${ekzFracSvg(vals, cols, cs, d.font||'inherit')}</g>
       <line id="ekzprev${d.id}" stroke="#89b4fa" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4,3" x1="0" y1="0" x2="0" y2="0"/>
     </svg>`;
 
-    return atHtml(d) + `<div onclick="event.stopPropagation()" data-ekz-fit="${d.id}" data-cs="${cs}" data-maxcols="${maxC}" data-cols="${cols}" data-key="${fitKey}" style="position:relative;display:inline-block;line-height:0;">
+    return atHtml(d) + `<div onclick="event.stopPropagation()" ${fitAttrs} style="position:relative;display:block;width:fit-content;line-height:0;">
       <div style="display:grid;grid-template-columns:repeat(${cols},${cs}px);
                   width:${w}px;gap:0;
-                  border-left:0.7px solid #888;border-top:0.7px solid #888;
                   line-height:0;font-size:0;">${inputs}</div>
       ${svg}
     </div>`;
   },
 
   renderProps: d => {
-    const g      = d.groesse || 'mittel';
+    ekzGroesseMigrieren(d);
+    const g      = d.groesse;
     const rows   = d.zeilen  || 4;
     const isLinien = d.mode === 'linien';
     const lineCount = (d.lines || []).length;
@@ -102,9 +132,9 @@ WIDGETS.push({
 
       `<div class="prow"><label>Kästchengröße</label>
       <div style="display:flex;gap:4px;">
-        ${sizeBtn('klein','Klein')}
-        ${sizeBtn('mittel','Mittel')}
-        ${sizeBtn('gross','Groß')}
+        ${sizeBtn('klein','Klein · 31')}
+        ${sizeBtn('mittel','Mittel · 22')}
+        ${sizeBtn('gross','Groß · 15')}
       </div></div>` +
 
       pr('Zeilen', `<input type="number" min="1" max="50" value="${rows}" onchange="upd(${d.id},'zeilen',+this.value)">`) +
@@ -335,7 +365,7 @@ function ekzFit(el) {
   const cs = Math.max(1, +el.dataset.cs || 20);
   const st = getComputedStyle(host);
   const avail = host.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight);
-  const fit  = Math.max(1, Math.floor((avail - 1) / cs));   // −1: linker Rand 0.7px
+  const fit  = Math.max(1, Math.floor(avail / cs + 0.001));   // wie Kästchenfeld (Gitter ist SVG, kein Extra-Rand mehr)
   const maxC = +el.dataset.maxcols || 0;
   const cols = maxC ? Math.min(maxC, fit) : fit;
   if (cols === +el.dataset.cols) return;
@@ -370,3 +400,72 @@ function ekzDisp(w, cols) {
   }
   return out;
 }
+
+
+// ── Klick auf das (nicht ausgewählte) Kästchenfeld: danach das angeklickte Kästchen fokussieren ──
+let _ekzKlick = null;
+function ekzMerkeZelle(e, id, cs, cols) {
+  const r = e.currentTarget.getBoundingClientRect();
+  const z = r.width / Math.max(1, cols * cs) || 1;                 // Ansichts-Zoom
+  const c = Math.max(0, Math.min(cols - 1, Math.floor((e.clientX - r.left) / z / cs)));
+  const row = Math.max(0, Math.floor((e.clientY - r.top) / z / cs));
+  _ekzKlick = { id, idx: row * cols + c };
+}
+function ekzFokusNachKlick(id) {
+  const k = _ekzKlick; _ekzKlick = null;
+  if (!k || k.id !== id) return;
+  setTimeout(() => {
+    const w = widgets.find(x => x.id === id); if (!w || w.mode === 'linien' || selId !== id) return;
+    const el = document.getElementById(`ekz${id}_${k.idx}`);
+    if (el) { el.focus(); el.select && el.select(); }
+  }, 0);
+}
+
+// Spalten-Option: „Ganze Breite" (Standard) oder eine feste Anzahl (nie mehr, als in die Breite passt).
+function kzSpaltenBlock(d) {
+  const fest = (d.spalten || 0) > 0;
+  const btn = (label, on, onclick) => `<button onclick="event.stopPropagation();${onclick}"
+      style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};
+             background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;
+             font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;
+  return `<div class="prow"><label>Spalten</label>
+      <div style="display:flex;gap:4px;margin-bottom:${fest?4:0}px;">
+        ${btn('Ganze Breite', !fest, `upd(${d.id},'spalten',0)`)}
+        ${btn('Anzahl', fest, `upd(${d.id},'spalten',kzAktuelleSpalten(${d.id}))`)}
+      </div>
+      ${fest ? `<input type="number" min="1" max="60" value="${d.spalten}" onchange="upd(${d.id},'spalten',Math.max(1,+this.value||1))">` : ''}
+    </div>`;
+}
+// Sichtbare Spaltenzahl (Startwert beim Umschalten auf „Anzahl")
+function kzAktuelleSpalten(id) {
+  const e = document.querySelector(`.wwrap[data-id="${id}"] [data-ekz-fit]`);
+  return e ? Math.max(1, +e.dataset.cols || 10) : 10;
+}
+
+// Früheres eigenes Widget „Kästchenfeld" (type 'kaestchen'): wird beim ersten Zeichnen in dieses
+// Widget umgewandelt (Größe, Zeilen und Spalten bleiben erhalten).
+// Größen = Kästchen pro Reihe bei voller Breite „Mit Abstand" (625 px).
+// So füllt eine volle Reihe die Breite genau aus.
+const EKZ_BREITE = 625;
+const EKZ_PRO_REIHE = { klein: 31, mittel: 22, gross: 15 };
+function ekzZellgroesse(n) { return Math.floor(EKZ_BREITE / n * 100) / 100; }
+// Ältere Blätter: früheres „Mittel" (20 px) ist jetzt „Klein", früheres „Klein" (16 px) entfällt.
+function ekzGroesseMigrieren(d) {
+  if (d.kgV === 2) return;
+  if (!d.groesse || d.groesse === 'mittel') d.groesse = 'klein';
+  d.kgV = 2;
+}
+
+function ekzVonKaestchen(d) {
+  if (d.type !== 'kaestchen') return d;
+  d.type = 'eingabekaestchen';
+  d.values = d.values || {}; d.lines = d.lines || []; d.mode = d.mode || 'schreiben'; d.font = d.font || 'inherit';
+  d.zeilen = d.zeilen || 8;
+  return d;
+}
+WIDGETS.push({
+  meta: { type:'kaestchen', hidden:true, label:'Kästchenfeld', desc:'Kariertes Feld', icon:'⊞', category:'mathematik', selSafe:true, selRender:true },
+  createData: id => WIDGET_MAP.eingabekaestchen.createData(id),
+  render: d => WIDGET_MAP.eingabekaestchen.render(ekzVonKaestchen(d)),
+  renderProps: d => WIDGET_MAP.eingabekaestchen.renderProps(ekzVonKaestchen(d)),
+});
