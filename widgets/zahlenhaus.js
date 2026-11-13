@@ -42,7 +42,7 @@ const ZH_SIZES = {
 function zhSize(groesse) { return ZH_SIZES[groesse] || ZH_SIZES.klein; }
 function zhFeldW(summands, groesse) { const z = zhSize(groesse); return summands === 3 ? z.bw3 : z.bw2; }
 
-function zhSvg(house, summands, isActive=false, farbig=false, groesse) {
+function zhSvg(house, summands, isActive=false, farbig=false, groesse, edit=null) {
   const { dach, dachLeer, floors } = house;
   const Z  = zhSize(groesse);
   const bw = zhFeldW(summands, groesse);
@@ -92,8 +92,16 @@ function zhSvg(house, summands, isActive=false, farbig=false, groesse) {
     }
   });
 
+  // Ausgewählt: Dachzahl und Felder anklicken → direkt ändern
+  let klick = '';
+  if (edit) {
+    const hit = (x, y, w, h, f, i) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"
+      onclick="zhEdit(event,${edit.id},${edit.hi},${f},${i})"><title>Zahl ändern</title></rect>`;
+    klick += hit((cx - rectW/2).toFixed(1), (numCY - rectH/2).toFixed(1), rectW, rectH, -1, -1);
+    floors.forEach((fl, fi) => { for (let i = 0; i < summands; i++) klick += hit(2 + i * bw, rh + fi * bh, bw, bh, fi, i); });
+  }
   return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;">
-    ${roof}${dachEl}${floorsHtml}
+    ${roof}${dachEl}${floorsHtml}${klick}
   </svg>`;
 }
 
@@ -111,7 +119,8 @@ WIDGETS.push({
     const houses = d.houses || zhGen(d.haeuser||3, s, st, d.zahlenraum||10, d.leerfeld||"links");
     const active = d.id === selId || _solutionsMode;
     const farbig = d.farbe === 'farbig';
-    const svgs   = houses.map(h => zhSvg(h, s, active, farbig, d.groesse));
+    const edit   = d.id === selId && !_solutionsMode;
+    const svgs   = houses.map((h, hi) => zhSvg(h, s, active, farbig, d.groesse, edit ? { id: d.id, hi } : null));
 
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Hausbreite itemW.
     const itemW = zhFeldW(s, d.groesse) * s + 4;
@@ -184,4 +193,31 @@ function zhUpdProp(id, key, val) {
   w[key] = val;
   w.houses = zhGen(w.haeuser||3, w.summands||2, w.stockwerke||4, w.zahlenraum||10, w.leerfeld||"links");
   render(); renderProps(id);
+}
+
+// ── Zahl direkt im Haus ändern ────────────────────────────────────
+// Dach geändert → in jedem Stockwerk das letzte Feld neu (Rest bleibt).
+// Feld geändert → ein anderes Feld desselben Stockwerks gleicht aus (sonst das letzte, beim
+// letzten das erste), damit die Summe wieder die Dachzahl ergibt. Nie negativ.
+function zhEdit(e, id, hi, f, i) {
+  const w = widgets.find(x => x.id === id); if (!w || !w.houses || !w.houses[hi]) return;
+  const h = w.houses[hi], s = w.summands || 2;
+  const alt = f < 0 ? h.dach : h.floors[f].felder[i];
+  bwZahlEingabe(e, alt, v => {
+    if (v < 0) return false;
+    if (f < 0) {
+      const neu = h.floors.map(fl => { const fe = fl.felder.slice(); fe[s - 1] = v - fe.slice(0, s - 1).reduce((a, b) => a + b, 0); return fe; });
+      if (neu.some(fe => fe[s - 1] < 0)) return false;
+      saveHistory(); h.dach = v; h.floors.forEach((fl, k) => { fl.felder = neu[k]; });
+    } else {
+      const fe = h.floors[f].felder.slice();
+      const j = i === s - 1 ? 0 : s - 1;
+      fe[i] = v;
+      fe[j] = h.dach - fe.reduce((a, b, k) => k === j ? a : a + b, 0);
+      if (fe[j] < 0) return false;
+      saveHistory(); h.floors[f].felder = fe;
+    }
+    render(); renderProps(id);
+    return true;
+  }, 'Das passt nicht zur Dachzahl (es käme eine negative Zahl heraus).');
 }

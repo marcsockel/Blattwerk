@@ -4,7 +4,6 @@
 // Spaltenrandzahl  („beginne immer mit der linken Randzahl").
 // Innenzellen bleiben leer; im Auswahl-/Lösungsmodus erscheinen sie blau.
 
-function rtRand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 function rtGcd(a, b) { while (b) { [a, b] = [b, a % b]; } return a; }
 function rtLcm(a, b) { return a / rtGcd(a, b) * b; }
 function rtLcmArr(arr) { return arr.reduce((x, y) => rtLcm(x, y), 1); }
@@ -141,12 +140,17 @@ function rtTableHtml(tbl, d) {
              + `font-family:'DidactGothic7',sans-serif;font-size:${fs}px;padding:0;`;
   const calc = (r, c) => op === '+' ? r + c : op === '-' ? r - c : op === '*' ? r * c : r / c;
 
+  // Ausgewählt: Randzahlen anklicken → direkt ändern (rtEdit)
+  const ti = (d.tables || []).indexOf(tbl);
+  const edit = d.id === selId && !_solutionsMode && ti >= 0;
+  const klick = (art, i) => edit ? ` onclick="rtEdit(event,${d.id},${ti},'${art}',${i})" title="Zahl ändern"` : '';
+  const zeiger = '';
   let html = `<table style="border-collapse:collapse;">`;
   html += `<tr><td style="${base}background:${hbg};font-weight:700;">${sym}</td>`;
-  tbl.cols.forEach(c => { html += `<td style="${base}background:${hbg};font-weight:700;">${c}</td>`; });
+  tbl.cols.forEach((c, i) => { html += `<td style="${base}background:${hbg};font-weight:700;${zeiger}"${klick('col', i)}>${c}</td>`; });
   html += `</tr>`;
-  tbl.rows.forEach(r => {
-    html += `<tr><td style="${base}background:${hbg};font-weight:700;">${r}</td>`;
+  tbl.rows.forEach((r, ri) => {
+    html += `<tr><td style="${base}background:${hbg};font-weight:700;${zeiger}"${klick('row', ri)}>${r}</td>`;
     tbl.cols.forEach(c => {
       const val = isActive ? `<span style="color:#2563eb;font-weight:700;">${calc(r, c)}</span>` : '';
       html += `<td style="${base}background:#fff;">${val}</td>`;
@@ -301,4 +305,23 @@ function rtGenerate(id) {
   saveHistory();
   rtDoGenerate(w);
   render(); renderProps(id);
+}
+
+// ── Randzahl direkt ändern ────────────────────────────────────────
+// Innenzellen rechnen sich aus den Randzahlen. Abgelehnt wird nur, was nicht aufgeht
+// (Minus unter 0, Geteilt mit Rest/durch 0) – Zahlenraum und Zehnerübergang prüft das nicht.
+function rtEdit(e, id, ti, art, i) {
+  const w = widgets.find(x => x.id === id); if (!w || !w.tables || !w.tables[ti]) return;
+  const t = w.tables[ti];
+  const alt = art === 'col' ? t.cols[i] : t.rows[i];
+  bwZahlEingabe(e, alt, v => {
+    if (v < 0) return false;
+    const cols = t.cols.slice(), rows = t.rows.slice();
+    if (art === 'col') cols[i] = v; else rows[i] = v;
+    if (!rtValid(w.op || '+', Infinity, true, cols, rows)) return false;
+    saveHistory();
+    t.cols = cols; t.rows = rows;
+    render(); renderProps(id);
+    return true;
+  }, 'Damit geht eine Aufgabe in der Tabelle nicht auf.');
 }

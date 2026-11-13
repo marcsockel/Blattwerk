@@ -232,13 +232,6 @@ WIDGETS.push({
 
 // ── Geheimschrift helpers ──────────────────────────────────────────────────
 
-function gsAddItem(id, anlaut) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  saveHistory();
-  w.items = [...(w.items || []), { anlaut, src: anlautDefaultSrc(anlaut) }];
-  render(); renderProps(id);
-}
-
 function gsRemoveItem(id, idx) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
@@ -251,18 +244,6 @@ function gsSetItemSrc(id, idx, src) {
   saveHistory();
   const items = [...(w.items || [])];
   items[idx] = { ...items[idx], src };
-  w.items = items;
-  render(); renderProps(id);
-}
-
-function gsShuffleItems(id) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  saveHistory();
-  const items = [...(w.items || [])];
-  for (let i = items.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
   w.items = items;
   render(); renderProps(id);
 }

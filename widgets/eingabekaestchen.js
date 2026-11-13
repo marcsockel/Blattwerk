@@ -52,7 +52,7 @@ WIDGETS.push({
       }
       return atHtml(d) + `<div ${fitAttrs} onpointerdown="ekzMerkeZelle(event,${d.id},${cs},${cols})"
           onclick="event.stopPropagation();ekzFokusNachKlick(${d.id})"
-          style="position:relative;display:block;width:fit-content;line-height:0;cursor:text;">
+          style="position:relative;display:block;width:fit-content;line-height:0;">
         <svg width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg" style="display:block;">
           ${gitter}${linienSvg}<g>${ekzFracSvg(vals, cols, cs, d.font||'inherit')}</g>${texte}</svg></div>`;
     }

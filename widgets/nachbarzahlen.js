@@ -217,7 +217,7 @@ WIDGETS.push({
       } else {
         row = taskRow([cellHtml(t.n, 'given'), cellHtml(t.after, 'ans')]);
       }
-      return `<div style="${tdBase}">${row}</div>`;
+      return `<div data-aufg="1" style="${tdBase}">${row}</div>`;
     };
 
     const renderGroup = group => group.map(renderTaskTable).join('');
@@ -317,3 +317,17 @@ function nzManual(id, text) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { nzRegen, nzPickMode, nzNeighbors, nzValidNs, nzAufgabenmodus, nzSlotDigits, nzGenCap, nzCellDigits, nzTableDigits, nzTasksToText, nzParseLine, nzApplyManual };
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Format wie „Manuell":
+//   _, 45, _  |  _, 45  |  45, _  |  45
+BW_AUFGABE.nachbarzahlen = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.tasks || [])[i] ? nzTaskToLine(w.tasks[i]) : null,
+  setzen: (w, i, txt) => {
+    const t = nzParseLine(txt, w.nachbarTyp || 'zahl', nzAufgabenmodus(w));
+    if (!t) return 'Bitte eine Zahl eingeben, z. B. 45 oder _, 45, _';
+    w.tasks[i] = t;
+    w.manualText = nzTasksToText(w);
+    return true;
+  },
+};

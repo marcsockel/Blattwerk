@@ -175,7 +175,7 @@ function zrWheelSvg(wh, d, wi) {
   }
   // Ausgewählt: Zahlen anklicken → direkt ändern (Klickflächen über den Zahlen)
   if (d.id === selId && !_solutionsMode && wi != null) {
-    const hit = (x, y, r, kind, si) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="transparent" style="cursor:text;"
+    const hit = (x, y, r, kind, si) => `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="transparent"
       onclick="zrEdit(event,${d.id},${wi},'${kind}',${si})"><title>Zahl ändern</title></circle>`;
     g += hit(cx, cy, r0, 'center', -1);
     const rh = Math.min((r1 - r0) / 2, (r2 - r1) / 2) * 0.95;

@@ -32,7 +32,7 @@ WIDGETS.push({
       const answerLine = isActive
         ? `<div style="border-bottom:1.5px solid #999;flex:1;min-width:40px;height:${ansH}px;display:flex;align-items:center;padding-left:6px;color:#2563eb;font-weight:700;font-size:${ansFs}px;">${esc(u)}</div>`
         : `<div style="border-bottom:1.5px solid #999;flex:1;min-width:40px;height:${ansH}px;"></div>`;
-      return `<div style="display:flex;align-items:center;gap:${gap}px;margin-bottom:${mb}px;font-size:${arrowFs}px;">`
+      return `<div data-aufg="1" style="display:flex;align-items:center;gap:${gap}px;margin-bottom:${mb}px;font-size:${arrowFs}px;">`
         + `<span style="font-family:monospace;font-size:${scrambleFs}px;background:#f0eee8;padding:3px 8px;border-radius:4px;letter-spacing:2px;white-space:nowrap;">${s}</span>`
         + `<span style="color:#bbb;">→</span>${answerLine}</div>`;
     });
@@ -70,3 +70,17 @@ WIDGETS.push({
       </div>`;
   },
 });
+
+// Wort direkt im Blatt ändern (main/helpers.js → BW_AUFGABE); es wird neu gemischt
+BW_AUFGABE.scramble = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.words || '').split(',').map(x => x.trim()).filter(Boolean)[i] ?? null,
+  setzen: (w, i, txt) => {
+    const t = txt.trim();
+    if (/[\s,]/.test(t)) return 'Bitte nur ein Wort (ohne Leerzeichen und Komma).';
+    const L = (w.words || '').split(',').map(x => x.trim()).filter(Boolean);
+    L[i] = t;
+    w.words = L.join(',');
+    return true;
+  },
+};

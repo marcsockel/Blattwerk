@@ -142,12 +142,6 @@ function guGenOne(d, gemischtMode) {
   return { f: 'einfach', fromVal, fromU: hi.u, toU: lo.u, ans: fromVal * best };
 }
 
-function guTotal(d) {
-  const app = Math.max(1, Math.min(20, d.aufgabenProPaeckchen || 5));
-  const cols = Math.max(1, Math.min(36, d.cols || 2));
-  return app * cols;
-}
-
 function guAppCols(d) {
   return {
     app: Math.max(1, Math.min(20, d.aufgabenProPaeckchen || 5)),

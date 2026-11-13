@@ -18,16 +18,20 @@ const LW_FARBEN  = ['#000000', '#ffffff', '#666666', '#aaaaaa', '#2563eb', '#16a
 const LW_FUELLUNG = ['', '#ffffff', '#000000', '#f2f2f2', '#d9d9d9', '#dbeafe', '#dcfce7', '#fee2e2', '#fef3c7'];
 
 // Symbole (assets/symbole/<name>.svg): [Dateiname, Bezeichnung, Seitenverhältnis, Gruppe]
-const LW_SYMBOL_GRUPPEN = ["Pfeile & Zeichen", "Schulsachen", "Lernen & Ordnung", "Sport & Belohnung", "Menschen & Kommunikation", "Technik & Medien", "Natur & Wetter"];
+const LW_SYMBOL_GRUPPEN = ["Pfeile & Zeichen", "Schulsachen", "Lernen & Ordnung", "Sport & Belohnung", "Menschen & Kommunikation", "Technik & Medien", "Natur & Wetter", "Musik"];
 const LW_SYMBOLE = [
-  ['pfeil-rechts','Pfeil rechts',1.44,0], ['pfeil-links','Pfeil links',1.27,0], ['pfeil-hoch','Pfeil hoch',0.75,0], ['pfeil-runter','Pfeil runter',0.81,0], ['bogen-rechts','Bogen rechts',1.17,0], ['bogen-links','Bogen links',1.17,0], ['kreislauf','Kreislauf',0.98,0], ['weiter','Weiter',1.10,0], ['pfeil-klein','Pfeil dunkel',1.29,0], ['richtig','Richtig',0.99,0], ['falsch','Falsch',1.00,0], ['achtung','Achtung',0.99,0], ['frage','Frage',0.99,0], ['info','Info',0.98,0], ['plus','Plus',0.98,0], ['minus','Minus',0.98,0], ['gleich','Gleich',1.00,0], ['eins','1',1.00,0], ['zwei','2',0.99,0], ['drei','3',1.07,0], ['warnung','Warnung',1.11,0], ['schild-ok','Schild ok',0.92,0], ['schild-nein','Schild nein',0.87,0], ['stern','Stern',1.04,0], ['herz','Herz',1.14,0], ['daumen-hoch','Daumen hoch',1.00,0], ['daumen-runter','Daumen runter',1.03,0],
-  ['tafel','Tafel',1.42,1], ['buecherstapel','Bücherstapel',1.08,1], ['buch','Buch',1.33,1], ['buch-offen','Buch offen',1.32,1], ['buecher','Bücher',1.16,1], ['ringbuch','Ringbuch',1.30,1], ['notizblock','Notizblock',0.87,1], ['aktenordner','Aktenordner',0.74,1], ['ordner','Ordner',1.24,1], ['schulranzen','Schulranzen',0.82,1], ['bleistift','Bleistift',0.99,1], ['buntstifte','Buntstifte',1.05,1], ['fueller','Füller',0.96,1], ['textmarker','Textmarker',1.04,1], ['radiergummi','Radiergummi',1.12,1], ['anspitzer','Anspitzer',1.08,1], ['schere','Schere',0.96,1], ['klebestift','Klebestift',0.66,1], ['kleber','Kleber',0.76,1], ['lineal','Lineal',0.99,1], ['geodreieck','Geodreieck',0.86,1], ['winkelmesser','Winkelmesser',1.54,1], ['zirkel','Zirkel',0.68,1], ['taschenrechner','Taschenrechner',0.82,1], ['rechenrahmen','Rechenrahmen',1.11,1], ['globus','Globus',0.84,1], ['mikroskop','Mikroskop',0.82,1], ['kolben','Experiment',0.92,1], ['reagenzglaeser','Reagenzgläser',1.30,1], ['farbpalette','Farbpalette',1.17,1], ['musik','Musik',1.05,1], ['trommel','Trommel',1.08,1], ['trinkflasche','Trinkflasche',0.64,1], ['brotdose','Brotdose',1.27,1], ['fruehstueckstasche','Frühstückstasche',1.22,1], ['apfel','Apfel',0.91,1],
+  ['pfeil-rechts','Pfeil rechts',1.44,0], ['pfeil-links','Pfeil links',1.27,0], ['pfeil-hoch','Pfeil hoch',0.75,0], ['pfeil-runter','Pfeil runter',0.81,0], ['bogen-rechts','Bogen rechts',1.17,0], ['bogen-links','Bogen links',1.17,0], ['kreislauf','Kreislauf',0.98,0], ['weiter','Weiter',1.10,0], ['pfeil-klein','Pfeil dunkel',1.29,0], ['richtig','Richtig',0.99,0], ['falsch','Falsch',1.00,0], ['achtung','Achtung',0.99,0], ['ausrufezeichen','Ausrufezeichen',0.42,0], ['fragezeichen','Fragezeichen',0.69,0], ['frage','Frage',0.99,0], ['info','Info',0.98,0], ['plus','Plus',0.98,0], ['minus','Minus',0.98,0], ['gleich','Gleich',1.00,0], ['eins','1',1.00,0], ['zwei','2',0.99,0], ['drei','3',1.07,0], ['warnung','Warnung',1.11,0], ['schild-ok','Schild ok',0.92,0], ['schild-nein','Schild nein',0.87,0], ['stern','Stern',1.04,0], ['herz','Herz',1.14,0], ['daumen-hoch','Daumen hoch',1.00,0], ['daumen-runter','Daumen runter',1.03,0],
+  ['tafel','Tafel',1.42,1], ['buecherstapel','Bücherstapel',1.08,1], ['buch','Buch',1.33,1], ['buch-offen','Buch offen',1.32,1], ['buecher','Bücher',1.16,1], ['ringbuch','Ringbuch',1.30,1], ['notizblock','Notizblock',0.87,1], ['aktenordner','Aktenordner',0.74,1], ['ordner','Ordner',1.24,1], ['schulranzen','Schulranzen',0.82,1], ['bleistift','Bleistift',0.99,1], ['buntstifte','Buntstifte',1.05,1], ['fueller','Füller',0.96,1], ['textmarker','Textmarker',1.04,1], ['radiergummi','Radiergummi',1.12,1], ['anspitzer','Anspitzer',1.08,1], ['schere','Schere',0.96,1], ['klebestift','Klebestift',0.66,1], ['kleber','Kleber',0.76,1], ['lineal','Lineal',0.99,1], ['geodreieck','Geodreieck',0.86,1], ['winkelmesser','Winkelmesser',1.54,1], ['zirkel','Zirkel',0.68,1], ['taschenrechner','Taschenrechner',0.82,1], ['rechenrahmen','Rechenrahmen',1.11,1], ['globus','Globus',0.84,1], ['mikroskop','Mikroskop',0.82,1], ['kolben','Experiment',0.92,1], ['reagenzglaeser','Reagenzgläser',1.30,1], ['farbpalette','Farbpalette',1.17,1], ['musik','Musik',1.05,7], ['trommel','Trommel',1.08,1], ['trinkflasche','Trinkflasche',0.64,1], ['brotdose','Brotdose',1.27,1], ['fruehstueckstasche','Frühstückstasche',1.22,1], ['apfel','Apfel',0.91,1],
   ['unterricht','Unterricht',1.18,2], ['schule','Schule',1.19,2], ['checkliste','Checkliste',0.83,2], ['checkliste-2','Checkliste 2',0.85,2], ['klemmbrett','Klemmbrett',0.79,2], ['dokument','Dokument',0.84,2], ['dokumente','Dokumente',0.86,2], ['urkunde','Urkunde',1.03,2], ['doktorhut','Doktorhut',1.35,2], ['idee','Idee',0.89,2], ['ziel','Ziel',1.01,2], ['lupe','Lupe',0.96,2], ['puzzle','Puzzle',0.90,2], ['puzzle-bunt','Puzzle bunt',1.03,2], ['kalender','Kalender',1.03,2], ['kalender-2','Kalender 2',1.00,2], ['uhr','Uhr',1.01,2], ['wecker','Wecker',1.00,2], ['sanduhr','Sanduhr',0.75,2], ['band-blau','Band blau',0.84,2], ['band-gruen','Band grün',0.83,2], ['band-gelb','Band gelb',0.84,2], ['band-rot','Band rot',0.84,2], ['flagge','Flagge',0.91,2], ['zahnraeder','Zahnräder',1.07,2], ['diagramm','Diagramm',0.97,2],
   ['fussball','Fußball',1.01,3], ['basketball','Basketball',1.00,3], ['huetchen','Hütchen',0.95,3], ['pokal','Pokal',1.00,3], ['medaille','Medaille',0.74,3], ['siegertreppchen','Siegertreppchen',1.38,3],
   ['person','Person',0.77,4], ['menschen','Menschen',1.56,4], ['gruppe','Gruppe',1.35,4], ['handschlag','Handschlag',1.51,4], ['rollstuhl','Rollstuhl',0.92,4], ['sprechblase','Sprechblase',1.09,4], ['gespraech','Gespräch',1.13,4], ['denkblase','Denkblase',1.01,4], ['brief','Brief',1.35,4], ['papierflieger','Papierflieger',1.24,4], ['glocke','Glocke',1.15,4], ['haus','Haus',1.17,4], ['ort','Ort',0.76,4], ['wegweiser','Wegweiser',0.96,4], ['schloss-zu','Schloss zu',0.82,4], ['schloss-offen','Schloss offen',0.97,4], ['schluessel','Schlüssel',1.10,4], ['pylone','Pylone',0.98,4],
   ['laptop','Laptop',1.37,5], ['monitor','Bildschirm',1.16,5], ['tablet','Tablet',0.83,5], ['handy','Handy',0.66,5], ['wlan','WLAN',1.21,5], ['hochladen','Hochladen',1.35,5], ['herunterladen','Herunterladen',1.28,5], ['cloud-sync','Cloud Sync',1.25,5], ['akku-voll','Akku voll',1.67,5], ['akku-leer','Akku leer',1.63,5], ['bild','Bild',1.12,5], ['film','Film',0.98,5], ['ton-an','Ton an',1.18,5], ['ton-aus','Ton aus',1.04,5], ['kopfhoerer','Kopfhörer',1.08,5], ['mikrofon','Mikrofon',0.69,5],
-  ['pflanze','Pflanze',1.03,6], ['setzling','Setzling',0.89,6], ['baum','Baum',0.99,6], ['blatt','Blatt',0.91,6], ['erde','Erde',1.01,6], ['recycling','Recycling',1.04,6], ['tropfen','Tropfen',0.76,6], ['feuer','Feuer',0.81,6], ['schneeflocke','Schneeflocke',0.92,6], ['sonne','Sonne',0.98,6], ['regen','Regen',1.01,6]];
+  ['pflanze','Pflanze',1.03,6], ['setzling','Setzling',0.89,6], ['baum','Baum',0.99,6], ['blatt','Blatt',0.91,6], ['erde','Erde',1.01,6], ['recycling','Recycling',1.04,6], ['tropfen','Tropfen',0.76,6], ['feuer','Feuer',0.81,6], ['schneeflocke','Schneeflocke',0.92,6], ['sonne','Sonne',0.98,6], ['regen','Regen',1.01,6], ['blitz','Blitz',0.67,6],
+  ['geige','Geige',1.63,7], ['gitarre','Gitarre',1.38,7], ['trompete','Trompete',1.81,7], ['floete','Blockflöte',1.12,7], ['keyboard','Keyboard',1.95,7], ['xylophon','Xylophon',2.14,7], ['tamburin','Tamburin',1.40,7], ['triangel','Triangel',1.22,7]];
 const lwSymbolSrc = n => `assets/symbole/${n}.svg`;
+// Schwarz-Weiß-Fassung als eigene Datei (assets/symbole-sw, aus den farbigen erzeugt) —
+// kein CSS-Filter nötig → druckt in jedem Browser grau, auch ohne Server (file://).
+const lwSymbolSrcSw = n => `assets/symbole-sw/${n}.svg`;
 let _lwSymbolWahl = null;   // Widget-ID, deren Symbol-Auswahl offen ist
 // ◐ neben „Symbol suchen": Symbole schwarz-weiß einfügen (pro Browser gemerkt)
 let _lwSymbolGrau = (() => { try { return !!localStorage.getItem('blattwerk-lw-symgrau'); } catch (e) { return false; } })();
@@ -126,9 +130,16 @@ function lwElementHtml(it, d, aktiv) {
                text-align:${it.align || 'left'};white-space:pre-wrap;word-break:break-word;overflow:hidden;border-radius:${it.rund ? 6 : 0}px;"><div data-lw-text="${it.id}" style="margin:auto 0;width:100%;">${lwTextHtml(it)}</div></div>`;
   } else if (it.kind === 'image') {
     const rahmen = sw ? `border:${sw}px solid ${it.stroke};` : '';
+    // Schwarz-Weiß: echtes Graustufenbild (main/helpers.js swSrc), sobald es umgerechnet ist —
+    // der CSS-Filter allein wird nicht in jedem Browser mitgedruckt (Safari druckt farbig).
+    // Symbole haben eine fertige S/W-Datei; andere Bilder werden umgerechnet.
+    const grauSrc = !it.grau ? null
+      : it.symbol && it.src === lwSymbolSrc(it.symbol) ? lwSymbolSrcSw(it.symbol)
+      : typeof swSrc === 'function' ? swSrc(it.src) : null;
+    const filtern = it.grau && !grauSrc;
     inner = it.src
-      ? `<img src="${it.src}" draggable="false" alt=""${it.grau ? ' class="img-sw"' : ''} style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
-           ${it.grau ? 'filter:grayscale(100%);' : ''}${rahmen}box-sizing:border-box;border-radius:${it.rund ? 6 : 0}px;pointer-events:none;user-select:none;">`
+      ? `<img src="${grauSrc || it.src}" draggable="false" alt=""${filtern ? ' class="img-sw" data-sw' : ''} style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+           ${filtern ? 'filter:grayscale(100%);' : ''}${rahmen}box-sizing:border-box;border-radius:${it.rund ? 6 : 0}px;pointer-events:none;user-select:none;">`
       : `<div style="position:absolute;inset:0;border:1.5px dashed #bbb;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;">Bild</div>`;
   }
   const gewaehlt = aktiv && _lwSel && _lwSel.id === d.id && _lwSel.item === it.id;
@@ -211,7 +222,7 @@ WIDGETS.push({
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:4px;">
             ${LW_SYMBOLE.filter(x => x[3] === gi).map(([n, t]) => `<button title="${t}" onclick="event.stopPropagation();lwSymbolEinfuegen(${d.id},'${n}')"
               style="aspect-ratio:1;border:1.5px solid #e5e5e5;border-radius:5px;background:#fff;cursor:pointer;padding:3px;">
-              <img src="${lwSymbolSrc(n)}" alt="${t}" loading="lazy" style="width:100%;height:100%;object-fit:contain;pointer-events:none;${_lwSymbolGrau ? 'filter:grayscale(100%);' : ''}"></button>`).join('')}
+              <img src="${_lwSymbolGrau ? lwSymbolSrcSw(n) : lwSymbolSrc(n)}" alt="${t}" loading="lazy" style="width:100%;height:100%;object-fit:contain;pointer-events:none;"></button>`).join('')}
             </div></div>`).join('')}
         </div>` : ''}
         ${_lwZeichne && _lwZeichne.id === d.id ? `<div style="font-size:11px;color:#3b6fd4;margin-top:5px;line-height:1.4;">
@@ -534,6 +545,7 @@ function lwPatch(id) {
     const win = document.querySelector(`.wwrap.zeichenebene[data-id="${id}"] > .winner`);
     if (!win) return false;
     win.innerHTML = WIDGET_MAP.zeichenebene.render(w);
+    if (typeof swConvert === 'function') swConvert(win);
     return true;
   }
   return typeof patchWidget === 'function' && patchWidget(id);
@@ -596,13 +608,6 @@ function lwRichFmt(id, cmd) {
   richUpdateBtns('lw' + id);
 }
 
-function lwSetQuiet(id, key, val) {
-  const w = lwW(id), it = lwItem(w); if (!it) return;
-  it[key] = val; _dirty = true;
-  const el = document.querySelector(`.lw-canvas[data-lw="${id}"] [data-lw-text="${it.id}"]`);
-  if (el) el.textContent = val;
-  if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
-}
 function lwUmdrehen(id) {
   const w = lwW(id), it = lwItem(w); if (!it || !lwIstLinie(it)) return;
   saveHistory();

@@ -276,3 +276,14 @@ function uhrUpdTime(id, idx, key, val) {
   w.uhren[idx][key] = val;
   render(); renderProps(id);
 }
+
+// Uhrzeit direkt im Blatt ändern (main/helpers.js → BW_AUFGABE): "7:30"
+BW_AUFGABE.uhr = {
+  text: (w, i) => { const u = (w.uhren || [])[i]; return u ? `${u.h}:${String(u.m).padStart(2, '0')}` : null; },
+  setzen: (w, i, txt) => {
+    const z = bwUhrzeitLesen(txt, w.stundenbereich);
+    if (!z) return `Bitte so eingeben: 7:30 (Stunden ${w.stundenbereich === '0-24' ? '0–23' : '1–12'}).`;
+    w.uhren[i] = { ...w.uhren[i], h: z.h, m: z.m };
+    return true;
+  },
+};

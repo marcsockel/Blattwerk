@@ -6,7 +6,7 @@
 // ohne dass Zahlen/Striche/Kästchen größer werden. Aufgerufen aus render() (Default-
 // Breite) und fitNumberlineSvg() (echte Containerbreite nach dem Layout).
 function nlBuild(d, W, isActive) {
-  const start=+d.start, end=+d.end, step=+d.step;
+  const start=+d.start, end=+d.end, step=Math.max(+d.step, nlMinStep(d));   // ältere Blätter: nie zu viele Striche
   const gaps=new Set((d.gaps||"").split(",").map(n=>parseInt(n.trim())).filter(n=>!isNaN(n)));
   const modus = d.modus || 'luecken';
   const nurRandwerte = d.nurRandwerte || false;
@@ -14,8 +14,8 @@ function nlBuild(d, W, isActive) {
   const range = (end - start) || 1;
   const scale = v => lineL + ((v - start) / range) * (lineR - lineL);
   const half = step >= 2 ? step / 2 : null;
-  const unit = step >= 1000 ? 100 : step >= 100 ? 10 : step >= 10 ? 1 : null;
-  const fs   = step >= 1000 ? 10 : step >= 100 ? 11 : 12;
+  const unit = step >= 10000 ? 1000 : step >= 1000 ? 100 : step >= 100 ? 10 : step >= 10 ? 1 : null;
+  const fs   = step >= 10000 ? 9 : step >= 1000 ? 10 : step >= 100 ? 11 : 12;
   const axis = lineY =>
     `<line x1="${lineL}" y1="${lineY}" x2="${lineR}" y2="${lineY}" stroke="#000" stroke-width="2"/>` +
     `<polygon points="${lineR+7},${lineY} ${lineR},${lineY-3} ${lineR},${lineY+3}" fill="#000"/>`;
@@ -30,7 +30,7 @@ function nlBuild(d, W, isActive) {
       const x = scale(v);
       ticks += `<line x1="${x}" y1="16" x2="${x}" y2="40" stroke="#000" stroke-width="2"/>`;
       if (modus === 'luecken' && gaps.has(v)) {
-        const boxW = (step >= 100 ? 36 : step >= 10 ? 28 : 22) * 1.5; // 1,5× größere Kästchen
+        const boxW = (step >= 10000 ? 44 : step >= 100 ? 36 : step >= 10 ? 28 : 22) * 1.5; // 1,5× größere Kästchen
         labels += `<rect x="${x-boxW/2}" y="42" width="${boxW}" height="24" rx="2" fill="white" stroke="#000" stroke-width="1.2"/>`;
         if (isActive) {
           labels += `<text x="${x}" y="58" text-anchor="middle" font-family="'Grundschrift',sans-serif" font-size="${fs}" font-weight="700" fill="#2563eb">${v}</text>`;
@@ -51,7 +51,7 @@ function nlBuild(d, W, isActive) {
 
   const marked = [...gaps].filter(v => v>=start && v<=end).sort((a,b)=>a-b);
   const n  = marked.length || 1;
-  const bw = step >= 100 ? 36 : step >= 10 ? 32 : 26, bh = 20;
+  const bw = step >= 10000 ? 46 : step >= 100 ? 36 : step >= 10 ? 32 : 26, bh = 20;
   const boxY = [12, -10]; // row 0: unten, row 1: oben
   const curve = (x1,y1,x2,y2) => { const cy=(y1+y2)/2; return `<path d="M${x1},${y1} C${x1},${cy} ${x2},${cy} ${x2},${y2}" fill="none"`; };
   let boxes = "", lines = "";
@@ -114,11 +114,10 @@ WIDGETS.push({
 
   renderProps: d => {
     const modus = d.modus || 'luecken';
-    const stepSel = `<select onchange="upd(${d.id},'step',+this.value)">
-      <option value="1"    ${+d.step===1   ?"selected":""}>1</option>
-      <option value="10"   ${+d.step===10  ?"selected":""}>10</option>
-      <option value="100"  ${+d.step===100 ?"selected":""}>100</option>
-      <option value="1000" ${+d.step===1000?"selected":""}>1000</option>
+    // Schritte, die zu viele Striche ergäben, sind gesperrt (nlMinStep)
+    const minStep = nlMinStep(d);
+    const stepSel = `<select onchange="nlSet(${d.id},'step',+this.value)">
+      ${[1, 10, 100, 1000, 10000].map(v => `<option value="${v}" ${+d.step === v ? 'selected' : ''} ${v < minStep ? 'disabled' : ''}>${v}${v < minStep ? ' (zu viele Striche)' : ''}</option>`).join('')}
     </select>`;
     const nurRandwerte = d.nurRandwerte || false;
     const toggleBtn = (label, active, onclick) =>
@@ -133,8 +132,8 @@ WIDGETS.push({
           ${toggleBtn("Eintragen", modus==='eintragen', `upd(${d.id},'modus','eintragen')`)}
           ${toggleBtn("Verbinden", modus==='verbinden', `upd(${d.id},'modus','verbinden')`)}
         </div></div>` +
-      pr("Start", `<input type="number" value="${d.start}" onchange="upd(${d.id},'start',+this.value)">`) +
-      pr("Ende",  `<input type="number" value="${d.end}"   onchange="upd(${d.id},'end',+this.value)">`) +
+      pr("Start", `<input type="number" value="${d.start}" onchange="nlSet(${d.id},'start',+this.value)">`) +
+      pr("Ende",  `<input type="number" value="${d.end}"   onchange="nlSet(${d.id},'end',+this.value)">`) +
       pr("Schritt", stepSel) +
       `<div class="prow"><label>Beschriftung</label>
         <div style="display:flex;gap:4px;">
@@ -143,26 +142,60 @@ WIDGETS.push({
         </div></div>` +
       (modus !== 'ohne' ? pr(modus==='luecken' ? "Lücken" : "Zahlen (beliebig, kommagetrennt)",
         `<input value="${esc(d.gaps)}" placeholder="${modus==='luecken'?'z.B. 20,40':'z.B. 5,17,32'}" onchange="upd(${d.id},'gaps',this.value)">`) : '') +
-      (modus !== 'luecken' && modus !== 'ohne' ? `<button onclick="nlRoll(${d.id})"
+      (modus !== 'ohne' ? `<button onclick="nlRoll(${d.id})"
         style="margin-top:4px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Zahlen würfeln</button>` : '') ;
   },
 });
 
+// Höchstens 20 beschriftete Hauptschritte (+ je 10 kleine Striche dazwischen) → sonst zu
+// dicht. Kleinster erlaubter Schritt aus 1 / 10 / 100 / 1000 für den eingestellten Bereich.
+const NL_MAX_SCHRITTE = 20;
+function nlMinStep(w) {
+  const spanne = Math.abs((+w.end) - (+w.start)) || 1;
+  return [1, 10, 100, 1000, 10000].find(s => spanne / s <= NL_MAX_SCHRITTE) || 10000;
+}
+
+// Neue Zahlen zum Bereich/Schritt: Lücken = Hauptschritt-Werte, sonst Zwischenwerte (step/10)
+function nlNeueZahlen(w) {
+  const start = +w.start, end = +w.end, step = +w.step;
+  const nurRandwerte = w.nurRandwerte || false;
+  const candidates = [];
+  if ((w.modus || 'luecken') === 'luecken') {
+    for (let v = start + step; v < end; v += step) candidates.push(v);
+    candidates.sort(() => Math.random() - 0.5);
+    w.gaps = candidates.slice(0, Math.min(3, Math.max(1, Math.floor(candidates.length / 2)))).sort((a, b) => a - b).join(',');
+    return;
+  }
+  const sub = step >= 10000 ? 1000 : step >= 1000 ? 100 : step >= 100 ? 10 : 1;
+  for (let v = start + sub; v < end; v += sub) {
+    // Wenn nurRandwerte: auch Hauptschritt-Werte erlaubt (außer start/end)
+    if (!nurRandwerte && step > 1 && v % step === 0) continue;   // Schritt 1: alle Zahlen erlaubt
+    candidates.push(v);
+  }
+  candidates.sort(() => Math.random() - 0.5);
+  w.gaps = candidates.slice(0, 5).sort((a, b) => a - b).join(',');
+}
+
+// Start/Ende ändern: Schritt stellt sich automatisch auf den feinsten, der nicht zu viele Striche gibt.
+// Schritt von Hand: nur gröber als dieses Minimum möglich.
+// ändert sich der Schritt (oder liegen Zahlen außerhalb), werden die Zahlen neu gewürfelt.
+function nlSet(id, key, val) {
+  const w = widgets.find(x => x.id === id); if (!w) return;
+  saveHistory();
+  const alterSchritt = +w.step;
+  w[key] = val;
+  const min = nlMinStep(w);
+  if (key === 'start' || key === 'end') w.step = min;   // Bereich geändert → passender Schritt (z. B. 0–1000 → 100er)
+  else if (+w.step < min) w.step = min;
+  const zahlen = String(w.gaps || '').split(',').map(v => +v.trim()).filter(Number.isFinite);
+  const lo = Math.min(+w.start, +w.end), hi = Math.max(+w.start, +w.end);
+  if (+w.step !== alterSchritt || zahlen.some(v => v < lo || v > hi)) nlNeueZahlen(w);
+  render(); renderProps(id);
+}
+
 function nlRoll(id) {
   const w = widgets.find(x => x.id === id); if (!w) return;
   saveHistory();
-  const start=+w.start, end=+w.end, step=+w.step;
-  // Sub-step: step/10 for step>=10, else 1
-  const sub = step >= 1000 ? 100 : step >= 100 ? 10 : step >= 10 ? 1 : 1;
-  const nurRandwerte = w.nurRandwerte || false;
-  const candidates = [];
-  for (let v = start + sub; v < end; v += sub) {
-    // Wenn nurRandwerte: auch Hauptschritt-Werte erlaubt (außer start/end)
-    if (!nurRandwerte && v % step === 0) continue;
-    candidates.push(v);
-  }
-  // Shuffle and pick 5
-  candidates.sort(() => Math.random() - 0.5);
-  w.gaps = candidates.slice(0, 5).sort((a,b)=>a-b).join(',');
+  nlNeueZahlen(w);
   render(); renderProps(id);
 }

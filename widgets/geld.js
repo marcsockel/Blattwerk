@@ -368,3 +368,30 @@ function geldWuerfeln(id) {
   w.aufgaben = geldGen(w.anzahl||4, (w.maxEuro||10)*100, w.mitCent||false);
   render(); renderProps(id);
 }
+
+// Betrag direkt im Blatt ändern (main/helpers.js → BW_AUFGABE): "12,50" oder "12,50 €".
+// Der Betrag wird mit möglichst wenigen Scheinen/Münzen gelegt.
+function geldZerlegen(cent) {
+  const werte = [...GELD_SCHEINE, ...GELD_EURO, ...GELD_CENT].sort((a, b) => b - a);
+  const items = []; let rest = cent;
+  for (const v of werte) while (rest >= v) { items.push(v); rest -= v; }
+  return items;
+}
+BW_AUFGABE.geld = {
+  text: (w, i) => {
+    const a = (w.aufgaben || [])[i]; if (!a) return null;
+    const b = a.betrag;
+    return b % 100 ? `${Math.floor(b / 100)},${String(b % 100).padStart(2, '0')} €` : `${b / 100} €`;
+  },
+  setzen: (w, i, txt) => {
+    const m = txt.replace(/€|euro/gi, '').trim().match(/^(\d+)(?:[,.](\d{1,2}))?$/);
+    if (!m) return 'Bitte so eingeben: 12,50 €';
+    const cent = +m[1] * 100 + (m[2] ? +m[2].padEnd(2, '0') : 0);
+    if (cent < 1) return 'Der Betrag muss größer als 0 sein.';
+    if (cent % 100 && !w.mitCent) return 'Cent-Beträge erst mit „mit Cent" einschalten.';
+    const items = geldZerlegen(cent);
+    if (items.length > 12) return 'Das wären zu viele Scheine und Münzen.';
+    w.aufgaben[i] = { betrag: cent, items, posSeed: w.aufgaben[i].posSeed ?? Math.random() };
+    return true;
+  },
+};

@@ -277,3 +277,15 @@ function zfManual(id, text) {
   zfApplyManual(w, text);
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Format wie „Manuell".
+BW_AUFGABE.zwanzigerfeld = {
+  text: (w, i) => (w.aufgaben || [])[i] ? zfAufgabeToLine(w.aufgaben[i], w.modus || 'rechnen') : null,
+  setzen: (w, i, txt) => {
+    const a = zfParseLine(txt.replace(/=\s*$/, ''), w.modus || 'rechnen');
+    if (!a) return (w.modus === 'zahl') ? 'Bitte eine Zahl von 1 bis 20.' : 'Bitte so eingeben: 5 + 3 oder 12 − 4 (Ergebnis bis 20).';
+    w.aufgaben[i] = a;
+    w.manualText = zfTasksToText(w);
+    return true;
+  },
+};

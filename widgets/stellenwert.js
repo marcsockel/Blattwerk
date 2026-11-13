@@ -218,3 +218,14 @@ function svwWuerfeln(id) {
   w.zahlen = svwGen(w.anzahl||4, w.zahlenraum||100);
   render(); renderProps(id);
 }
+
+// Zahl direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Muss in die Tafel passen.
+BW_AUFGABE.stellenwert = {
+  text: (w, i) => (w.zahlen || [])[i] != null ? String(w.zahlen[i]) : null,
+  setzen: (w, i, txt) => {
+    const n = /^\d+$/.test(txt.trim()) ? +txt.trim() : NaN, zr = w.zahlenraum || 100;
+    if (!(n >= 1 && n < zr)) return `Bitte eine Zahl von 1 bis ${zr - 1} (passt sonst nicht in die Tafel).`;
+    w.zahlen[i] = n;
+    return true;
+  },
+};

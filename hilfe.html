@@ -249,6 +249,10 @@
   <h2>Nebeneinander statt untereinander</h2>
   <p>Stelle im Bereich <b>Layout</b> eine Teilbreite ein (z. B. ½) – Widgets gleicher Zeile erscheinen dann
      nebeneinander. So kombinierst du etwa ein Bild links mit Schreiblinien rechts.</p>
+  <div class="tip"><b>Ausgegraute Breiten:</b> Passt der Inhalt eines Widgets nicht in eine Teilbreite (z. B. ein Suchsel in ½),
+     ist dieser Knopf gesperrt. Ist ein Widget trotzdem zu breit – etwa auf älteren Blättern oder nach dem Wechsel ins
+     Hochformat –, bekommt es einen roten Rahmen mit „Passt nicht in diese Breite"; der Inhalt wird abgeschnitten,
+     statt den Nachbarn über den Seitenrand zu schieben. Abhilfe: breiter stellen oder das Widget kleiner machen.</div>
   <h2>Seiten und Umbrüche</h2>
   <p>Seiten füllen sich automatisch: Was nicht mehr passt, rutscht auf eine automatisch erzeugte Überlauf-Seite
      – und rutscht wieder zurück, wenn Platz frei wird. Mit <b>＋ Neue Seite</b> erzwingst du dagegen einen
@@ -258,6 +262,27 @@
   <p>Für komplexere Layouts gibt es die <a href="#w-group">Gruppe</a> (gemeinsamer Rahmen um mehrere Widgets),
      den <a href="#w-floatbox">Schwebenden Rahmen</a> (frei auf der Seite positionierbar), die
      <a href="#w-leinwand">Leinwand</a> und die <a href="#w-zeichenebene">Zeichenebene</a> (freies Zeichnen).</p>
+</article>
+
+<article id="direkt-bearbeiten" data-group="Aufbau der App" data-title="Direkt im Blatt bearbeiten">
+  <h1>Direkt im Blatt bearbeiten</h1>
+  <p>Viele Inhalte lassen sich ohne Umweg über die Eigenschaften direkt auf dem Blatt ändern:
+     <b>Doppelklick</b> auf die Stelle – oder ein einfacher Klick, wenn das Widget schon ausgewählt ist.
+     <b>Enter</b> übernimmt, <b>Esc</b> bricht ab, <b>Strg+Z</b> macht es rückgängig.</p>
+  <ul>
+    <li><b>Texte</b> (Text, Aufgabentext, Infobox): direkt im Blatt tippen; Klick daneben beendet.</li>
+    <li><b>Einträge</b>: Checkliste (jeder Eintrag), Multiple Choice (Frage und jede Antwort einzeln – die richtige Antwort bleibt richtig), Zuordnung (jede Karte – die Paare bleiben verbunden).</li>
+    <li><b>Wörter</b>: Buchstabensalat (wird neu gemischt), Silbenwort (Silben und Bögen rechnen sich neu), Wortchips.</li>
+    <li><b>Zahlen, Geld, Uhrzeit</b>: Stellenwerttafel (Zahl), Zwanzigerfeld und Hunderterfeld (Zahl bzw. Aufgabe), Geld (<code>12,50 €</code> – wird mit möglichst wenigen Scheinen/Münzen gelegt), Uhr (<code>7:30</code>), Zeitspanne (<code>7:30 - 9:15</code>).</li>
+    <li><b>Ganze Aufgabe</b> als Text ändern: Rechenaufgaben, Erste Päckchen, 10er Stop (nur die obere Zeile – die Zerlegung ergibt sich), Analogie-, Umkehraufgaben,
+        Zahlenzerlegung (beide Zeilen mit „ | " getrennt), Schriftlich und Halbschriftlich (+ − · :), Zahlenkette
+        (<code>5 +3 −2 ×4</code>), Nachbarzahlen und Nachbarzahlen-Tabelle – Format wie unter „Manuell bearbeiten".</li>
+    <li><b>Einzelne Zahl</b> ändern: Zahlenrad, Zahlenmauer, Zahlenhaus, Rechendreieck, Rechentabelle (Randzahlen).
+        Die abhängigen Zahlen rechnen sich automatisch nach, damit die Aufgabe stimmt.</li>
+  </ul>
+  <div class="tip"><b>Hinweis:</b> Passt eine Eingabe nicht (z. B. eine Minus-Aufgabe unter 0 oder eine Division mit Rest),
+     wird das Feld rot; mit der Maus darüber steht der Grund. Zahlenraum und Zehnerübergang werden bei eigenen Eingaben
+     nicht geprüft. <b>Würfeln</b> ersetzt eigene Änderungen wieder.</div>
 </article>
 
 <article id="speichern" data-group="Aufbau der App" data-title="Speichern &amp; Öffnen">
@@ -337,8 +362,9 @@
 <article id="w-infobox" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Infobox">
   <h1><span class="wicon">▭</span>Infobox</h1>
   <span class="cattag allgemein">Allgemein</span>
-  <p>Ein gerahmtes Textfeld für Merksätze, Hinweise oder Regeln – optional mit einem Symbol links oder rechts
-     neben dem Text.</p>
+  <p>Ein gerahmtes Textfeld für Merksätze, Hinweise oder Regeln. Als <b>Symbol</b> stehen dieselben Symbole wie in
+     der Zeichenebene zur Wahl (mit Suche, Größe Klein/Mittel/Groß und ◐ S/W). Das Symbol sitzt links oder rechts und
+     ragt leicht über den oberen Rand; der Text weicht ihm aus. Den Text kannst du per Doppelklick direkt im Blatt ändern.</p>
 </article>
 
 <article id="w-namedate" data-group="Widgets: Allgemein" data-cat="allgemein" data-title="Name / Datum">
@@ -555,16 +581,10 @@
   <p>Tabelle zum Verlängern: Zu jedem Wort mit unklarem Auslaut (<b>g/k</b>, <b>d/t</b>, <b>b/p</b>) schreiben die
      Kinder die verlängerte Form und dann das richtige Wort, z.B. <i>die Bur[g/k]</i> → <i>viele Burgen</i> →
      <i>die Burg</i>. Modi und Anzahl wählbar, Wörter neu <b>würfeln 🎲</b> oder von Hand anpassen
-     (Format: <code>die Bur[g/k], viele Burgen</code>).</p>
+     (Format: <code>die Bur[g/k], viele Burgen</code>). Als Hilfe lässt sich die verlängerte Form auch
+     <b>vorgeben</b> – der entscheidende Buchstabe ist dann unterstrichen.</p>
 </article>
 
-<article id="w-auslaut" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Auslautverhärtung">
-  <h1><span class="wicon">✏</span>Auslautverhärtung</h1>
-  <span class="cattag deutsch">Deutsch</span>
-  <p>Wörter, bei denen der richtige Auslaut erkannt werden muss: <b>d/t</b>, <b>b/p</b> oder <b>g/k</b>
-     (einzeln oder kombiniert wählbar). Optional wird die Verlängerungsform als Hilfe mit angezeigt. Wortauswahl
-     per <b>Würfeln 🎲</b> aus dem eingebauten Wortschatz, Anzahl und Schrift einstellbar.</p>
-</article>
 
 <article id="w-anlaut" data-group="Widgets: Deutsch" data-cat="deutsch" data-title="Anlautbild">
   <h1><span class="wicon">🔤</span>Anlautbild</h1>
@@ -855,14 +875,23 @@
   <span class="cattag mathematik">Mathematik</span>
   <p>Die Hundertertafel in vier Modi. Oben wählt man den <b>Zahlenraum</b>: 1–100, 101–200 … bis 901–1000 – alle Modi darunter rechnen dann in diesem Hunderter.</p>
   <ul>
-    <li><b>Lücken:</b> die Tafel ist nur teilweise ausgefüllt. Wie viel vorgegeben ist, stellt ein Schieberegler ein (0 = keine Hilfe, 1 = nur 1 und 100, 3 = linke Spalte, 5 = Diagonale … 10 = ca. 40 Felder). An einigen Stellen steht ein Symbol (Kreis mit Buchstabe). Rechts daneben steht jedes Symbol noch einmal mit einem Schreibfeld – dort wird die Zahl eingetragen, die an der Stelle des Symbols steht (1–8 Symbole).</li>
-    <li><b>Eintragen:</b> vorgegebene Zahlen werden an der richtigen Stelle in die Tafel geschrieben. Die Zielfelder sind immer leer; wie viel sonst vorgegeben ist, stellt derselbe Hilfe-Regler wie bei Lücken ein.</li>
+    <li><b>Lücken:</b> die Tafel ist nur teilweise ausgefüllt. Wie viel vorgegeben ist, stellt ein Schieberegler ein (0 = keine Hilfe, 1 = nur 1 und 100, 3 = linke Spalte, 5 = Diagonale … 10 = ca. 40 Felder). An einigen Stellen steht ein Symbol (Kreis mit Buchstabe). Rechts daneben steht jedes Symbol noch einmal mit einem Schreibfeld – dort wird die Zahl eingetragen, die an der Stelle des Symbols steht (bis 26 Symbole, A–Z). Ist das Widget ausgewählt, setzt ein Klick auf ein Feld dort ein Symbol oder nimmt es wieder weg.</li>
+    <li><b>Eintragen:</b> vorgegebene Zahlen werden an der richtigen Stelle in die Tafel geschrieben. Die Zielfelder sind immer leer; wie viel sonst vorgegeben ist, stellt derselbe Hilfe-Regler wie bei Lücken ein. Ist das Widget ausgewählt, macht ein Klick auf ein Feld es zur gesuchten Zahl oder nimmt es wieder heraus.</li>
     <li><b>Ausschnitte:</b> ausgestanzte Teile der Tafel (Plus-, L-, T-Formen …) mit einer vorgegebenen Zahl –
         die Nachbarfelder werden logisch ergänzt. Optional mit gezeichnetem Schatten.</li>
     <li><b>Eigene:</b> die Tafel selbst gestalten – sie startet vollständig; ist das Widget ausgewählt, blendet ein Klick auf eine Zahl sie aus oder wieder ein (beim Bearbeiten blass, in der Lösung blau).</li>
   </ul>
   <p>Größe: <b>Klein</b> (feste Kästchen), <b>Mittel</b> (bei Lücken füllen Tafel und Eintrag-Spalte zusammen die Breite) und <b>Groß</b> (Tafel über die ganze Breite, bei Lücken stehen die Eintragfelder darunter). Anordnung und Ausrichtung mehrerer Tafeln über
      <a href="#standardoptionen">Verteilung</a>. Neue Aufgaben per <b>Würfeln 🎲</b>, Lösungen blau.</p>
+</article>
+
+<article id="w-zahlenkarten" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Zahlenkarten">
+  <h1><span class="wicon">🃏</span>Zahlenkarten</h1>
+  <span class="cattag mathematik">Mathematik</span>
+  <p>Zahlen einzeln auf Karten – z. B. zum Ordnen, Ausschneiden oder Vergleichen. Die Zahlen werden im gewählten
+     <b>Zahlenraum</b> (bis 10, 20, 100, 1000) gewürfelt, <b>gemischt</b> oder <b>sortiert</b>; die Null kann dazukommen.
+     Eigene Zahlen trägst du kommagetrennt ein oder änderst eine Karte direkt im Blatt (Klick bzw. Doppelklick).
+     Es passen so viele Karten in eine Reihe wie Platz ist; die Verteilung (Links – Standard –, Mitte oder Block) stellst du wie bei anderen Widgets ein. Größe: Klein, Mittel, Groß.</p>
 </article>
 
 <article id="w-stellenwert" data-group="Widgets: Mathematik" data-cat="mathematik" data-title="Stellenwerttafel">

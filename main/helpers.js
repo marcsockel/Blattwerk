@@ -347,6 +347,7 @@ function flexDistribute(innerHtmls, opts) {
 
   return `<div class="series" data-itemw="${itemW}"${opts.estimate ? ' data-estimate="1"' : ''}${opts.lines ? ` data-lines="${esc(opts.lines)}"` : ''} data-align="${layout.align}"`
     + ` data-gapcol="${gapCol}" data-perrow="${perRow}" data-count="${items.length}"`
+    + (opts.gap != null ? ` data-mingap="${opts.gap}"` : '')   // eigener Mindestabstand (auch im Blocksatz)
     + ` style="--s-col-gap:${gapCol}px;--s-row-gap:${gapRow}px;`
     + `grid-template-columns:repeat(${initial},${itemW}px);">${cells}</div>`;
 }
@@ -451,7 +452,8 @@ function fitSeries(el) {
     for (const c of el.children) itemW = Math.max(itemW, Math.ceil(c.scrollWidth));
   }
   const lines = el.dataset.lines || '';   // Trennlinien-Modus: Zellen ohne Lücke, Linien dazwischen
-  const minGap = lines ? 0 : (+el.dataset.gapcol || 24);
+  // Blocksatz hat gapcol 0 → Mindestabstand: der widget-eigene (data-mingap), sonst 24 px
+  const minGap = lines ? 0 : (el.dataset.mingap != null ? +el.dataset.mingap : (+el.dataset.gapcol || 24));
   const r = seriesResolve({
     width, itemW,
     count: +el.dataset.count || el.children.length,
@@ -802,13 +804,14 @@ document.addEventListener('click', e => {
   const kurzDavor = L && L.id === id && L.i === i && jetzt - L.t < 450;
   if (kurzDavor || selId === id) {
     _bwAufgabeKlick = null;
-    const alt = A.text(w, i); if (alt == null) return;
+    const ref = item.dataset.aufg;                      // optional: was genau angeklickt wurde
+    const alt = A.text(w, i, ref); if (alt == null) return;
     const ev = { clientX: e.clientX, clientY: e.clientY };
     setTimeout(() => {
       if (selId !== id) sel(id);
       bwAufgabeEingabe(ev, alt, txt => {
         const vorher = _snap();
-        const r = A.setzen(w, i, txt);
+        const r = A.setzen(w, i, txt, ref);
         if (r !== true) return r;
         saveHistory(vorher);
         render(); renderProps(id);
@@ -825,4 +828,69 @@ function bwAufgabeZahlen(txt, zeichenRe) {
   const teile = t.split(zeichenRe).map(v => v.trim());
   if (teile.length < 2 || !teile.every(v => /^\d+$/.test(v))) return null;
   return teile.map(v => parseInt(v, 10));
+}
+
+// "7:30", "7.30", "7 Uhr 30", "7" → {h, m} oder null
+function bwUhrzeitLesen(t, bereich) {
+  const m = String(t).trim().replace(/\s*uhr\s*/i, ':').replace(/[.,]/, ':').match(/^(\d{1,2})(?::(\d{1,2}))?:?$/);
+  if (!m) return null;
+  const h = +m[1], mi = m[2] != null ? +m[2] : 0;
+  const maxH = bereich === '0-24' ? 23 : 12, minH = bereich === '0-24' ? 0 : 1;
+  if (h < minH || h > maxH || mi > 59) return null;
+  return { h, m: mi };
+}
+
+// ── Echtes Schwarz-Weiß für Bilder (druckfest) ────────────────────────────────
+// Der CSS-Filter grayscale() wird beim Drucken nicht in jedem Browser angewandt
+// (Safari/WebKit druckt das Bild dann farbig). Deshalb wird das Bild einmal über ein
+// <canvas> wirklich in Graustufen umgerechnet und als Daten-URL zwischengespeichert
+// (nur im Arbeitsspeicher — die Widget-Daten behalten die Original-Quelle).
+//   swSrc(src)      → fertige Graustufen-URL oder null (noch nicht umgerechnet)
+//   swConvert(root) → rechnet alle <img class="img-sw" data-sw> unter root um
+// Klappt die Umrechnung nicht (z. B. fremder Server ohne Freigabe), bleibt der CSS-Filter.
+const _swCache = new Map();   // Original-src → Graustufen-Daten-URL | false (nicht möglich)
+function swSrc(src) { const c = _swCache.get(src); return typeof c === 'string' ? c : null; }
+function swGrau(img, key) {
+  try {
+    let nw = img.naturalWidth, nh = img.naturalHeight;
+    if (!nw || !nh) { const r = img.getBoundingClientRect(); nw = r.width; nh = r.height; }
+    if (!nw || !nh) return null;
+    // Vektorgrafik: groß rastern (bleibt im Druck scharf); Fotos: Originalgröße, höchstens 2000 px
+    const svg = /\.svg([?#]|$)|^data:image\/svg/i.test(key);
+    const f = (svg ? 1000 : Math.min(2000, Math.max(nw, nh))) / Math.max(nw, nh);
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(1, Math.round(nw * f)); cv.height = Math.max(1, Math.round(nh * f));
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, cv.width, cv.height);
+    const id = ctx.getImageData(0, 0, cv.width, cv.height), p = id.data;
+    let sichtbar = false;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3]) sichtbar = true;
+      const g = Math.round(0.2126 * p[i] + 0.7152 * p[i + 1] + 0.0722 * p[i + 2]);
+      p[i] = p[i + 1] = p[i + 2] = g;
+    }
+    if (!sichtbar) return null;            // nichts gezeichnet → lieber beim Filter bleiben
+    ctx.putImageData(id, 0, 0);
+    return cv.toDataURL('image/png');
+  } catch (e) { return null; }
+}
+function swApply(img, url) {
+  img.classList.remove('img-sw');
+  img.removeAttribute('data-sw');
+  img.style.filter = '';
+  img.src = url;
+}
+function swConvert(root) {
+  (root && root.querySelectorAll ? root : document).querySelectorAll('img.img-sw[data-sw]').forEach(img => {
+    const key = img.getAttribute('src'); if (!key) return;
+    const c = _swCache.get(key);
+    if (typeof c === 'string') { swApply(img, c); return; }
+    if (c === false) return;
+    const run = () => {
+      let u = _swCache.get(key);
+      if (u === undefined) { u = swGrau(img, key) || false; _swCache.set(key, u); }
+      if (u) document.querySelectorAll('img.img-sw[data-sw]').forEach(i => { if (i.getAttribute('src') === key) swApply(i, u); });
+    };
+    if (img.complete) run(); else img.addEventListener('load', run, { once: true });
+  });
 }

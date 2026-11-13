@@ -449,3 +449,17 @@ function hfEditTasks(id, value) {
   w.tasks = value;
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Format wie „Manuell".
+BW_AUFGABE.hunderterfeld = {
+  text: (w, i) => (w.items || [])[i] ? hfSerialize([w.items[i]]) : null,
+  setzen: (w, i, txt) => {
+    const it = hfParse(txt.replace(/=\s*$/, '').replace(/−/g, '-'), w)[0];
+    const m = w.modus || 'feld';
+    if (!it) return (m === 'feld' || m === 'zahl') ? 'Bitte eine Zahl von 0 bis 100.' : `Bitte so eingeben: ${m === 'plus' ? '23 + 34' : '87 - 34'}`;
+    if ((it.typ === 'plus' && it.result > 100) || (it.typ === 'minus' && it.result < 0)) return 'Das Ergebnis muss zwischen 0 und 100 liegen.';
+    w.items[i] = it;
+    w.tasks = hfSerialize(w.items);
+    return true;
+  },
+};

@@ -70,7 +70,7 @@ function ztGenPieces(w) {
 }
 
 function ztPieceSvg(p, d, cs) {
-  const m = 1.5, fs = Math.round(cs * 0.42);
+  const m = 1.5, fs = Math.round(cs * 0.52);
   const isActive = d.id === selId || _solutionsMode;
   const ff = "'DidactGothic7',sans-serif";
   const o = d.stueckSchatten ? (cs >= 40 ? 3 : 2) : 0;     // gezeichneter Schatten, Versatz nach Größe
@@ -108,7 +108,7 @@ function ztPiecesHtml(d) {
 // Ein Teil der Tafel ist ausgefüllt (Vorgabe viel/mittel/wenig), der Rest leer.
 // An einigen leeren Stellen steht ein Symbol (Kreis mit Buchstabe). Rechts daneben
 // steht jedes Symbol noch einmal mit einem Schreibfeld → Zahl an dieser Stelle eintragen.
-const ZT_SYM_MAX = 8;
+const ZT_SYM_MAX = 26;   // A–Z
 // Hilfe-Stufen (Slider 0–10): welche Zahlen in der Tafel vorgegeben sind.
 const ZT_HILFE = [
   { t: 'Keine Hilfe' },
@@ -166,24 +166,36 @@ function ztSymbolSvg(x, y, cs, buchstabe) {
 }
 
 // Rechte Spalte: Symbol = [Schreibfeld]
+// Mehr als 8 Symbole stünden in EINER Spalte zu dicht (ab 11 länger als die Tafel) →
+// zweite Spalte daneben, sofern rechts neben der Tafel Platz ist (z. B. Größe „Klein").
+// Die zwei Spalten sind etwas schmaler (kürzeres „=", schmaleres Schreibfeld).
 function ztAntwortSvg(d, cs, hoehe) {
   const syms = d.blanks || [];
   const isActive = d.id === selId || _solutionsMode;
   const ff = "'DidactGothic7',sans-serif";
-  const bw = Math.round(cs * 1.7), eqW = Math.round(cs * 0.8), m = 1.5;
-  const W = cs + eqW + bw + 2 * m;
-  const n = syms.length;
-  const gap = n > 1 ? Math.min(cs * 0.6, Math.max(0, (hoehe - 2 * m - n * cs) / (n - 1))) : 0;
+  const m = 1.5, n = syms.length;
+  let bw = Math.round(cs * 1.7), eqW = Math.round(cs * 0.8), cols = 1, colGap = 0;
+  if (n > 8) {
+    const eq2 = Math.round(cs * 0.6), bw2 = Math.round(cs * 1.5);
+    const frei = (ztAvail(d) || 0) - (10 * cs + 3) - ZT_LUECKE_GAP;          // Platz rechts der Tafel
+    const cg = Math.min(Math.round(cs * 0.7), Math.floor(frei - 2 * (cs + eq2 + bw2) - 2 * m));
+    if (cg >= 12) { cols = 2; eqW = eq2; bw = bw2; colGap = cg; }
+  }
+  const colW = cs + eqW + bw;
+  const W = cols * colW + (cols - 1) * colGap + 2 * m;
+  const rows = Math.ceil(n / cols);
+  const gap = rows > 1 ? Math.min(cs * 0.6, Math.max(0, (hoehe - 2 * m - rows * cs) / (rows - 1))) : 0;
   let g = '';
   syms.forEach((num, i) => {
-    const y = m + i * (cs + gap);
-    g += ztSymbolSvg(m, y, cs, String.fromCharCode(65 + i));
-    g += `<text x="${m + cs + eqW / 2}" y="${y + cs / 2}" text-anchor="middle" dominant-baseline="central" font-family="${ff}" font-size="${Math.round(cs * 0.5)}" fill="#222">=</text>`;
-    const bx = m + cs + eqW;
+    const x0 = m + Math.floor(i / rows) * (colW + colGap);
+    const y = m + (i % rows) * (cs + gap);
+    g += ztSymbolSvg(x0, y, cs, String.fromCharCode(65 + i));
+    g += `<text x="${x0 + cs + eqW / 2}" y="${y + cs / 2}" text-anchor="middle" dominant-baseline="central" font-family="${ff}" font-size="${Math.round(cs * 0.5)}" fill="#222">=</text>`;
+    const bx = x0 + cs + eqW;
     g += `<rect x="${bx}" y="${y}" width="${bw}" height="${cs}" fill="#fff" stroke="#999" stroke-width="1.4" rx="2"/>`;
     if (isActive) g += `<text x="${bx + bw / 2}" y="${y + cs / 2}" text-anchor="middle" dominant-baseline="central" font-family="${ff}" font-size="${Math.round(cs * 0.5)}" font-weight="700" fill="#2563eb">${num + ztOff(d)}</text>`;
   });
-  const H = n ? m * 2 + n * cs + (n - 1) * gap : 0;
+  const H = n ? m * 2 + rows * cs + (rows - 1) * gap : 0;
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;">${g}</svg>`;
 }
 
@@ -213,17 +225,45 @@ function ztGroesse(d) {
 }
 function ztAvail(d) {
   if (typeof geom !== 'function' || typeof widthFrac !== 'function') return 0;
-  return geom().contentW * widthFrac(d) - (d.flush ? 0 : 18) + 2;
+  // 4 px Reserve: Safari rundet die mm-Seitenbreite anders als Chrome → sonst bricht bei
+  // „Mittel" die Eintrag-Spalte unter die Tafel um
+  return geom().contentW * widthFrac(d) - (d.flush ? 0 : 18) - 4;
 }
-function ztCs(d) {
+// Höchste Zellgröße, damit die Tafel noch aufs Blatt passt (≈80 px Luft für Überschrift/
+// Aufgabentext). Greift praktisch nur im Querformat.
+function ztMaxCs() {
+  if (typeof geom !== 'function') return 999;
+  const hoehe = (geom().ovH || 267) * 96 / 25.4;
+  return Math.floor((hoehe - 80 - 3) / 10 * 10) / 10;
+}
+// „Groß" über die ganze Breite (Eintragfelder darunter) – nur, wenn die Tafel dann noch
+// aufs Blatt passt. Sonst (Querformat) wie „Mittel": Eintragfelder rechts daneben.
+function ztGrossVoll(d) {
+  if (ztGroesse(d) !== 'gross') return false;
+  const avail = ztAvail(d);
+  return !!avail && Math.floor((avail - 6) / 10 * 10) / 10 <= ztMaxCs();
+}
+// Zellgröße + Anordnung der Eintragfelder:
+//   unten = false → Spalte rechts neben der Tafel (Tafel + 28 px + 3,5·cs müssen in die Breite passen)
+//   unten = true  → Groß über die ganze Breite, oder zu schmal für „daneben" (z. B. ½ Breite):
+//                   Eintragfelder in Reihen unter der Tafel, Tafel so groß wie die Breite erlaubt.
+// Fehlen nur wenige Pixel, wird die Tafel leicht verkleinert (bis 30 px), damit es daneben passt.
+function ztLayout(d) {
   const g = ztGroesse(d), avail = ztAvail(d);
-  if (g === 'klein' || !avail) return 34;
-  // Mittel: Breite = Tafel (10·cs + 3) + Abstand + Spalte (3,5·cs + 3)
-  const cs = g === 'gross'
-    ? Math.floor((avail - 6) / 10 * 10) / 10
-    : Math.floor((avail - ZT_LUECKE_GAP - 6) / 13.5 * 10) / 10;
-  return cs >= 34 ? cs : 34;           // zu schmal (z.B. halbe Breite) → Klein
+  if (!avail) return { cs: 34, unten: false };
+  const maxCs = ztMaxCs();
+  const voll = Math.floor((avail - 6) / 10 * 10) / 10;                       // Tafel allein, volle Breite
+  if (ztGrossVoll(d)) return { cs: voll, unten: true };
+  const daneben = Math.floor((avail - ZT_LUECKE_GAP - 6) / 13.5 * 10) / 10;  // Tafel + Spalte
+  if ((d.modus || 'luecken') === 'voll') {                                   // Eigene: keine Spalte daneben
+    const z = g === 'klein' ? 34 : (daneben >= 30 ? daneben : voll);
+    return { cs: Math.min(z, voll, maxCs), unten: false };
+  }
+  const ziel = Math.min(g === 'klein' ? 34 : daneben, maxCs);
+  if (daneben >= 30) return { cs: Math.min(ziel, daneben), unten: false };
+  return { cs: Math.min(g === 'klein' ? 34 : voll, voll, maxCs), unten: true };
 }
+function ztCs(d) { return ztLayout(d).cs; }
 
 // Lücken + Groß: Eintragfelder unter der Tafel, nebeneinander
 function ztAntwortReiheHtml(d) {
@@ -257,7 +297,8 @@ function ztChartSvg(d) {
   const ff = "'DidactGothic7',sans-serif";
   // Eigene: einzelne Zahlen per Klick aus-/einblenden (nur im Bearbeiten, nicht in der Lösung)
   const versteckt = new Set(modus === 'voll' ? (d.versteckt || []) : []);
-  const klickbar = modus === 'voll' && d.id === selId && !_solutionsMode;
+  // Eigene: Zahlen ein-/ausblenden · Lücken/Eintragen: Felder als gesuchte Zahl an-/abwählen
+  const klickbar = ['voll', 'luecken', 'einkreisen'].includes(modus) && d.id === selId && !_solutionsMode;
 
   let g = '', klick = '';
   for (let r = 0; r < 10; r++) {
@@ -276,7 +317,11 @@ function ztChartSvg(d) {
       } else if (!zeigen || zeigen.has(num)) {
         g += `<text x="${x + cs / 2}" y="${y + cs / 2}" text-anchor="middle" dominant-baseline="central" font-family="${ff}" font-size="${ztFs(fs, cs, num + off)}" fill="#222">${num + off}</text>`;
       }
-      if (klickbar) klick += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="transparent" style="cursor:pointer;" onclick="event.stopPropagation();ztToggle(${d.id},${num})"><title>${versteckt.has(num) ? 'Einblenden' : 'Ausblenden'}</title></rect>`;
+      if (klickbar) {
+        const tip = modus === 'voll' ? (versteckt.has(num) ? 'Einblenden' : 'Ausblenden')
+          : (symIdx.has(num) || ziele.has(num)) ? 'Nicht mehr gesucht' : 'Als gesuchte Zahl wählen';
+        klick += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" fill="transparent" onclick="event.stopPropagation();ztToggle(${d.id},${num})"><title>${tip}</title></rect>`;
+      }
     }
   }
   // 5er-Hilfslinien (etwas kräftiger) + Außenrahmen
@@ -319,9 +364,9 @@ WIDGETS.push({
     if (modus === 'luecken' && !Array.isArray(d.zeigen)) ztGenerate(d);   // auch ältere Blätter (ohne Symbole)
     if (modus === 'luecken') {
       const cs = ztCs(d), H = 10 * cs + 3;
-      if (ztGroesse(d) === 'gross')
+      if (ztLayout(d).unten)
         return atHtml(d) + `<div style="text-align:${chartAlign};"><div style="display:inline-block;text-align:left;">${ztChartSvg(d)}</div>${ztAntwortReiheHtml(d)}</div>`;
-      return atHtml(d) + `<div style="text-align:${chartAlign};"><div style="display:inline-flex;align-items:flex-start;gap:${ZT_LUECKE_GAP}px;flex-wrap:wrap;text-align:left;">`
+      return atHtml(d) + `<div style="text-align:${chartAlign};"><div style="display:inline-flex;align-items:flex-start;gap:${ZT_LUECKE_GAP}px;flex-wrap:nowrap;text-align:left;">`
         + `${ztChartSvg(d)}${ztAntwortSvg(d, cs, H)}</div></div>`;
     }
     if (modus === 'einkreisen' && !Array.isArray(d.zeigen)) ztGenZeigen(d);   // ältere Blätter
@@ -335,7 +380,9 @@ WIDGETS.push({
       const kw = Math.round(hfs * Math.max(2.2, 0.62 * maxL + 0.5)), kh = Math.round(hfs * 1.6), gap = 10;   // gap = Mindestabstand
       const kaestchen = nums.map(n => `<span style="display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;`
         + `width:${kw}px;height:${kh}px;border:1.5px solid #555;border-radius:3px;font-size:${hfs}px;">${n}</span>`).join('') || '—';
-      const label = `<div style="font-size:${hfs}px;margin-bottom:8px;">Trage ein:</div>`;
+      // Hinweis über den Zahlen: frei änderbar; leeres Feld = kein Hinweis
+      const hinweis = (d.hinweis == null ? 'Trage ein:' : String(d.hinweis)).trim();
+      const label = hinweis ? `<div style="font-size:${hfs}px;margin-bottom:8px;">${esc(hinweis)}</div>` : '';
       const rechtsW = (ztAvail(d) || 0) - chartW - ZT_LUECKE_GAP;
       // Raster: so viele Spalten wie passen. Reicht die Anzahl für eine volle Reihe → Blocksatz
       // (erste/letzte Spalte bündig mit dem Rand), sonst linksbündig mit Mindestabstand.
@@ -345,7 +392,7 @@ WIDGETS.push({
         return `<div style="display:grid;grid-template-columns:repeat(${n},${kw}px);row-gap:${gap}px;`
           + (block ? `justify-content:space-between;` : `column-gap:${gap}px;`) + `">${kaestchen}</div>`;
       };
-      if (ztGroesse(d) !== 'gross' && rechtsW >= 2 * kw + gap) {
+      if (!ztLayout(d).unten && rechtsW >= 2 * kw + gap) {
         return atHtml(d) + `<div style="text-align:${chartAlign};"><div style="display:inline-flex;align-items:flex-start;gap:${ZT_LUECKE_GAP}px;text-align:left;">`
           + `${ztChartSvg(d)}<div style="width:${Math.floor(rechtsW)}px;font-family:'DidactGothic7',sans-serif;">${label}`
           + `${raster(Math.floor(rechtsW))}</div></div></div>`;
@@ -401,10 +448,14 @@ WIDGETS.push({
           style="margin:4px 0 8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;
                  color:#cdd6f4;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;">🎲 Neu würfeln</button>` +
         ztHilfeSlider(d) +
-        `<div style="font-size:11px;color:#aaa;margin-bottom:4px;">Die Symbole stehen rechts noch einmal mit Schreibfeld – dort wird die Zahl an der Stelle des Symbols eingetragen.</div>`;
+        `<div style="font-size:11px;color:#aaa;margin-bottom:4px;">Die Symbole stehen rechts noch einmal mit Schreibfeld – dort wird die Zahl an der Stelle des Symbols eingetragen.<br>Klick auf ein Feld der Tafel setzt dort ein Symbol bzw. nimmt es wieder weg.</div>`;
     } else if (modus === 'einkreisen') {
       out += pr('Einzutragende Zahlen (kommagetrennt)',
-        `<input value="${esc(d.circle||'')}" placeholder="z.B. 12, 34, 56" onchange="ztZiele(${d.id},this.value)">`) +
+        `<input value="${esc(d.circle||'')}" placeholder="z.B. 12, 34, 56" onchange="ztZiele(${d.id},this.value)">`
+        + `<div style="font-size:11px;color:#aaa;margin-top:3px;">Oder in der Tafel auf ein Feld klicken – es wird gesucht bzw. nicht mehr gesucht.</div>`) +
+        pr('Hinweis über den Zahlen',
+          `<input value="${esc(d.hinweis == null ? 'Trage ein:' : d.hinweis)}" placeholder="kein Hinweis" onchange="upd(${d.id},'hinweis',this.value)">`
+          + `<div style="font-size:11px;color:#aaa;margin-top:3px;">Feld leeren = ohne Hinweis.</div>`) +
         pr('Anzahl (für Würfeln)', `<input type="number" min="1" max="40" value="${d.anzahl||8}" onchange="upd(${d.id},'anzahl',+this.value)">`) +
         `<button onclick="event.stopPropagation();ztRoll(${d.id})"
           style="margin:4px 0 8px;width:100%;padding:6px;border:none;border-radius:5px;background:#313244;
@@ -485,6 +536,8 @@ function ztHunderter(id, h) {
 // Eigene: einzelne Zahl aus-/einblenden
 function ztToggle(id, num) {
   const w = widgets.find(x => x.id === id); if (!w) return;
+  const modus = w.modus || 'luecken';
+  if (modus === 'luecken' || modus === 'einkreisen') { ztZielToggle(w, num); return; }
   saveHistory();
   const v = new Set(w.versteckt || []);
   if (v.has(num)) v.delete(num); else v.add(num);
@@ -497,4 +550,26 @@ function ztAlleZeigen(id) {
   saveHistory();
   w.versteckt = [];
   render(); renderProps(id);
+}
+
+// Lücken/Eintragen: ein Feld der Tafel als gesuchte Zahl an- oder abwählen.
+// Lücken → Symbol (nächster Buchstabe) dazu/weg; Eintragen → Zahl in die Liste dazu/weg.
+// Ein gesuchtes Feld ist immer leer (wird aus den vorgegebenen Zahlen genommen).
+function ztZielToggle(w, num) {
+  const modus = w.modus || 'luecken';
+  if (modus === 'luecken') {
+    const b = (w.blanks || []).slice(), k = b.indexOf(num);
+    if (k >= 0) b.splice(k, 1);
+    else { if (b.length >= ZT_SYM_MAX) return; b.push(num); }   // A–Z
+    saveHistory();
+    w.blanks = b; w.anzahl = Math.max(1, b.length);
+  } else {
+    const off = ztOff(w), L = ztParseNums(w.circle, off), k = L.indexOf(num);
+    if (k >= 0) L.splice(k, 1); else L.push(num);
+    saveHistory();
+    w.circle = L.map(n => n + off).join(', ');
+  }
+  w.zeigen = (w.zeigen || []).filter(n => n !== num);
+  _dirty = true;
+  render(); renderProps(w.id);
 }

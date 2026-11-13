@@ -41,7 +41,7 @@ WIDGETS.push({
 
     const qBlocks = questions.map((item, qi) => {
       // Antworten ggf. mischen (deterministisch per seed = widget-id + frage-index)
-      let entries = item.answers.map((text, i) => ({ text, correct: i === item.correct }));
+      let entries = item.answers.map((text, i) => ({ text, i, correct: i === item.correct }));
       // Seed pro Widget gespeichert → Reihenfolge bleibt stabil, bis neu gemischt wird
       if (doShuffle) entries = mcShuffled(entries, (d.mischSeed || d.id) * 31 + qi);
 
@@ -53,14 +53,14 @@ WIDGETS.push({
                                background:${isCorrect ? '#2563eb' : 'transparent'};"></span>`;
         return `<div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;">
           ${circle}
-          <span style="${ff}">
+          <span style="${ff}" data-aufg="a:${qi}:${entry.i}">
             <span style="font-weight:600;">${labels[ai] || ai+1})</span>&nbsp;${esc(entry.text)}
           </span>
         </div>`;
       }).join('');
 
       return `<div style="margin-bottom:12px;">
-        <div style="${ff}font-weight:700;margin-bottom:5px;">
+        <div style="${ff}font-weight:700;margin-bottom:5px;" data-aufg="q:${qi}">
           ${qi+1}.&nbsp;${esc(item.q)}
         </div>
         <div style="padding-left:4px;">${answers}</div>
@@ -184,3 +184,20 @@ function mcUpdate(id, text) {
   saveHistory();
   w.text = text; render(); renderProps(id);
 }
+
+// Frage oder einzelne Antwort direkt im Blatt ändern (main/helpers.js → BW_AUFGABE).
+// Die richtige Antwort bleibt dieselbe (auch wenn ihr Text geändert wird).
+BW_AUFGABE.multiplechoice = {
+  ziel: '[data-aufg]',
+  text: (w, i, ref) => {
+    const [art, qi, ai] = String(ref).split(':'), q = mcParseText(w.text)[+qi]; if (!q) return null;
+    return art === 'q' ? q.q : q.answers[+ai];
+  },
+  setzen: (w, i, txt, ref) => {
+    const [art, qi, ai] = String(ref).split(':'), fragen = mcParseText(w.text), q = fragen[+qi];
+    if (!q) return 'Frage nicht gefunden.';
+    if (art === 'q') q.q = txt.trim(); else q.answers[+ai] = txt.trim();
+    w.text = mcSerializeQuestions(fragen);
+    return true;
+  },
+};

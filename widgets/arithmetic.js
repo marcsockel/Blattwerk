@@ -323,8 +323,8 @@ WIDGETS.push({
     const renderGroup = (group, gi) => {
       const rows = group.map(p => {
         if (ergaenzungZufall && p.result != null && p.raw === undefined && !p.isVergleich && !p.isZeichen)
-          return renderZufallRow(p);
-        return renderTaskRow(p);
+          return renderZufallRow(p).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"');
+        return renderTaskRow(p).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"');   // data-aufg: direkt im Blatt bearbeitbar
       }).join('');
       const table = `<table style="border-collapse:collapse;">${rows}</table>`;
       if (!d.paeckchenAbc) return table;
@@ -488,13 +488,6 @@ function arithToggleOp(id, sym) {
   else ops.push(sym);
   w.ops = ops;
   arithDoGenerate(w);   // Aufgaben passen sonst nicht mehr zu den gewählten Zeichen
-  render(); renderProps(id);
-}
-
-function arithSetErgaenzung(id, val) {
-  const w = widgets.find(x => x.id === id); if (!w) return;
-  saveHistory();
-  w.ergaenzung = val;
   render(); renderProps(id);
 }
 
@@ -827,3 +820,17 @@ function arithGenerate(id) {
   arithDoGenerate(w);
   render(); renderProps(id);
 }
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Text = Zeile wie bei
+// „Manuell bearbeiten", z. B. "7 + 5 =", "3 + _ = 10", "12 <?> 7 + 4".
+BW_AUFGABE.arithmetic = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.tasks || '').split('\n').map(t => t.trim()).filter(Boolean)[i] ?? null,
+  setzen: (w, i, txt) => {
+    const t = txt.trim();
+    if (!/\d/.test(t)) return 'Bitte eine Aufgabe eingeben, z. B. 7 + 5 =';
+    let k = -1;
+    w.tasks = (w.tasks || '').split('\n').map(l => (l.trim() && ++k === i) ? t : l).join('\n');
+    return true;
+  },
+};

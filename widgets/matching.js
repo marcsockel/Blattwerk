@@ -49,8 +49,9 @@ WIDGETS.push({
     const strokeCol = isActive ? '#2563eb' : '#ccc';
     const strokeW   = isActive ? 2 : 1.5;
 
-    const card = (val, id) =>
-      `<div style="padding:3px 6px;font-size:${fontSize}px;font-family:${font};white-space:nowrap;">` +
+    // ref = "Paar:Spalte" → Karte direkt im Blatt bearbeitbar (BW_AUFGABE.matching)
+    const card = (val, id, ref) =>
+      `<div${ref ? ` data-aufg="${ref}"` : ''} style="padding:3px 6px;font-size:${fontSize}px;font-family:${font};white-space:nowrap;">` +
       `<span ${id?`id="${id}"`:''}` +
       ` style="display:block;border:1.5px solid #bbb;border-radius:5px;background:#fff;` +
       `padding:3px 10px;text-align:center;">${esc(val)}</span></div>`;
@@ -71,19 +72,19 @@ WIDGETS.push({
 
       const topRow = left.map((val, i) => {
         const leftId = drawSet.has(i) ? `mleft-${d.id}-${i}` : null;
-        return card(val, leftId);
+        return card(val, leftId, `${i}:0`);
       }).join("");
 
       const midRow = right1.map((val, i) => {
         const pairIdx = order[i];
         const midId = drawSet.has(pairIdx) ? `mmid-${d.id}-${pairIdx}` : null;
-        return card(val, midId);
+        return card(val, midId, `${pairIdx}:1`);
       }).join("");
 
       const mid2Row = is3 ? right2.map((val, i) => {
         const pairIdx = order2[i];
         const rightId = drawSet.has(pairIdx) ? `mright2-${d.id}-${pairIdx}` : null;
-        return card(val, rightId);
+        return card(val, rightId, `${pairIdx}:2`);
       }).join("") : "";
 
       const lineRow = schreiblinien ? left.map((_, i) => {
@@ -142,9 +143,9 @@ WIDGETS.push({
         ? (is3 ? (i === exPos2 ? beispielText : undefined)
                 : (i === exPos  ? beispielText : undefined))
         : undefined;
-      return card(left[i], leftId) + gapDiv +
-        card(right1[i], midId) +
-        (is3 ? gapDiv + card(right2[i], rightId) : ``) +
+      return card(left[i], leftId, `${i}:0`) + gapDiv +
+        card(right1[i], midId, `${midPair}:1`) +
+        (is3 ? gapDiv + card(right2[i], rightId, `${rightPair}:2`) : ``) +
         (schreiblinien ? spacerDiv + writeLine(writeTxt) : ``);
     }).join("");
 
@@ -305,3 +306,15 @@ function matchingDrawNow(boxId, ...segments) {
     line.setAttribute('y2', p2.y);
   }
 }
+
+// Karte direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Die Paare bleiben verbunden.
+BW_AUFGABE.matching = {
+  ziel: '[data-aufg]',
+  text: (w, i, ref) => { const [p, k] = String(ref).split(':').map(Number); return (w.pairs[p] || [])[k] ?? null; },
+  setzen: (w, i, txt, ref) => {
+    const [p, k] = String(ref).split(':').map(Number);
+    if (!w.pairs[p]) return 'Karte nicht gefunden.';
+    w.pairs[p] = w.pairs[p].slice(); w.pairs[p][k] = txt.trim();
+    return true;
+  },
+};

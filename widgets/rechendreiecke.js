@@ -44,7 +44,7 @@ function rdGen(n, zahlenraum, leerfeld) {
   return Array.from({ length: n }, () => rdGenOne(zahlenraum, leerfeld));
 }
 
-function rdSvg(tri, active=false) {
+function rdSvg(tri, active=false, edit=null) {
   const { corners, sides, shownC, shownS } = tri;
   // Triangle vertices and centroid
   const TX=105, TY=15, BLX=20, BLY=158, BRX=190, BRY=158, CX=105, CY=110;
@@ -54,7 +54,7 @@ function rdSvg(tri, active=false) {
     [(BLX+CX)/2, (BLY+CY)/2], // bl  → (63, 134)
     [(BRX+CX)/2, (BRY+CY)/2], // br  → (148, 134)
   ];
-  const bw=42, bh=26;
+  const bw=48, bh=30;
   // Side box centers (outside the triangle, ~half-box-width gap from triangle side)
   const sp = [[24,87],[186,87],[105,179]]; // left, right, bottom
 
@@ -73,9 +73,9 @@ function rdSvg(tri, active=false) {
   corners.forEach((v, i) => {
     const [cx, cy] = cp[i];
     if (shownC[i]) {
-      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#1a1a1a">${v}</text>`;
+      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="20" font-weight="700" fill="#1a1a1a">${v}</text>`;
     } else if (active) {
-      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${v}</text>`;
+      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="20" font-weight="700" fill="#2563eb">${v}</text>`;
     }
   });
 
@@ -84,12 +84,19 @@ function rdSvg(tri, active=false) {
     const [cx, cy] = sp[i];
     s += `<rect x="${cx-bw/2}" y="${cy-bh/2}" width="${bw}" height="${bh}" rx="5" fill="white" stroke="#555" stroke-width="1.5"/>`;
     if (shownS[i]) {
-      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#1a1a1a">${v}</text>`;
+      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="20" font-weight="700" fill="#1a1a1a">${v}</text>`;
     } else if (active) {
-      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="15" font-weight="700" fill="#2563eb">${v}</text>`;
+      s += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="middle" font-family="'DidactGothic7',sans-serif" font-size="20" font-weight="700" fill="#2563eb">${v}</text>`;
     }
   });
 
+  // Ausgewählt: Innen- und Außenzahlen anklicken → direkt ändern
+  if (edit) {
+    const hit = (x, y, w, h, art, i) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="transparent"
+      onclick="rdEdit(event,${edit.id},${edit.ti},'${art}',${i})"><title>Zahl ändern</title></rect>`;
+    cp.forEach(([cx, cy], i) => { s += hit(cx - 20, cy - 14, 40, 28, 'c', i); });
+    sp.forEach(([cx, cy], i) => { s += hit(cx - bw/2, cy - bh/2, bw, bh, 's', i); });
+  }
   s += '</svg>';
   return s;
 }
@@ -108,7 +115,7 @@ WIDGETS.push({
     // Einheitliches Verteilungs-Layout (flexDistribute in helpers.js). Feste Breite basis.
     const basis = d.gross ? 250 : 188;
     return atHtml(d) + flexDistribute(
-      dreiecke.map(t => rdSvg(t, active)),
+      dreiecke.map((t, ti) => rdSvg(t, active, d.id === selId && !_solutionsMode ? { id: d.id, ti } : null)),
       { itemSize: `width:${basis}px;`, itemW: basis, d }
     );
   },
@@ -153,4 +160,32 @@ function rdSet(id, key, val) {
   w[key] = val;
   w.dreiecke = rdGen(w.anzahl||4, w.zahlenraum||100, w.leerfeld||"seiten");
   render(); renderProps(id);
+}
+
+// ── Zahl direkt im Dreieck ändern ─────────────────────────────────
+// Innenzahl (Ecke) → die beiden angrenzenden Außenzahlen rechnen sich neu.
+// Außenzahl (Seite = Summe zweier Ecken) → eine der beiden Ecken gleicht aus
+// (links: unten links, rechts/unten: unten rechts), die übrigen Seiten rechnen sich neu.
+function rdEdit(e, id, ti, art, i) {
+  const w = widgets.find(x => x.id === id); if (!w || !w.dreiecke || !w.dreiecke[ti]) return;
+  const t = w.dreiecke[ti];
+  const alt = art === 'c' ? t.corners[i] : t.sides[i];
+  bwZahlEingabe(e, alt, v => {
+    if (v < 0) return false;
+    const c = t.corners.slice();
+    if (art === 'c') c[i] = v;
+    else {
+      const paare = [[0, 1], [0, 2], [1, 2]];             // Seite → Ecken
+      const [p, q] = paare[i];
+      const aendern = i === 0 ? q : 2;                     // bl bei links, sonst br
+      const fest = aendern === q ? p : q;
+      c[aendern] = v - c[fest];
+      if (c[aendern] < 0) return false;
+    }
+    saveHistory();
+    t.corners = c;
+    t.sides = [c[0] + c[1], c[0] + c[2], c[1] + c[2]];
+    render(); renderProps(id);
+    return true;
+  }, 'Das geht nicht – die Innenzahl würde negativ.');
 }

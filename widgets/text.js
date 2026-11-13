@@ -237,7 +237,7 @@ WIDGETS.push({
 // Doppelklick auf den Text im Blatt → wird an Ort und Stelle editierbar.
 // Tippen schreibt sofort in die Daten (und in den Editor in den Eigenschaften);
 // Klick daneben oder Esc beendet die Bearbeitung.
-const INLINE_EDIT_TARGETS = { text: '[data-flowtext]', instruction: '.instr-box' };
+const INLINE_EDIT_TARGETS = { text: '[data-flowtext]', instruction: '.instr-box', infobox: '.infobox-text' };
 let _inlineEd = null;
 
 function inlineEditStart(e, id) {
@@ -258,7 +258,6 @@ function inlineEditStart(e, id) {
   el.contentEditable = 'true';
   el.style.outline = '2px solid #89b4fa';
   el.style.outlineOffset = '2px';
-  el.style.cursor = 'text';
   el.onclick = ev => ev.stopPropagation();      // Klick im Text darf das Widget nicht neu zeichnen
   el.onmousedown = ev => ev.stopPropagation();
   el.onpaste = ev => {
@@ -295,7 +294,7 @@ function inlineEditEnd() {
   inlineEditSave();
   _inlineEd = null;
   el.contentEditable = 'false';
-  el.style.outline = ''; el.style.outlineOffset = ''; el.style.cursor = '';
+  el.style.outline = ''; el.style.outlineOffset = '';
   el.onclick = el.onmousedown = el.onpaste = el.onkeydown = el.oninput = el.onblur = null;
   wrap.draggable = drag;
   edBlur();

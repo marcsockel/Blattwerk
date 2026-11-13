@@ -246,7 +246,7 @@ WIDGETS.push({
           return `<td style="${colW}padding:0;vertical-align:top;${zahl}">`
             + `${segment(html, i, n, ri, nRows, c.key === 'zahl')}</td>`;
         }).join('');
-        return `<tr>${cells}</tr>`;
+        return `<tr data-aufg="1">${cells}</tr>`;
       }).join('');
 
       return `<table style="border-collapse:collapse;table-layout:fixed;width:${tableW}px;">`
@@ -349,3 +349,16 @@ function nztManual(id, text) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { nztRegen, nztRowValues, nztVisibleCols, nztNeighbors, nztTasksToText, nztParseLine, nztApplyManual };
 }
+
+// Zeile direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Format: 45 | v45 | n45
+BW_AUFGABE.nachbarzahlen_tabelle = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.tasks || [])[i] ? nztTaskToLine(w.tasks[i]) : null,
+  setzen: (w, i, txt) => {
+    const t = nztParseLine(txt, w);
+    if (!t) return 'Bitte eine Zahl eingeben (v45 = Vorgänger vorgegeben, n45 = Nachfolger)';
+    w.tasks[i] = t;
+    w.manualText = nztTasksToText(w);
+    return true;
+  },
+};

@@ -134,13 +134,13 @@ WIDGETS.push({
                                style="font-size:${fontSize}px;font-family:${font};
                                       line-height:1.1;white-space:nowrap;"
                           >${esc(w)}</div>`;
-        return `<div style="display:inline-block;line-height:1.4;margin-bottom:${Math.round(fontSize * 0.6)}px;">${wordSpan}${box}</div>`;
+        return `<div data-aufg="1" style="display:inline-block;line-height:1.4;margin-bottom:${Math.round(fontSize * 0.6)}px;">${wordSpan}${box}</div>`;
       }
       const inner = modus === "gleichlang"
         ? silbenbogenGleichlangHTML(w, fontSize, arcWidth, d.id, wi)
         : silbenbogenHTML(w, fontSize);
       // white-space:nowrap → ein Wort wird NIE über zwei Zeilen getrennt
-      return `<div style="font-family:${font};line-height:1.4;white-space:nowrap;margin-bottom:${Math.round(fontSize * 0.6)}px;">${inner}</div>`;
+      return `<div data-aufg="1" style="font-family:${font};line-height:1.4;white-space:nowrap;margin-bottom:${Math.round(fontSize * 0.6)}px;">${inner}</div>`;
     });
 
     // Wörter untereinander; Spaltenzahl wie beim Multiple-Choice-Quiz (spaltenweise gefüllt).
@@ -299,3 +299,16 @@ function silbenwortAdd(id) {
   w.words.push("");
   render(); renderProps(id);
 }
+
+// Wort direkt im Blatt ändern (main/helpers.js → BW_AUFGABE); Silben/Bögen rechnen sich neu
+BW_AUFGABE.silbenwort = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.words || []).map(x => x.trim()).filter(Boolean)[i] ?? null,
+  setzen: (w, i, txt) => {
+    const t = txt.trim();
+    if (/\s/.test(t)) return 'Bitte nur ein Wort (ohne Leerzeichen).';
+    let k = -1;
+    w.words = (w.words || []).map(x => (x.trim() && ++k === i) ? t : x);
+    return true;
+  },
+};

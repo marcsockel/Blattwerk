@@ -297,10 +297,6 @@ function anlautApplyCase(letter, schreibweise) {
 const ANLAUT_EINZEL = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").concat(["Ä","Ö","Ü"]);
 const ANLAUT_ZWEIER = ["Au", "Ei", "Eu", "Sp", "St"];
 
-function anlautGenChoices(letters, schreibweise) {
-  return letters.map(letter => anlautShuffleOpts(letter, null, schreibweise || 'gross'));
-}
-
 function anlautShuffleOpts(letter, pool, schreibweise) {
   const sw = schreibweise || 'gross';
   const norm = anlautNormLetter(letter);

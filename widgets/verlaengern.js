@@ -1,9 +1,60 @@
 // Widget: Verlängern Tabelle — „die Bur[g/k]" → „viele Burgen" → „die Burg"
+// d.zeigVerlaengerung: verlängerte Form vorgeben (Hilfe; der entscheidende Buchstabe ist
+// unterstrichen) statt sie vom Kind schreiben zu lassen.
 
 // Font-Liste zentral in main/helpers.js (SCHREIB_FONTS).
 
-// Wortschatz aus dem Widget „Auslautverhärtung" (AUSLAUT_POOL in auslaut.js):
-// {art, wort, plural} — der richtige Buchstabe ist der letzte von „wort".
+// Wortschatz {art, wort, plural} — der richtige Buchstabe ist der letzte von „wort".
+const VL_POOL = {
+  'g/k': [
+    {art:'die', wort:'Burg',   plural:'Burgen'},
+    {art:'der', wort:'Tag',    plural:'Tage'},
+    {art:'der', wort:'Weg',    plural:'Wege'},
+    {art:'der', wort:'Berg',   plural:'Berge'},
+    {art:'der', wort:'Zug',    plural:'Züge'},
+    {art:'der', wort:'Zweig',  plural:'Zweige'},
+    {art:'der', wort:'Sieg',   plural:'Siege'},
+    {art:'der', wort:'Teig',   plural:'Teige'},
+    {art:'der', wort:'Sarg',   plural:'Särge'},
+    {art:'der', wort:'Steg',   plural:'Stege'},
+    {art:'der', wort:'Krug',   plural:'Krüge'},
+    {art:'der', wort:'Flug',   plural:'Flüge'},
+    {art:'der', wort:'Steig',  plural:'Steige'},
+    {art:'der', wort:'Pflug',  plural:'Pflüge'},
+    {art:'der', wort:'Betrug', plural:'Betrüge'},
+  ],
+  'd/t': [
+    {art:'das', wort:'Bad',   plural:'Bäder'},
+    {art:'das', wort:'Rad',   plural:'Räder'},
+    {art:'der', wort:'Hund',  plural:'Hunde'},
+    {art:'der', wort:'Wald',  plural:'Wälder'},
+    {art:'das', wort:'Kind',  plural:'Kinder'},
+    {art:'das', wort:'Land',  plural:'Länder'},
+    {art:'das', wort:'Pferd', plural:'Pferde'},
+    {art:'der', wort:'Mond',  plural:'Monde'},
+    {art:'das', wort:'Lied',  plural:'Lieder'},
+    {art:'das', wort:'Bild',  plural:'Bilder'},
+    {art:'der', wort:'Rand',  plural:'Ränder'},
+    {art:'der', wort:'Held',  plural:'Helden'},
+    {art:'das', wort:'Feld',  plural:'Felder'},
+    {art:'das', wort:'Hemd',  plural:'Hemden'},
+    {art:'der', wort:'Herd',  plural:'Herde'},
+    {art:'das', wort:'Pfand', plural:'Pfänder'},
+  ],
+  'b/p': [
+    {art:'das', wort:'Grab',    plural:'Gräber'},
+    {art:'der', wort:'Korb',    plural:'Körbe'},
+    {art:'der', wort:'Stab',    plural:'Stäbe'},
+    {art:'der', wort:'Dieb',    plural:'Diebe'},
+    {art:'das', wort:'Kalb',    plural:'Kälber'},
+    {art:'das', wort:'Sieb',    plural:'Siebe'},
+    {art:'der', wort:'Betrieb', plural:'Betriebe'},
+    {art:'der', wort:'Trieb',   plural:'Triebe'},
+    {art:'der', wort:'Urlaub',  plural:'Urlaube'},
+    {art:'das', wort:'Weib',    plural:'Weiber'},
+  ],
+};
+
 const VL_PAARE = ['g/k', 'd/t', 'b/p', 'doppelt'];
 const VL_LABEL  = { 'g/k': 'g/k', 'd/t': 'd/t', 'b/p': 'b/p', 'doppelt': 'Doppelt' };
 
@@ -36,7 +87,7 @@ function vlGenText(modi, anzahl) {
   const pool = [];
   modi.forEach(m => {
     if (m === 'doppelt') pool.push(...VL_DOPPEL.map(e => ({ e, m })));
-    else if (typeof AUSLAUT_POOL !== 'undefined' && AUSLAUT_POOL[m]) pool.push(...AUSLAUT_POOL[m].map(e => ({ e, m })));
+    else if (VL_POOL[m]) pool.push(...VL_POOL[m].map(e => ({ e, m })));
   });
   pool.sort(() => Math.random() - 0.5);
   return pool.slice(0, Math.min(anzahl, pool.length)).map(x => vlEintrag(x.e, x.m)).join('\n');
@@ -106,6 +157,16 @@ WIDGETS.push({
     const line = content => `<div style="flex:1;min-width:0;border-bottom:2px solid #444;margin-bottom:-1px;
                    height:${lh}px;line-height:${lh}px;white-space:nowrap;overflow:hidden;">${content}</div>`;
     const sol = t => isActive ? `<span style="${solStyle}">${esc(t)}</span>` : '';
+    // Verlängerung vorgeben: Wort steht da (ohne Schreiblinie), der entscheidende Buchstabe unterstrichen
+    const zeigVerl = !!d.zeigVerlaengerung;
+    const norm = t => String(t).toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u');
+    const vorgabe = (stem, richtig, verwandt) => {
+      const tail = norm(stem).slice(-2), k = norm(verwandt).indexOf(tail + norm(richtig));
+      const a = k < 0 ? -1 : k + tail.length, b = a + richtig.length;
+      const html = a < 0 ? esc(verwandt)
+        : `${esc(verwandt.slice(0, a))}<u style="font-weight:700;text-decoration-thickness:2px;text-underline-offset:3px;">${esc(verwandt.slice(a, b))}</u>${esc(verwandt.slice(b))}`;
+      return `<div style="flex:1;min-width:0;height:${lh}px;line-height:${lh}px;white-space:nowrap;margin-bottom:2px;">${html}</div>`;
+    };
 
     const rows = eintraege.map(({ art, stem, alt, end, verwandt }) => {
       const richtig = vlRichtig(stem, alt, verwandt);      // z.B. 'g' bei „viele Burgen"
@@ -115,7 +176,7 @@ WIDGETS.push({
           ${art ? art + ' ' : ''}${stem}<span style="background:#f0ede6;border-radius:3px;
             padding:1px 5px;font-weight:700;">${alt}</span>${end}
         </td>
-        <td style="${ansTd}width:30%;"><div style="display:flex;">${line(sol(verwandt))}</div></td>
+        <td style="${ansTd}width:30%;"><div style="display:flex;">${zeigVerl ? vorgabe(stem, richtig, verwandt) : line(sol(verwandt))}</div></td>
         <td style="${ansTd}"><div style="display:flex;align-items:flex-end;gap:6px;">
           <span style="line-height:${lh}px;white-space:nowrap;">also:</span>${line(sol(geloest))}</div></td>
       </tr>`;
@@ -138,7 +199,7 @@ WIDGETS.push({
     const fontSize = d.fontSize || 16;
     const text     = d.text     || '';
 
-    const poolSize = modi.reduce((n, m) => n + (m === 'doppelt' ? VL_DOPPEL.length : ((typeof AUSLAUT_POOL !== 'undefined' && AUSLAUT_POOL[m]) ? AUSLAUT_POOL[m].length : 0)), 0);
+    const poolSize = modi.reduce((n, m) => n + (m === 'doppelt' ? VL_DOPPEL.length : (VL_POOL[m] ? VL_POOL[m].length : 0)), 0);
 
     const togBtn = (label, active, onclick) =>
       `<button onclick="event.stopPropagation();${onclick}"
@@ -152,6 +213,12 @@ WIDGETS.push({
       <div class="prow"><label>Beispiele</label>
         <div style="display:flex;gap:4px;">
           ${VL_PAARE.map(m => togBtn(VL_LABEL[m], modi.includes(m), `vlToggleModus(${d.id},'${m}')`)).join('')}
+        </div>
+      </div>
+      <div class="prow"><label>Verlängerung</label>
+        <div style="display:flex;gap:4px;">
+          ${togBtn('Selbst schreiben', !d.zeigVerlaengerung, `upd(${d.id},'zeigVerlaengerung',false)`)}
+          ${togBtn('Vorgeben', !!d.zeigVerlaengerung, `upd(${d.id},'zeigVerlaengerung',true)`)}
         </div>
       </div>
       ${pr('Anzahl', `<input type="number" min="1" max="30"

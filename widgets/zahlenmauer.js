@@ -115,7 +115,7 @@ function zmSvg(mauer, n, fillMode, isActive=false, edit=null) {
       const val = grid[gridRow][col];
       rects += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}"
         fill="#ffffff" stroke="#999" stroke-width="${stroke}"/>`;
-      if (edit) klick += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}" fill="transparent" style="cursor:text;"
+      if (edit) klick += `<rect x="${x+stroke/2}" y="${y+stroke/2}" width="${cw}" height="${ch}" fill="transparent"
         onclick="zmEdit(event,${edit.id},${edit.mi},${gridRow},${col})"><title>Zahl ändern</title></rect>`;
       if (isShown)
         texts += `<text x="${x+stroke/2+cw/2}" y="${y+stroke/2+ch/2+ty}" text-anchor="middle"

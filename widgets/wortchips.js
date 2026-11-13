@@ -104,3 +104,15 @@ WIDGETS.push({
           onchange="upd(${d.id},'chipPadY',+this.value)">`);
   },
 });
+
+// Wort direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.wortchips = {
+  text: (w, i) => wcParseWords(w.wordsText)[i] ?? null,
+  setzen: (w, i, txt) => {
+    const t = txt.trim();
+    if (/[\n,;]/.test(t)) return 'Bitte nur ein Wort bzw. einen Begriff.';
+    const L = wcParseWords(w.wordsText); L[i] = t;
+    w.wordsText = L.join('\n');
+    return true;
+  },
+};

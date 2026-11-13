@@ -239,3 +239,20 @@ function zeitspanneUpdTime(id, idx, key, val) {
   w.items[idx][key] = val;
   render(); renderProps(id);
 }
+
+// Beide Uhrzeiten direkt im Blatt ändern (main/helpers.js → BW_AUFGABE): "7:30 - 9:15"
+BW_AUFGABE.zeitspanne = {
+  text: (w, i) => {
+    const t = (w.items || [])[i]; if (!t) return null;
+    const f = (h, m) => `${h}:${String(m).padStart(2, '0')}`;
+    return `${f(t.h1, t.m1)} - ${f(t.h2, t.m2)}`;
+  },
+  setzen: (w, i, txt) => {
+    const teile = txt.split(/\s*(?:-|–|—|bis)\s*/i).filter(Boolean);
+    const a = teile.length === 2 && bwUhrzeitLesen(teile[0], w.stundenbereich);
+    const b = teile.length === 2 && bwUhrzeitLesen(teile[1], w.stundenbereich);
+    if (!a || !b) return 'Bitte so eingeben: 7:30 - 9:15';
+    w.items[i] = { ...w.items[i], h1: a.h, m1: a.m, h2: b.h, m2: b.m };
+    return true;
+  },
+};

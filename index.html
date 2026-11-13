@@ -132,6 +132,16 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .wwrap{position:relative;margin-bottom:14px;border-radius:6px;outline:2px solid transparent;transition:outline-color .15s;display:flex;flex-direction:column;}
 .wwrap.ecke-eckig{border-radius:0;}
 .wwrap:hover{outline-color:var(--acc3);}.wwrap.sel{outline-color:var(--acc3);}
+/* Zu breit für die ½/⅓/¼-Spalte: abschneiden statt über den Rand, rot markieren (nur Bildschirm) */
+/* Wiederholung („Auf jeder Seite wiederholen"): nur Anzeige, Inhalt nicht bedienbar */
+.wwrap.wrep{cursor:default;}
+.wwrap.wrep > .winner{pointer-events:none;}
+.wwrap.wrep:hover{outline:2px dashed var(--acc3);}
+.wwrap.bw-zu-breit > .winner{overflow:hidden;}
+.wwrap.bw-zu-breit{outline:2px dashed #e64553 !important;}
+.wwrap.bw-zu-breit::after{content:'Passt nicht in diese Breite';position:absolute;left:6px;bottom:-9px;z-index:5;
+  font:700 10px/1 sans-serif;color:#fff;background:#e64553;padding:3px 6px;border-radius:3px;pointer-events:none;}
+@media print{.wwrap.bw-zu-breit{outline:none !important;}.wwrap.bw-zu-breit::after{display:none;}}
 /* Zeichenebene im Bearbeiten-Modus: doppelt dicker grüner Rahmen (Grün wie Ω-Knopf oben rechts) */
 .wwrap.zeichenebene.sel,.wwrap.zeichenebene.sel:hover{outline:none;}
 .wwrap.zeichenebene.sel::after{content:'';position:absolute;inset:0;border:4px solid var(--acc2);pointer-events:none;z-index:100;}
@@ -154,6 +164,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
 /* Multitool: Zellrahmen nur im Editor, nicht im Druck */
 .winner{padding:7px 9px;flex:1 1 auto;}
+/* Infobox mit überstehendem Symbol: oben Platz schaffen (Überstand − normaler Widget-Abstand) */
+.wwrap:has(.ib-sym-klein){margin-top:4px;} .wwrap:has(.ib-sym-mittel){margin-top:12px;} .wwrap:has(.ib-sym-gross){margin-top:20px;}
 /* Platzhalter: unsichtbar (nur Abstand), Auswahl über .wwrap-Outline */
 .ph-spacer{border:none;background:transparent;box-sizing:border-box;}
 /* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
@@ -212,7 +224,10 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
   * { box-shadow: none !important; text-shadow: none !important; filter: none !important; }
   .fx-shadow{box-shadow:0 3px 8px rgba(0,0,0,.22)!important;} /* bewusst gewählter Schatten bleibt im Druck (Chrome); Safari ggf. grauer Balken */
   img.img-sw{filter:grayscale(100%)!important;} /* Schwarz-Weiß-Bildeffekt übersteht den globalen filter:none-Reset */
-  #toolbar,#sidebar,#props,#props-resizer,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.wdz,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
+  /* Leerer Platz neben ½/⅓-Widgets bleibt im Druck als unsichtbarer Platzhalter erhalten –
+     sonst wächst ein allein stehendes ½-Widget auf die volle Breite (≠ Bildschirm) */
+  .wdz{visibility:hidden!important;border:none!important;min-height:0!important;}
+  #toolbar,#sidebar,#props,#props-resizer,.wacts,.dh,.group-handle,.float-grip,.float-resize,.gmbtn,.page-dz,.ov-fab,#overview-overlay,#pdf-hint,#print-warning,#img-picker-overlay,.ws-warn{display:none!important;}
   .tbl-selcell{outline:none!important;}
   input,textarea,[contenteditable]{caret-color:transparent!important;} /* blinkender Cursor eines fokussierten Felds (z. B. Eingabekästchen) nicht mitdrucken */
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
@@ -477,6 +492,7 @@ const WIDGET_GROUPS = {
   diagramme: { label: "Diagramme", icon: "📊" },
   groessen: { label: "Größen", icon: "📏" },
   zeit: { label: "Zeit", icon: "🕐" },
+  grammatik: { label: "Grammatik", icon: "📘" },
 };
 const _groupOpen = {};
 
@@ -489,77 +505,84 @@ const WIDGETS = [];
 </script>
 
 <!-- ── Shared helpers ──────────────────────────────────────────── -->
-<script src="main/helpers.js?v=30"></script>
+<script src="main/helpers.js?v=34"></script>
 <script src="main/img_picker.js?v=4"></script>
+<script src="vendor/qrcode.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
 <script src="widgets/heading.js"></script>
 <script src="widgets/subheading.js"></script>
-<script src="widgets/text.js?v=7"></script>
+<script src="widgets/text.js?v=9"></script>
 <script src="widgets/textfluss.js"></script>
 <script src="widgets/image.js?v=5"></script>
+<script src="widgets/qr.js?v=3"></script>
 <script src="widgets/platzhalter.js"></script>
 <script src="widgets/namedate.js?v=3"></script>
 <script src="widgets/instruction.js?v=6"></script>
 <script src="widgets/divider.js?v=3"></script>
 <script src="widgets/linebox.js?v=3"></script>
-<script src="widgets/checkbox.js?v=4"></script>
+<script src="widgets/checkbox.js?v=5"></script>
 <script src="widgets/table.js?v=3"></script>
 <script src="widgets/gap_text.js?v=5"></script>
 <script src="widgets/wordsearch.js?v=3"></script>
-<script src="widgets/scramble.js?v=3"></script>
-<script src="widgets/matching.js?v=3"></script>
+<script src="widgets/scramble.js?v=4"></script>
+<script src="widgets/purzelsatz.js?v=1"></script>
+<script src="widgets/wortarten_lexikon.js?v=1"></script>
+<script src="widgets/grammatik.js?v=2"></script>
+<script src="widgets/matching.js?v=4"></script>
 <script src="widgets/numbering.js?v=4"></script>
-<script src="widgets/arithmetic.js?v=3"></script>
-<script src="widgets/ep_shared.js?v=4"></script>
-<script src="widgets/numberline.js"></script>
+<script src="widgets/arithmetic.js?v=4"></script>
+<script src="widgets/ep_shared.js?v=6"></script>
+<script src="widgets/numberline.js?v=4"></script>
 <script src="widgets/geometry.js"></script>
-<script src="widgets/zahlenmauer.js?v=6"></script>
-<script src="widgets/zahlenhaus.js?v=3"></script>
-<script src="widgets/uhr.js"></script>
-<script src="widgets/zeitspanne.js"></script>
-<script src="widgets/eingabekaestchen.js?v=9"></script>
+<script src="widgets/spiegeln.js?v=2"></script>
+<script src="widgets/zahlenmauer.js?v=7"></script>
+<script src="widgets/zahlenhaus.js?v=5"></script>
+<script src="widgets/uhr.js?v=2"></script>
+<script src="widgets/zeitspanne.js?v=2"></script>
+<script src="widgets/kalender.js?v=3"></script>
+<script src="widgets/eingabekaestchen.js?v=10"></script>
 <script src="widgets/halbschriftlich.js?v=8"></script>
 <script src="widgets/schriftlich_addition.js?v=4"></script>
 <script src="widgets/schriftlich_subtraktion.js?v=4"></script>
 <script src="widgets/schriftlich_multiplikation.js?v=4"></script>
 <script src="widgets/schriftlich_division.js?v=5"></script>
 <script src="widgets/bildwort.js?v=8"></script>
-<script src="widgets/auslaut.js"></script>
 <script src="widgets/anlaut.js?v=7"></script>
 <script src="widgets/anlaut_zuordnung.js?v=3"></script>
 <script src="widgets/wort_schreiben.js?v=3"></script>
-<script src="widgets/wortchips.js?v=3"></script>
+<script src="widgets/wortchips.js?v=4"></script>
 <script src="widgets/buchstabensalat2.js?v=5"></script>
 <script src="widgets/geheimschrift.js"></script>
 <script src="widgets/bild_wort_zuordnung2.js"></script>
 <script src="widgets/aeue.js?v=5"></script>
-<script src="widgets/verlaengern.js?v=2"></script>
-<script src="widgets/infobox.js"></script>
+<script src="widgets/verlaengern.js?v=3"></script>
+<script src="widgets/infobox.js?v=5"></script>
 <script src="widgets/silbentext.js"></script>
-<script src="widgets/silbenwort.js?v=8"></script>
+<script src="widgets/silbenwort.js?v=9"></script>
 <script src="widgets/crossword.js"></script>
-<script src="widgets/multiplechoice.js?v=5"></script>
+<script src="widgets/multiplechoice.js?v=6"></script>
 <script src="widgets/zahlenkette.js?v=8"></script>
-<script src="widgets/nachbarzahlen.js?v=3"></script>
-<script src="widgets/nachbarzahlen_tabelle.js?v=3"></script>
-<script src="widgets/stellenwert.js?v=4"></script>
+<script src="widgets/nachbarzahlen.js?v=4"></script>
+<script src="widgets/nachbarzahlen_tabelle.js?v=4"></script>
+<script src="widgets/stellenwert.js?v=5"></script>
 <script src="widgets/buendeln.js?v=3"></script>
-<script src="widgets/geld.js?v=4"></script>
-<script src="widgets/zwanzigerfeld.js?v=4"></script>
+<script src="widgets/geld.js?v=5"></script>
+<script src="widgets/zwanzigerfeld.js?v=5"></script>
 <script src="widgets/zwanzigerrahmen.js?v=3"></script>
-<script src="widgets/rechendreiecke.js?v=4"></script>
-<script src="widgets/zahlenrad.js?v=8"></script>
-<script src="widgets/rechentabelle.js?v=4"></script>
+<script src="widgets/rechendreiecke.js?v=7"></script>
+<script src="widgets/zahlenrad.js?v=9"></script>
+<script src="widgets/rechentabelle.js?v=6"></script>
 <script src="widgets/groessen.js?v=3"></script>
 <script src="widgets/groessentafel.js"></script>
-<script src="widgets/hunderterfeld.js?v=3"></script>
-<script src="widgets/zahlentafel.js?v=20"></script>
+<script src="widgets/hunderterfeld.js?v=4"></script>
+<script src="widgets/zahlentafel.js?v=27"></script>
+<script src="widgets/zahlenkarten.js?v=2"></script>
 <script src="widgets/diagramm.js"></script>
 <script src="widgets/kuchendiagramm.js"></script>
 <script src="widgets/strichliste.js"></script>
 <script src="widgets/group.js?v=2"></script>
 <script src="widgets/floatbox.js?v=4"></script>
-<script src="widgets/leinwand.js?v=27"></script>
+<script src="widgets/leinwand.js?v=30"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -828,10 +851,22 @@ function dupPage(){
   const ranges=getPageRanges();
   const range=ranges[activePage]||ranges[ranges.length-1];
   // Deep-clone all widgets on the current page with fresh IDs
-  const clones=widgets.slice(range.start,range.end).map(w=>{
+  const idMap={};
+  // Wiederholte Kopf-Widgets nicht mitkopieren — die neue Seite zeigt sie ohnehin als Wiederholung
+  const clones=widgets.slice(range.start,range.end).filter(w=>!(w.jedeSeite&&repErlaubt(w)&&!repInGruppe(w))).map(w=>{
     const c=JSON.parse(JSON.stringify(w));
     c.id=++idC;
+    idMap[w.id]=c.id;
     return c;
+  });
+  // Verweise auf die Kopien umschreiben: Rahmen-Kind → kopierter Rahmen, Textfluss-
+  // Fortsetzung → kopierter Text. Schwebende Rahmen/Zeichenebenen sind an eine
+  // Seitennummer gepinnt → Kopien auf die neue Seite, alles dahinter rückt eine Seite weiter.
+  widgets.forEach(w=>{ if(w.floating&&(w.page||0)>activePage) w.page=(w.page||0)+1; });
+  clones.forEach(c=>{
+    if(c.parent!=null&&idMap[c.parent]!=null) c.parent=idMap[c.parent];
+    if(c.master!=null&&idMap[c.master]!=null) c.master=idMap[c.master];
+    if(c.floating) c.page=activePage+1;
   });
   // Insert a pagebreak + cloned widgets after the current page
   widgets.splice(range.end,0,{id:++idC,type:'pagebreak'},...clones);
@@ -839,6 +874,45 @@ function dupPage(){
   selId=null;
   render();
   scrollToActivePage();
+}
+
+// ── „Auf jeder Seite wiederholen" (Kopf) ─────────────────────────────────────
+// Ein Widget mit w.jedeSeite existiert nur EINMAL in widgets[], wird aber oben auf jeder
+// FOLGENDEN Seite als Spiegelung mitgezeichnet (renderPage → .wrep). Die Spiegelung
+//  - belegt Platz im Seitenfluss (der Überlauf rechnet sie dadurch automatisch mit),
+//  - zählt für checkOverflow/Druck-Fixes NICHT als Widget (Filter .wrep),
+//  - trägt data-rep statt data-id/data-idx → alle Zugriffe über .wwrap[data-id] treffen
+//    weiterhin nur das Original; Klick auf die Spiegelung wählt das Original aus.
+// Nur für einfache Kopf-Widgets (reines HTML, keine Nachzeichnung per ID).
+const REP_TYPES=new Set(['heading','subheading','namedate','text','instruction','infobox','divider','image','linebox']);
+function repErlaubt(w){ return !!w&&REP_TYPES.has(w.type)&&!w.floating&&!w.parent&&!(w.type==='text'&&w.fliessen); }
+// Liegt das Widget in einer Gruppe? (dort gibt es keine Wiederholung)
+function repInGruppe(w){
+  let tiefe=0;
+  for(const x of widgets){ if(x===w)return tiefe>0; if(x.type==='group')tiefe++; else if(x.type==='groupEnd')tiefe=Math.max(0,tiefe-1); }
+  return false;
+}
+// Alle zu wiederholenden Widgets, die VOR Index vorIdx stehen (= auf einer früheren Seite)
+function repListe(vorIdx){
+  const out=[];let tiefe=0;
+  for(let i=0;i<vorIdx&&i<widgets.length;i++){
+    const w=widgets[i];
+    if(w.type==='group'){tiefe++;continue;}
+    if(w.type==='groupEnd'){tiefe=Math.max(0,tiefe-1);continue;}
+    if(tiefe===0&&w.jedeSeite&&repErlaubt(w))out.push({w,gIdx:i});
+  }
+  return out;
+}
+// Spiegelungen eines Widgets nach einem Teil-Update nachziehen (patchWidget, sel/desel)
+function repSync(w){
+  if(!w||!w.jedeSeite)return;
+  document.querySelectorAll(`.wrep[data-rep="${w.id}"]`).forEach(m=>{
+    const win=m.querySelector(':scope > .winner'); if(!win)return;
+    syncWrapEcken(m,w);
+    win.className=winnerClass(w);
+    win.style.cssText=winnerStyle(w);
+    winnerInnerRefresh(w,win);
+  });
 }
 
 // Rahmen/Ecken zentral: Ecken (rund/eckig) getrennt vom Rahmen-Strich.
@@ -868,7 +942,7 @@ function winnerStyle(w) {
     + (typeof textUsesInnerPad === 'function' && textUsesInnerPad(w) ? 'padding:0;' : '');
 }
 
-const UPD_FULL_RENDER_KEYS = new Set(['widthFraction', 'halfWidth']);
+const UPD_FULL_RENDER_KEYS = new Set(['widthFraction', 'halfWidth', 'jedeSeite']);
 
 function updNeedsFullRender(w, key) {
   return UPD_FULL_RENDER_KEYS.has(key);
@@ -901,6 +975,55 @@ function fitCanvasPostLayout(root, opts) {
   if (typeof fitAllFrameInkSvgs === 'function') fitAllFrameInkSvgs(scope);
   if (typeof redrawConnectionLines === 'function') redrawConnectionLines();
   if (typeof attachSeries === 'function') attachSeries(scope);
+  if (typeof swConvert === 'function') swConvert(scope);   // S/W-Bilder druckfest in Graustufen umrechnen
+  bwZuBreitPruefen(scope);
+}
+
+// Sicherheitsnetz: Widgets in ½/⅓/¼-Reihen, deren Inhalt breiter ist als ihr Platz →
+// Inhalt wird abgeschnitten (nicht über den Rand/Nachbarn) und rot markiert (nur Bildschirm).
+// Ragt irgendein Teil des Inhalts rechts über die Innenfläche hinaus? (auch innerhalb von
+// Containern mit eigenem Scrollbereich, z. B. .series)
+function bwUeberstand(inner) {
+  const r = inner.getBoundingClientRect(), st = getComputedStyle(inner);
+  const rechts = r.right - parseFloat(st.paddingRight || 0) - parseFloat(st.borderRightWidth || 0);
+  let max = -Infinity;
+  inner.querySelectorAll('*').forEach(e => { const b = e.getBoundingClientRect(); if (b.width && b.right > max) max = b.right; });
+  return Math.max(inner.scrollWidth - inner.clientWidth, max - rechts);
+}
+function bwZuBreitPruefen(scope) {
+  (scope || document).querySelectorAll('.wwrap[data-inrow]').forEach(wr => {
+    const inner = wr.querySelector(':scope > .winner'); if (!inner) return;
+    wr.classList.remove('bw-zu-breit');
+    const zuBreit = bwUeberstand(inner) > 4;
+    wr.classList.toggle('bw-zu-breit', zuBreit);
+  });
+}
+
+// Passt der Inhalt eines Widgets in eine Breite (Anteil der Seite)? Rendert ihn dazu
+// unsichtbar in genau diese Breite und misst. Für das Sperren der Breiten-Knöpfe.
+function bwPasstInBreite(w, frac) {
+  const def = WIDGET_MAP[w.type];
+  if (!def || frac >= 1) return true;
+  if (['group','groupEnd','image','text','silbentext','gap_text','instruction','infobox','heading','subheading',
+       'divider','linebox','platzhalter','namedate','leinwand','floatbox','zeichenebene','pagebreak','textfluss',
+       'eingabekaestchen','kaestchen'].includes(w.type)) return true;   // Kästchenfeld passt seine Spaltenzahl selbst an
+  const page = document.querySelector('.page'); if (!page) return true;
+  const val = frac <= 0.25 ? '1/4' : frac <= 1/3 + 0.01 ? '1/3' : frac <= 0.5 ? '1/2' : frac <= 2/3 + 0.01 ? '2/3' : '3/4';
+  const k = JSON.parse(JSON.stringify(w)); k.widthFraction = val; k.halfWidth = val === '1/2';
+  const n = Math.round(1 / frac);                       // Widgets je Reihe (≈) → 10 px Abstand dazwischen
+  const breite = Math.floor(geom().contentW * frac - 10 * (n - 1) / n);
+  const box = document.createElement('div');
+  box.style.cssText = `position:absolute;left:0;top:0;width:${breite}px;visibility:hidden;pointer-events:none;`;
+  let html = '';
+  try { html = def.render(k); } catch (e) { return true; }
+  html = String(html).replace(/<img[^>]*onerror[^>]*>/gi, '');   // keine Nachlauf-Skripte auf das echte Widget
+  box.innerHTML = `<div class="${winnerClass(k)}" style="${winnerStyle(k)}">${html}</div>`;
+  page.appendChild(box);
+  if (typeof attachSeries === 'function') { try { attachSeries(box); } catch (e) {} }
+  const inner = box.firstElementChild;
+  const passt = bwUeberstand(inner) <= 4;
+  box.remove();
+  return passt;
 }
 
 function patchWidgetPost(w, root) {
@@ -950,6 +1073,7 @@ function patchWidget(id) {
       patchWidgetPost(c, cwin);
     });
   }
+  repSync(w);   // Wiederholungen auf den Folgeseiten nachziehen
   schedulePatchOverflow();
   return true;
 }
@@ -1094,7 +1218,9 @@ function layoutInto(wc, list, base){
       const rowLen=rowItems.length;
       rowItems.forEach((item,pos)=>{
         const div=makeEl(item.u,{ inRow:true, posInRow:pos, rowLen });
-        if(div){div.style.flex=String(item.cfu);div.style.marginBottom="0";row.appendChild(div);}
+        // min-width:0 → ein zu breiter Inhalt drückt den Nachbarn nicht mehr über den Seitenrand
+        // (er wird stattdessen als „zu breit" markiert, s. bwZuBreitPruefen)
+        if(div){div.style.flex=String(item.cfu);div.style.minWidth="0";div.dataset.inrow="1";div.style.marginBottom="0";row.appendChild(div);}
       });
       i=j;
       if(rem>0){
@@ -1163,6 +1289,25 @@ function renderPage(pageWidgets, pageIdx, range, isAutoPage, nextIsAuto){
     }
     _pageUnits.push({w, gIdx:range.start+i});
     i++;
+  }
+  // Kopf: Widgets mit „Auf jeder Seite wiederholen" von früheren Seiten oben mitzeichnen
+  if(pageIdx>0){
+    const kopf=repListe(range.start);
+    if(kopf.length){
+      const origSeite=gIdx=>getPageRanges().findIndex(r=>gIdx>=r.start&&gIdx<r.end)+1;
+      const rc=document.createElement("div");rc.className="rep-kopf";
+      layoutInto(rc,kopf,0);
+      rc.querySelectorAll('.wwrap').forEach(el=>{
+        const k=kopf.find(x=>String(x.w.id)===el.dataset.id);
+        el.classList.add('wrep');el.classList.remove('sel');
+        el.dataset.rep=el.dataset.id;delete el.dataset.id;delete el.dataset.idx;
+        el.draggable=false;el.ondragstart=el.ondragover=el.ondragleave=el.ondrop=null;
+        el.querySelectorAll(':scope > .wacts, :scope > .dh').forEach(x=>x.remove());
+        el.title=`Wiederholung von Seite ${k?origSeite(k.gIdx):1} – zum Ändern dort das Original bearbeiten`;
+      });
+      rc.querySelectorAll('.wdz').forEach(dz=>{dz.style.visibility='hidden';dz.ondragover=dz.ondragleave=dz.ondrop=null;});
+      pageDiv.appendChild(rc);
+    }
   }
   layoutInto(wc,_pageUnits,range.start);
   pageDiv.appendChild(wc);
@@ -1525,14 +1670,14 @@ function checkOverflow(ranges){
     const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Nur Top-Level-Einheiten messen: Kinder INNERHALB einer Gruppe (.group-frame)
     // ausschließen — die Gruppe zählt als ein Block und wird nie gesplittet.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene,.wrep'));
     const pageBottom=wraps.length?wrapFlowBottom(wraps[wraps.length-1]):0;
     // Höhe des ersten Widgets der nächsten Seite messen. WICHTIG: offsetTop abziehen —
     // wrapFlowBottom enthält sonst das Seiten-Padding (~49px) DOPPELT (einmal in
     // pageBottom, einmal hier) → Bedingung zu streng, Widgets fließen nie zurück,
     // obwohl sie passen würden.
     const nextPage=pages[pi+1];
-    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene')):[];
+    const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene,.wrep')):[];
     const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0])-nextWraps[0].offsetTop:Infinity;
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
@@ -1568,7 +1713,7 @@ function checkOverflow(ranges){
     const pxPerMm=pageEl.offsetWidth/geom().scrW;
     const maxBottom=geom().endTop*pxPerMm; // Inhalts-Unterkante (orientierungsabhängig, siehe PAGE_GEOM)
     // Kinder in Gruppen ausschließen (siehe oben); Gruppe = atomare Einheit.
-    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene'));
+    const wraps=[...pageEl.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene,.wrep'));
     for(let i=0;i<wraps.length;i++){
       if(wrapFlowBottom(wraps[i])>maxBottom){
         // Fließender Text: wortweise splitten statt komplett verschieben (textfluss.js)
@@ -1625,6 +1770,7 @@ function sel(id){
     if(def.meta&&def.meta.selSafe&&!(def.meta.selRender&&prevId!==id))return;
     const winner=document.querySelector(`.wwrap[data-id="${wid}"] .winner`);
     if(winner) winnerInnerRefresh(w, winner);
+    repSync(w);
   });
   renderProps(id);
 }
@@ -1636,7 +1782,7 @@ function desel(){
   // Re-render vorheriges Widget damit Lösung (isActive) ausgeblendet wird
   if(prevId!==null){
     const w=widgets.find(x=>x.id===prevId);
-    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&(!(def.meta&&def.meta.selSafe)||def.meta.selRender))winnerInnerRefresh(w,winner);}
+    if(w){const def=WIDGET_MAP[w.type];const winner=document.querySelector(`.wwrap[data-id="${prevId}"] .winner`);if(def&&winner&&(!(def.meta&&def.meta.selSafe)||def.meta.selRender)){winnerInnerRefresh(w,winner);repSync(w);}}
   }
   document.getElementById("pi").innerHTML='<span style="color:#bbb;">Widget auswählen</span>';
 }
@@ -1777,11 +1923,17 @@ function sfBorderBlock(id,w){
 }
 function sfLayoutBlock(id,w){
   const wf=w.widthFraction||(w.halfWidth?'1/2':'full');
-  const btns=[['1/4','¼'],['1/3','⅓'],['1/2','½'],['2/3','⅔'],['3/4','¾'],['full','Voll']].map(([val,lbl])=>`
-    <button onclick="setWidth(${id},'${val}')"
-      style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${wf===val?'#89b4fa':'#ddd'};
-             background:${wf===val?'#e8f0ff':'#fff'};font-family:inherit;font-size:${val==='full'?'11px':'15px'};font-weight:700;
-             line-height:1.1;cursor:pointer;color:${wf===val?'#1c1e23':'#999'};">${lbl}</button>`).join('');
+  const FR={'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1};
+  // Breiten, in die der Inhalt nicht passt, sind gesperrt (die aktuelle bleibt wählbar, aber rot)
+  const passt={}; Object.keys(FR).forEach(v=>{ passt[v]=FR[v]>=1||bwPasstInBreite(w,FR[v]); });
+  const btns=[['1/4','¼'],['1/3','⅓'],['1/2','½'],['2/3','⅔'],['3/4','¾'],['full','Voll']].map(([val,lbl])=>{
+    const on=wf===val, gesperrt=!passt[val]&&!on, rot=!passt[val]&&on;
+    return `
+    <button ${gesperrt?'disabled title="Passt nicht – der Inhalt ist für diese Breite zu breit"':`onclick="setWidth(${id},'${val}')"`}
+      style="flex:1;padding:5px 2px;border-radius:4px;border:1.5px solid ${rot?'#e64553':on?'#89b4fa':'#ddd'};
+             background:${rot?'#fde8ea':on?'#e8f0ff':'#fff'};font-family:inherit;font-size:${val==='full'?'11px':'15px'};font-weight:700;
+             line-height:1.1;cursor:${gesperrt?'not-allowed':'pointer'};opacity:${gesperrt?0.35:1};color:${on?'#1c1e23':'#999'};">${lbl}</button>`;}).join('');
+  const hinweis=!passt[wf]?'<div style="font-size:10.5px;color:#e64553;margin-top:4px;">Der Inhalt passt nicht in diese Breite – bitte breiter stellen oder kleiner machen.</div>':'';
   // Innenabstand (flush): global über winnerStyle (w.flush → padding:0). Typen mit
   // EIGENEM Innenabstand-Konzept ausnehmen: group/image (eigener Toggle),
   // platzhalter (immer bündig), text/silbentext/gap_text (px-Slider innerPad).
@@ -1793,9 +1945,17 @@ function sfLayoutBlock(id,w){
         ${[['Mit Abstand',false],['Bündig',true]].map(([lbl,val])=>{const on=!!w.flush===val;return `<button onclick="event.stopPropagation();upd(${id},'flush',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${lbl}</button>`;}).join('')}
       </div>
     </div>`;
-  return `<div style="display:flex;gap:4px;">${btns}</div>
+  // „Auf jeder Seite wiederholen": nur für einfache Kopf-Widgets außerhalb von Gruppen
+  const repRow=(repErlaubt(w)&&!repInGruppe(w))?`
+    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+      <span style="font-size:11px;font-weight:700;color:#666;flex-shrink:0;">Auf jeder Seite</span>
+      <div style="display:flex;gap:4px;flex:1;">
+        ${[['Nein',false],['Wiederholen',true]].map(([lbl,val])=>{const on=!!w.jedeSeite===val;return `<button onclick="event.stopPropagation();upd(${id},'jedeSeite',${val})" style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1c1e23':'#999'};">${lbl}</button>`;}).join('')}
+      </div>
+    </div>${w.jedeSeite?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Erscheint oben auf allen folgenden Seiten. Geändert wird nur hier, am Original.</div>':''}`:'';
+  return `<div style="display:flex;gap:4px;">${btns}</div>${hinweis}
     ${wf!=='full'?'<div style="font-size:10px;color:#aaa;margin-top:4px;">Widgets gleicher Zeile erscheinen nebeneinander.</div>':''}
-    ${flushRow}`;
+    ${flushRow}${repRow}`;
 }
 function standardFooter(id,w){
   // Unselbstständige Widgets (z.B. Textfluss-Fortsetzung): erben alles vom Original,
@@ -2085,7 +2245,107 @@ function mvAcrossBreak(idx,d){
   widgets.splice(insertAt,0,...block);
   render();
 }
-function dup(idx){saveHistory();const c=JSON.parse(JSON.stringify(widgets[idx]));c.id=++idC;widgets.splice(idx+1,0,c);render();sel(c.id);}
+function dup(idx){
+  saveHistory();
+  const src=widgets[idx];
+  const c=JSON.parse(JSON.stringify(src));c.id=++idC;
+  delete c.jedeSeite; // die Kopie wird nicht auch noch auf jeder Seite wiederholt
+  // Fließender Text: Kopie nie MITTEN in die Kette (Master + Fortsetzungen) setzen,
+  // sondern hinter deren Ende — sonst wird das Original zerrissen (wie in addWidget).
+  let at=idx+1;
+  if(src.type==='text'&&src.fliessen){
+    let j=idx;
+    while(j+2<widgets.length&&widgets[j+1].type==='pagebreak'&&widgets[j+1].flow
+          &&widgets[j+2].type==='textfluss'&&widgets[j+2].master===src.id)j+=2;
+    at=j+1;
+  }
+  widgets.splice(at,0,c);render();sel(c.id);
+}
+// ── Kopieren / Ausschneiden / Einfügen (Strg/Cmd + C / X / V) ──────────────────
+// Kopiert das ausgewählte Widget als Daten (Gruppe samt Inhalt, schwebender Rahmen samt Kind).
+// Zwischenablage: im Speicher UND in localStorage → Einfügen klappt auch in einem anderen
+// Blattwerk-Tab/Fenster. Passt der Inhalt nicht in localStorage (große Bilder), gilt nur der
+// Speicher dieses Tabs.
+const CLIP_KEY='blattwerk-clip';
+let _wClip=null; // {t:Zeitstempel, items:[…]}
+function clipCollect(id){
+  const i=widgets.findIndex(x=>x.id===id); if(i<0)return null;
+  const w=widgets[i];
+  if(['zeichenebene','groupEnd','pagebreak','textfluss'].includes(w.type))return null;
+  let items;
+  if(w.type==='group') items=widgets.slice(i,groupEndIndex(i)+1).filter(x=>!x.floating);
+  else if(w.type==='floatbox') items=[w,...widgets.filter(x=>x.parent===w.id)];
+  else items=[w];
+  return items;
+}
+function copyWidget(){
+  if(selId==null)return false;
+  const items=clipCollect(selId); if(!items)return false;
+  _wClip={t:Date.now(),items:JSON.parse(JSON.stringify(items))};
+  try{ localStorage.setItem(CLIP_KEY,JSON.stringify(_wClip)); }
+  catch(e){ try{ localStorage.removeItem(CLIP_KEY); }catch(e2){} }
+  return true;
+}
+function cutWidget(){
+  if(selId==null)return false;
+  const items=clipCollect(selId); if(!items||!copyWidget())return false;
+  saveHistory();
+  const weg=new Set(items.map(x=>x.id));
+  widgets=widgets.filter(x=>!weg.has(x.id));
+  selId=null; render(); desel();
+  return true;
+}
+function pasteWidget(){
+  let clip=_wClip;
+  try{ const l=JSON.parse(localStorage.getItem(CLIP_KEY)||'null'); if(l&&Array.isArray(l.items)&&(!clip||l.t>clip.t))clip=l; }catch(e){}
+  if(!clip||!clip.items.length)return false;
+  const items=JSON.parse(JSON.stringify(clip.items)).filter(x=>x.type==='groupEnd'||WIDGET_MAP[x.type]);
+  if(!items.length)return false;
+  saveHistory();
+  // Neue IDs; Verweise innerhalb des Kopierten mitziehen (Rahmen-Kind → Rahmen)
+  const idMap={};
+  items.forEach(x=>{ const neu=++idC; idMap[x.id]=neu; x.id=neu; delete x.jedeSeite; });
+  items.forEach(x=>{
+    if(x.parent!=null){ if(idMap[x.parent]!=null)x.parent=idMap[x.parent]; else delete x.parent; }
+    if(x.type==='text'&&x.fliessen){ x.splits=[]; x.flowLines=[]; } // Seitenaufteilung entsteht neu
+  });
+  const first=items[0];
+  const ranges=getPageRanges();
+  const pageEnd=(ranges[activePage]||ranges[ranges.length-1]).end;
+  const selIdx=selId!=null?widgets.findIndex(x=>x.id===selId):-1;
+  let insertAt=pageEnd;
+  if(first.floating){
+    // Schwebender Rahmen: auf die sichtbare Seite, leicht versetzt (liegt sonst genau auf dem Original)
+    first.page=activePage;
+    first.x=Math.min(100-(first.w||10),(first.x||0)+4);
+    first.y=Math.min(95,(first.y||0)+4);
+  }else if(selIdx>=0){
+    // Hinter dem ausgewählten Widget einfügen — hinter der ganzen Gruppe bzw. Fließtext-Kette
+    const sw=widgets[selIdx];
+    if(sw.type==='group') insertAt=groupEndIndex(selIdx)+1;
+    else if(!sw.floating&&!sw.parent){
+      insertAt=selIdx+1;
+      const masterId=sw.type==='textfluss'?sw.master:(sw.type==='text'&&sw.fliessen?sw.id:null);
+      if(masterId!=null){
+        let j=widgets.findIndex(x=>x.id===masterId);
+        while(j>=0&&j+2<widgets.length&&widgets[j+1].type==='pagebreak'&&widgets[j+1].flow
+              &&widgets[j+2].type==='textfluss'&&widgets[j+2].master===masterId)j+=2;
+        if(j>=0)insertAt=j+1;
+      }
+      // Gruppe nicht in eine Gruppe verschachteln → hinter deren Ende
+      if(first.type==='group'){
+        const gid=currentGroupContext();
+        if(gid!=null) insertAt=groupEndIndex(widgets.findIndex(x=>x.id===gid))+1;
+      }
+    }
+  }
+  widgets.splice(Math.min(insertAt,widgets.length),0,...items);
+  selId=first.id;
+  _followAddedToPage=true;
+  render();renderProps(first.id);
+  return true;
+}
+
 function clearCanvas(){
   // Nur fragen, wenn es etwas zu verlieren gibt (rückgängig machbar via Strg+Z).
   if(widgets.length && !confirm('Das ganze Arbeitsblatt leeren? Alle Seiten und Widgets werden entfernt.\n\n(Rückgängig machbar mit Strg+Z.)'))return;
@@ -2406,6 +2666,9 @@ async function draftLoad(){
   }catch(e){ return null; }
 }
 async function draftClear(){
+  // Ausstehenden Autosave stoppen — sonst schreibt der Timer den gerade verworfenen
+  // Entwurf ~1s später wieder zurück (z.B. direkt nach Öffnen/Speichern einer .blatt).
+  clearTimeout(_draftTimer);
   try{ const db=await _draftDb(); await new Promise(res=>{ const tx=db.transaction(DRAFT_STORE,'readwrite'); tx.objectStore(DRAFT_STORE).delete(DRAFT_KEY); tx.oncomplete=res; tx.onerror=res; }); }catch(e){}
 }
 let _draftTimer=null;
@@ -2438,7 +2701,7 @@ function showRestoreBanner(draft){
     _dirty=true; // wiederhergestellt, aber noch nicht als .blatt gespeichert
     bar.remove();
   };
-  document.getElementById('rb-no').onclick=()=>{ draftClear(); bar.remove(); addSample(); };
+  document.getElementById('rb-no').onclick=()=>{ draftClear(); bar.remove(); render(); };
 }
 
 // ── PRINT OPTIONS ────────────────────────────────────────────────
@@ -2515,7 +2778,7 @@ function applyPrintLayoutFixes() {
   _printMarginBackup = [];
   document.querySelectorAll('#canvas-area .page').forEach(pageEl => {
     const wraps = [...pageEl.querySelectorAll('.wwrap')]
-      .filter(el => !el.closest('.group-frame') && !el.closest('.floatbox,.zeichenebene'));
+      .filter(el => !el.closest('.group-frame') && !el.closest('.floatbox,.zeichenebene,.wrep'));
     if (!wraps.length) return;
     const last = wraps[wraps.length - 1];
     _printMarginBackup.push({ el: last, mb: last.style.marginBottom });
@@ -2756,6 +3019,11 @@ document.addEventListener('click', () => {
 
 // ── INIT ─────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
+  // Beim Tippen (Textfelder, Texteditoren) gehört Strg+Z dem Feld selbst (Tippfehler
+  // zurücknehmen) — nicht dem Dokument, sonst verschwindet das zuletzt eingefügte Widget.
+  const t=e.target;
+  if(t&&t.closest&&(t.closest('textarea,[contenteditable="true"],[contenteditable=""]')
+     ||(t.tagName==='INPUT'&&!/^(checkbox|radio|range|color|button|submit|file)$/i.test(t.type||''))))return;
   if((e.ctrlKey||e.metaKey) && e.key==='z' && !e.shiftKey){e.preventDefault();undo();}
   if((e.ctrlKey||e.metaKey) && (e.key==='y' || (e.key==='z' && e.shiftKey))){e.preventDefault();redo();}
 });
@@ -2768,6 +3036,14 @@ document.addEventListener('keydown', e => {
   if(ov&&ov.style.display==='flex')return;
   // Leinwand: ausgewähltes Element hat Vorrang (Löschen, Pfeiltasten, Duplizieren, Esc)
   if(typeof lwTaste==='function'&&lwTaste(e)){e.preventDefault();return;}
+  // Strg/Cmd + C / X / V: ausgewähltes Widget kopieren, ausschneiden, einfügen.
+  // Ist Text auf dem Blatt markiert, kopiert Strg+C wie gewohnt den Text.
+  if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey){
+    const k=(e.key||'').toLowerCase();
+    if(k==='c'&&selId!=null&&!String(window.getSelection()||'').trim()){ if(copyWidget())e.preventDefault(); return; }
+    if(k==='x'&&selId!=null){ if(cutWidget())e.preventDefault(); return; }
+    if(k==='v'){ if(pasteWidget())e.preventDefault(); return; }
+  }
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   if((e.key==='Delete'||e.key==='Backspace')&&selId!=null){
     const w=widgets.find(x=>x.id===selId);if(!w)return;
@@ -2797,7 +3073,8 @@ buildList();
   }
 })();
 // Start: persistenten Speicher anfragen, dann auf Auto-Entwurf prüfen.
-// Gibt es einen Entwurf mit Inhalt → Wiederherstellen-Hinweis, sonst Beispiel laden.
+// Gibt es einen Entwurf mit Inhalt → Wiederherstellen-Hinweis, sonst leeres Blatt
+// (Beispiele gibt es weiterhin über das Datei-Menü).
 (async()=>{
   if(navigator.storage&&navigator.storage.persist){ try{ await navigator.storage.persist(); }catch(e){} }
   let draft=null;
@@ -2805,7 +3082,7 @@ buildList();
   if(draft && Array.isArray(draft.widgets) && draft.widgets.some(w=>w.type!=='pagebreak'&&w.type!=='groupEnd')){
     showRestoreBanner(draft);
   }else{
-    addSample();
+    render();
   }
 })();
 
@@ -2852,8 +3129,8 @@ if (document.fonts && document.fonts.ready) {
 updatePrintStyle();
 </script>
 <script>
-// Service Worker entfernt: Desktop-App braucht keinen Offline-Cache und das
-// Cache-First-Verhalten verhinderte, dass Datei-Änderungen geladen wurden.
+// Service Worker entfernt: Das Cache-First-Verhalten verhinderte, dass
+// Datei-Änderungen geladen wurden.
 // Dieser Block deregistriert einen evtl. früher installierten SW und löscht
 // dessen Caches – nötig, damit Altinstallationen die alte index.html loswerden.
 if ('serviceWorker' in navigator) {

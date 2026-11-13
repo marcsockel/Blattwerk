@@ -16,29 +16,6 @@ function zkCompute(start, ops) {
   return vals;
 }
 
-function zkRandStart(ops, zahlenraum) {
-  // Alle gültigen Startwerte im Zahlenraum finden, dann zufällig wählen
-  const candidates = [];
-  for (let s = 1; s <= zahlenraum; s++) {
-    const vals = zkCompute(s, ops);
-    if (vals.every(v => Number.isInteger(v) && v > 0 && v <= zahlenraum)) {
-      candidates.push(s);
-    }
-  }
-  if (candidates.length > 0) {
-    return candidates[Math.floor(Math.random() * candidates.length)];
-  }
-  // Fallback: ohne Ganzzahl-Bedingung, nur positiv
-  const fallback = [];
-  for (let s = 1; s <= zahlenraum; s++) {
-    const vals = zkCompute(s, ops);
-    if (vals.every(v => v > 0 && v <= zahlenraum)) fallback.push(s);
-  }
-  return fallback.length > 0
-    ? fallback[Math.floor(Math.random() * fallback.length)]
-    : Math.ceil(Math.random() * zahlenraum);
-}
-
 // Generiert eine gültige Kette aus erlaubten Ops vorwärts
 function zkGenChain(allowedOps, nSchritte, zahlenraum) {
   for (let att = 0; att < 400; att++) {
@@ -251,39 +228,6 @@ function zkSetLayout(id, key, val) {
 function zkWuerfeln(id) {
   const w = widgets.find(x=>x.id===id); if (!w) return;
   saveHistory();
-  zkRegen(w); render(); renderProps(id);
-}
-
-function zkWuerfelnOps(id) {
-  const w = widgets.find(x=>x.id===id); if (!w) return;
-  saveHistory();
-  const zr = w.zahlenraum || 20;
-  const n  = w.ops.length || 4;
-
-  // Zufällige Operationen generieren die ganzzahlige Ergebnisse liefern
-  for (let attempt = 0; attempt < 100; attempt++) {
-    const newOps = Array.from({length: n}, () => {
-      const op  = ['+','-','×',':'][Math.floor(Math.random() * 4)];
-      let val;
-      if (op === '×') val = Math.floor(Math.random() * 4) + 2;       // 2–5
-      else if (op === ':') val = [2,3,4,5][Math.floor(Math.random() * 4)]; // 2–5
-      else val = Math.floor(Math.random() * Math.max(3, Math.round(zr / 4))) + 1;
-      return {op, val};
-    });
-    // Prüfen ob es genug gültige Startwerte gibt
-    const candidates = [];
-    for (let s = 1; s <= zr; s++) {
-      const vals = zkCompute(s, newOps);
-      if (vals.every(v => Number.isInteger(v) && v > 0 && v <= zr)) candidates.push(s);
-    }
-    if (candidates.length >= 3) {
-      w.ops = newOps;
-      zkRegen(w);
-      render(); renderProps(id);
-      return;
-    }
-  }
-  // Fallback: nur Zahlen neu würfeln
   zkRegen(w); render(); renderProps(id);
 }
 

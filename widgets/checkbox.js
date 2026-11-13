@@ -5,7 +5,7 @@ WIDGETS.push({
   render: d => {
     const font     = d.font     || "inherit";
     const fontSize = d.fontSize || 14;
-    const rows = d.items.map(it=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-family:${font};font-size:${fontSize}px;"><div style="width:15px;height:15px;border:2px solid #999;border-radius:2px;flex-shrink:0;"></div>${esc(it)}</div>`);
+    const rows = d.items.map(it=>`<div data-aufg="1" style="display:flex;align-items:center;gap:8px;margin-bottom:5px;font-family:${font};font-size:${fontSize}px;"><div style="width:15px;height:15px;border:2px solid #999;border-radius:2px;flex-shrink:0;"></div>${esc(it)}</div>`);
     // Spalten wie beim Multiple-Choice-Quiz: Einträge spaltenweise verteilt (1. Spalte zuerst)
     const cols = Math.max(1, d.cols || 1);
     const colDivs = mcColumnChunks(rows, cols).map(ch => `<div style="flex:1;min-width:0;">${ch.join('')}</div>`).join('');
@@ -48,3 +48,10 @@ WIDGETS.push({
                font-family:inherit;font-size:12px;text-align:center;">`);
   },
 });
+
+// Eintrag direkt im Blatt ändern (main/helpers.js → BW_AUFGABE)
+BW_AUFGABE.checkbox = {
+  ziel: '[data-aufg]',
+  text: (w, i) => (w.items || [])[i] ?? null,
+  setzen: (w, i, txt) => { w.items[i] = txt.trim(); return true; },
+};

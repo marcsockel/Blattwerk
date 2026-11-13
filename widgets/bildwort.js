@@ -10,14 +10,6 @@ function bwShuffle(n) {
 }
 
 /** Max. Items pro Zeile (Querformat) — Legacy-Helfer, nutzt itemsLayoutProps. */
-function bwProZeile(d) {
-  const L = typeof itemsLayoutProps === 'function' ? itemsLayoutProps(d) : null;
-  if (L && L.itemsPerRow !== 'auto') return L.itemsPerRow;
-  // Legacy proZeile / Default 2
-  const p = d.itemsPerRow != null ? d.itemsPerRow : d.proZeile;
-  if (p === 'auto' || p == null) return 2;
-  return Math.max(1, Math.min(6, Math.round(+p) || 2));
-}
 
 /** Klein / Mittel / Groß — mit Migration alter Werte. */
 function bwGroesse(d) {

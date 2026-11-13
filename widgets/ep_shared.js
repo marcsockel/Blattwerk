@@ -544,22 +544,25 @@ function epRender(d) {
 
   const renderGroup = (group, gIdx = 0) => {
     if (d.type === 'ep_umkehr') {
-      const items = group.map((pair, i) => renderUmkehrPair(pair, `${gIdx}-${i}`)).join('');
+      const items = group.map((pair, i) => renderUmkehrPair(pair, `${gIdx}-${i}`).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"')).join('');
       return `<div style="display:flex;flex-direction:column;gap:${c.PAIR_GAP}px;line-height:0;">${items}</div>`;
     }
     if (d.type === 'ep_zehner_stop') {
-      const items = group.map((pair, i) => renderZehnerStopPair(pair, `${gIdx}-${i}`, gIdx * perCol + i)).join('');
+      const items = group.map((pair, i) => renderZehnerStopPair(pair, `${gIdx}-${i}`, gIdx * perCol + i).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"')).join('');
       return `<div style="display:flex;flex-direction:column;gap:${c.PAIR_GAP}px;line-height:0;">${items}</div>`;
     }
     if (d.type === 'ep_analogie') {
-      const items = group.map(pair => renderAnalogiePair(pair)).join('');
+      const items = group.map(pair => renderAnalogiePair(pair).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"')).join('');
       return `<div style="display:flex;flex-direction:column;gap:${c.PAIR_GAP}px;line-height:0;">${items}</div>`;
     }
     if (d.type === 'ep_zerlegung') {
-      const items = group.map((pair, i) => renderZerlegPair(pair, `${gIdx}-${i}`, gIdx * perCol + i)).join('');
+      const items = group.map((pair, i) => renderZerlegPair(pair, `${gIdx}-${i}`, gIdx * perCol + i).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"')).join('');
       return `<div style="display:flex;flex-direction:column;gap:${c.zerlegPairGap}px;line-height:0;">${items}</div>`;
     }
-    const rows = group.map(p => {
+    const rows = group.map(p => epEinzelZeile(p, c).replace(/^\s*<(\w+)/, '<$1 data-aufg="1"')).join('');
+    return `<div style="display:flex;flex-direction:column;gap:${c.ROW_GAP}px;line-height:0;">${rows}</div>`;
+  };
+  const epEinzelZeile = (p, c) => {
       if (p.raw !== undefined) {
         const ans = p.hasEq ? (c.isActive ? c.sqVal(epComputeAns(p) ?? '?', true) : c.sqEmpty) : '';
         return `<div style="${c.tdBase}font-size:${c.FS}px;">${esc(p.raw)}${p.hasEq ? c.midSlot('=') + ans : ''}</div>`;
@@ -575,8 +578,6 @@ function epRender(d) {
       }
       const ans = epComputeAns(p);
       return c.taskRow(c.sqVal(p.left), p.op, c.sqVal(p.right), c.isActive && ans ? c.sqVal(ans, true) : c.sqEmpty);
-    }).join('');
-    return `<div style="display:flex;flex-direction:column;gap:${c.ROW_GAP}px;line-height:0;">${rows}</div>`;
   };
 
   const sample = pairMode
@@ -796,3 +797,45 @@ WIDGETS.push(epMakeWidget({
   type: 'ep_umkehr', group: EP_GROUP, itemsLayout: true,
   label: 'Umkehraufgabe', desc: 'Plus- und Minus-Umkehr', icon: '🔄', category: 'mathematik',
 }));
+
+// Aufgabe direkt im Blatt ändern (main/helpers.js → BW_AUFGABE). Einzelaufgaben: eine Zeile
+// wie bei „Manuell bearbeiten"; Paare (Umkehr, 10er Stop, Analogie, Zerlegung): beide Zeilen,
+// getrennt durch „ | ", z. B. "8 + 5 = | 8 + 2 + 3 =".
+function epZeilen(w) { return (w.tasks || '').split('\n').map(t => t.trim()).filter(Boolean); }
+function epPaarOk(type, l1, l2) {
+  if (type === 'ep_zerlegung') return !!(epParseZerlegLine1(l1) && epParseZerlegLine2(l2));
+  if (type === 'ep_zehner_stop') return epParse(l1).raw === undefined && !!epParseStopLine(l2);
+  return epParse(l1).raw === undefined && epParse(l2).raw === undefined;
+}
+['erste_paketchen', 'ep_zehner_stop', 'ep_analogie', 'ep_zerlegung', 'ep_umkehr'].forEach(type => {
+  BW_AUFGABE[type] = {
+    ziel: '[data-aufg]',
+    text: (w, i) => {
+      const L = epZeilen(w);
+      if (!EP_PAIR_TYPES.has(type)) return L[i] ?? null;
+      if (type === 'ep_zehner_stop') return L[2 * i] ?? null;   // nur die obere Zeile, die Zerlegung folgt daraus
+      return L[2 * i] != null ? `${L[2 * i]} | ${L[2 * i + 1] ?? ''}` : null;
+    },
+    setzen: (w, i, txt) => {
+      const L = epZeilen(w);
+      if (!EP_PAIR_TYPES.has(type)) {
+        if (epParse(txt).raw !== undefined) return 'Bitte so eingeben: 7 + 5 =   (oder 3 + _ = 10)';
+        L[i] = txt.trim();
+      } else if (type === 'ep_zehner_stop') {
+        // 10er Stop: aus „a + b =" die Zerlegungszeile „a + bis-zur-10 + Rest =" bilden
+        const m = txt.replace(/=\s*$/, '').trim().match(/^(\d+)\s*\+\s*(\d+)$/);
+        if (!m) return 'Bitte so eingeben: 8 + 5 =';
+        const a = +m[1], b = +m[2], p1 = 10 - (a % 10), p2 = b - p1;
+        if (a % 10 === 0 || p2 <= 0) return 'Hier wird kein Zehner überschritten – bitte eine Aufgabe mit Zehnerübergang.';
+        L[2 * i] = `${a} + ${b} =`; L[2 * i + 1] = `${a} + ${p1} + ${p2} =`;
+      } else {
+        const teile = txt.split('|').map(t => t.trim());
+        if (teile.length !== 2 || !epPaarOk(type, teile[0], teile[1]))
+          return 'Bitte beide Zeilen eingeben, getrennt durch | (Format wie unter „Manuell bearbeiten")';
+        L[2 * i] = teile[0]; L[2 * i + 1] = teile[1];
+      }
+      w.tasks = L.join('\n');
+      return true;
+    },
+  };
+});
