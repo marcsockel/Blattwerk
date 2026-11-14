@@ -14,8 +14,6 @@ let _lwDrag = null;         // laufende Zieh-Aktion
 let _lwLetzterKlick = null; // für die Doppelklick-Erkennung
 let _lwZeichne = null;      // { id, kind } – Linie/Pfeil wird gerade gezeichnet
 
-const LW_FARBEN  = ['#000000', '#ffffff', '#666666', '#aaaaaa', '#2563eb', '#16a34a', '#dc2626', '#ea580c', '#9333ea'];
-const LW_FUELLUNG = ['', '#ffffff', '#000000', '#f2f2f2', '#d9d9d9', '#dbeafe', '#dcfce7', '#fee2e2', '#fef3c7'];
 
 // Symbole (assets/symbole/<name>.svg): [Dateiname, Bezeichnung, Seitenverhältnis, Gruppe]
 const LW_SYMBOL_GRUPPEN = ["Pfeile & Zeichen", "Schulsachen", "Lernen & Ordnung", "Sport & Belohnung", "Menschen & Kommunikation", "Technik & Medien", "Natur & Wetter", "Musik"];
@@ -191,9 +189,15 @@ WIDGETS.push({
     const tgl = (label, on, onclick) => `<button onclick="event.stopPropagation();${onclick}"
         style="flex:1;padding:5px 4px;border-radius:4px;border:1.5px solid ${on?'#89b4fa':'#ddd'};background:${on?'#e8f0ff':'#fff'};
                font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${on?'#1e1e2e':'#999'};">${label}</button>`;
-    const swatches = (key, list, cur) => list.map(c => `<button title="${c || 'keine'}" onclick="event.stopPropagation();lwSet(${d.id},'${key}','${c}')"
-        style="width:22px;height:22px;border-radius:4px;border:2px solid ${cur === c ? '#3b6fd4' : '#ddd'};cursor:pointer;padding:0;
-               background:${c || '#fff'};font-size:11px;color:#bbb;">${c ? '' : '✕'}</button>`).join('');
+    // Farbwahl über das Farbfenster des Browsers (wie bei den Diagrammen). mitKeine: zusätzlicher
+    // Knopf „Keine" (durchsichtig) — z. B. für die Füllung.
+    const farbwahl = (key, cur, mitKeine) =>
+      `<input type="color" value="${cur || '#ffffff'}" onclick="event.stopPropagation()" onchange="lwSet(${d.id},'${key}',this.value)"
+         style="width:36px;height:26px;padding:0;border:1.5px solid #ddd;border-radius:4px;cursor:pointer;background:#fff;flex:0 0 auto;${cur ? '' : 'opacity:.45;'}">`
+      + `<span style="font-size:11px;color:#888;font-family:monospace;align-self:center;">${cur || 'keine'}</span>`
+      + (mitKeine ? `<button onclick="event.stopPropagation();lwSet(${d.id},'${key}','')"
+          style="margin-left:auto;padding:4px 10px;border-radius:4px;border:1.5px solid ${cur ? '#ddd' : '#89b4fa'};background:${cur ? '#fff' : '#e8f0ff'};
+                 font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${cur ? '#999' : '#1e1e2e'};">Keine</button>` : '');
     const zk = k => _lwZeichne && _lwZeichne.id === d.id && _lwZeichne.kind === k;
     const zeichenKnopf = (label, k) => knopf(label, `lwZeichnen(${d.id},'${k}')`,
         zk(k) ? 'border-color:#3b6fd4;background:#e8f0ff;color:#1e1e2e;' : '');
@@ -316,7 +320,7 @@ WIDGETS.push({
         `<div class="prow"><label>Ausrichtung</label><div style="display:flex;gap:4px;">
           ${tgl('Links', (it.align||'left')==='left', `lwSet(${d.id},'align','left')`)}${tgl('Mitte', it.align==='center', `lwSet(${d.id},'align','center')`)}${tgl('Rechts', it.align==='right', `lwSet(${d.id},'align','right')`)}
         </div></div>` +
-        `<div class="prow"><label>Textfarbe</label><div style="display:flex;gap:3px;flex-wrap:wrap;">${swatches('color', LW_FARBEN, it.color || '#000000')}</div></div>`;
+        `<div class="prow"><label>Textfarbe</label><div style="display:flex;gap:8px;">${farbwahl('color', it.color || '#000000')}</div></div>`;
     }
     if (it.kind === 'arrow') {
       html += `<div class="prow"><label>Spitzen</label><div style="display:flex;gap:4px;">
@@ -328,12 +332,12 @@ WIDGETS.push({
       html += `<div style="font-size:10px;color:#aaa;margin:-2px 0 8px;line-height:1.4;">Blaue Punkte an den Enden ziehen, um Start und Ziel zu ändern. Shift = 45°-Schritte.</div>`;
     }
     const rahmenArt = it.kind === 'text' || it.kind === 'image';
-    html += `<div class="prow"><label>${rahmenArt ? 'Rahmenfarbe' : 'Linienfarbe'}</label><div style="display:flex;gap:3px;flex-wrap:wrap;">${swatches('stroke', LW_FARBEN, it.stroke)}</div></div>` +
+    html += `<div class="prow"><label>${rahmenArt ? 'Rahmenfarbe' : 'Linienfarbe'}</label><div style="display:flex;gap:8px;">${farbwahl('stroke', it.stroke || '#000000')}</div></div>` +
       `<div class="prow"><label>${rahmenArt ? 'Rahmen' : 'Linienstärke'}</label><div style="display:flex;gap:4px;">
         ${(linie ? [1,2,3,5] : [0,1,2,3,5]).map(v => tgl(v === 0 ? 'ohne' : v + ' px', (it.sw ?? 2) === v, `lwSet(${d.id},'sw',${v})`)).join('')}
       </div></div>`;
     if (!linie) {
-      if (it.kind !== 'image') html += `<div class="prow"><label>Füllung</label><div style="display:flex;gap:3px;flex-wrap:wrap;">${swatches('fill', LW_FUELLUNG, it.fill || '')}</div></div>`;
+      if (it.kind !== 'image') html += `<div class="prow"><label>Füllung</label><div style="display:flex;gap:8px;">${farbwahl('fill', it.fill || '', true)}</div></div>`;
       if (it.kind !== 'ellipse') html += `<div class="prow"><label>Ecken</label><div style="display:flex;gap:4px;">${tgl('Eckig', !it.rund, `lwSet(${d.id},'rund',false)`)}${tgl('Rund', !!it.rund, `lwSet(${d.id},'rund',true)`)}</div></div>`;
     }
     if (!linie) {

@@ -117,6 +117,9 @@ function tfSyncChain(master) {
   return true;
 }
 
+// Exakte Textbreite (mit Nachkommastellen). clientWidth rundet → die Messbox wäre bis zu
+// 0,5px breiter als der echte Text, bräche anders um und Split/Umbruch pendelten endlos.
+function tfBreite(el) { return parseFloat(getComputedStyle(el).width) || el.clientWidth; }
 // ── Messung: wieviele Wörter passen in availPx? ──────────────────
 // Liefert {cut, lines} — cut = Token-Index NACH dem letzten passenden Wort,
 // oder null wenn nicht sinnvoll teilbar. slack: px-Reserve (Hysterese gegen Flattern).
@@ -174,9 +177,11 @@ function tfTrySplit(w, wrapEl, maxBottom) {
   const txtEl = wrapEl.querySelector('[data-flowtext]');
   if (!txtEl) return false;
   const overhead = wrapEl.offsetHeight - txtEl.offsetHeight;
-  const avail = maxBottom - wrapEl.offsetTop - overhead;
+  // Außenabstand unten abziehen – die Überlauf-Prüfung (wrapFlowBottom) rechnet ihn mit;
+  // sonst pendeln Split und automatischer Umbruch endlos (Zittern).
+  const avail = maxBottom - wrapEl.offsetTop - overhead - (parseFloat(getComputedStyle(wrapEl).marginBottom) || 0);
   if (avail < (master.fontSize || 16) * 1.7 * 2) return false; // < 2 Zeilen → normaler Break sinnvoller
-  const meas = tfMeasureSplit(master, toks, from, avail, txtEl.clientWidth, 0);
+  const meas = tfMeasureSplit(master, toks, from, avail, tfBreite(txtEl), 0);
   if (!meas || meas.cut >= toks.length || meas.cut <= from) return false;
   if (splits[seq] === meas.cut) return false; // bereits so — kein Fortschritt
   splits[seq] = meas.cut;
@@ -219,10 +224,10 @@ function tfRebalance() {
       const pxPerMm = pageEl.offsetWidth / geom().scrW;
       const maxBottom = geom().endTop * pxPerMm;
       const overhead = wrap.offsetHeight - txtEl.offsetHeight;
-      const avail = maxBottom - wrap.offsetTop - overhead;
+      const avail = maxBottom - wrap.offsetTop - overhead - (parseFloat(getComputedStyle(wrap).marginBottom) || 0);
       const from = s === 0 ? 0 : Math.min(splits[s - 1], toks.length);
       // Wachsen nur mit 3px-Hysterese → kein Flattern zwischen Split/Overflow
-      const meas = tfMeasureSplit(m, toks, from, avail, txtEl.clientWidth, 3);
+      const meas = tfMeasureSplit(m, toks, from, avail, tfBreite(txtEl), 3);
       if (!meas) continue;
       if (meas.cut >= toks.length) {
         // ab hier passt ALLES auf diese Seite → restliche Teile verschmelzen

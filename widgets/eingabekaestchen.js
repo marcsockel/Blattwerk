@@ -12,14 +12,18 @@ WIDGETS.push({
   render: d => {
     ekzGroesseMigrieren(d);
     const fullCols = EKZ_PRO_REIHE[d.groesse] || EKZ_PRO_REIHE.klein;
-    const cs     = ekzZellgroesse(fullCols);
+    const cs0    = ekzZellgroesse(fullCols);            // Nenngröße bei Standard-Rahmen
     const _frac  = d.widthFraction||(d.halfWidth?'1/2':'full');
     // Spaltenzahl wie beim Kästchenfeld aus der ECHTEN verfügbaren Breite (ekzFit misst
     // nach dem Layout, z.B. bei „Bündig" mehr Platz). Bis dahin: Schätzwert.
     const est    = Math.max(1, Math.floor(fullCols*({'1/4':0.25,'1/3':1/3,'1/2':0.5,'2/3':2/3,'3/4':0.75,'full':1}[_frac]||1)));
     const maxC   = d.spalten || 0;                       // 0 = ganze Breite
-    const fitKey = `${cs}|${_frac}|${d.flush ? 1 : 0}|${maxC}`;
-    const cols   = (d._ekzFit && d._ekzFit.key === fitKey) ? d._ekzFit.cols : (maxC ? Math.min(maxC, est) : est);
+    const fitKey = `${cs0}|${_frac}|${d.flush ? 1 : 0}|${maxC}`;
+    const fitOk  = d._ekzFit && d._ekzFit.key === fitKey;
+    const cols   = fitOk ? d._ekzFit.cols : (maxC ? Math.min(maxC, est) : est);
+    // Dicker Rahmen / „Bündig" ändern die nutzbare Breite um ein paar px: die Spaltenzahl bleibt,
+    // die Kästchen werden minimal kleiner/größer (ekzFit liefert den Faktor).
+    const cs     = Math.round(cs0 * ((fitOk && d._ekzFit.scale) || 1) * 100) / 100;
     const rows   = d.zeilen || 4;
     const w      = cols * cs;
     const h      = rows * cs;
@@ -36,7 +40,7 @@ WIDGETS.push({
     gitter += `<rect x="0.35" y="0.35" width="${w-0.7}" height="${h-0.7}" fill="none" stroke="#888" stroke-width="0.7"/>`;
     const linienSvg = linien.map(l =>
       `<line x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>`).join('');
-    const fitAttrs = `data-ekz-fit="${d.id}" data-cs="${cs}" data-maxcols="${maxC}" data-cols="${cols}" data-key="${fitKey}"`;
+    const fitAttrs = `data-ekz-fit="${d.id}" data-cs="${cs}" data-cs0="${cs0}" data-maxcols="${maxC}" data-cols="${cols}" data-key="${fitKey}"`;
 
     // Beide Darstellungen als display:block (nicht inline-block): sonst hängt die Höhe an der
     // Grundlinie des Inhalts (Bild vs. Eingabefelder) und der Abstand unten springt beim Auswählen.
@@ -362,14 +366,20 @@ function ekzFit(el) {
   const id = +el.dataset.ekzFit;
   const w = widgets.find(x => x.id === id); if (!w) return;
   const host = el.parentElement; if (!host || !host.clientWidth) return;
-  const cs = Math.max(1, +el.dataset.cs || 20);
+  const cs0 = Math.max(1, +el.dataset.cs0 || +el.dataset.cs || 20);
   const st = getComputedStyle(host);
   const avail = host.clientWidth - parseFloat(st.paddingLeft) - parseFloat(st.paddingRight);
-  const fit  = Math.max(1, Math.floor(avail / cs + 0.001));   // wie Kästchenfeld (Gitter ist SVG, kein Extra-Rand mehr)
+  // Bezugsbreite = Breite bei Standard-Optik (ohne Rahmen, 9px Innenabstand je Seite). Daraus die
+  // Spaltenzahl → sie bleibt bei dickem Rahmen oder „Bündig" gleich; die Kästchen füllen
+  // stattdessen denselben Anteil der tatsächlichen Breite (Faktor scale, wenige Prozent).
+  const ref  = Math.max(cs0, host.offsetWidth - 18);
+  const fit  = Math.max(1, Math.floor(ref / cs0 + 0.001));
   const maxC = +el.dataset.maxcols || 0;
   const cols = maxC ? Math.min(maxC, fit) : fit;
-  if (cols === +el.dataset.cols) return;
-  w._ekzFit = { key: el.dataset.key, cols };
+  const scale = Math.round(avail / ref * 1000) / 1000;
+  const cs = Math.round(cs0 * scale * 100) / 100;
+  if (cols === +el.dataset.cols && Math.abs(cs - (+el.dataset.cs || 0)) < 0.005) return;
+  w._ekzFit = { key: el.dataset.key, cols, scale };
   if (!(typeof patchWidget === 'function' && patchWidget(id))) render();
 }
 

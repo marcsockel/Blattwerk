@@ -45,9 +45,18 @@ WIDGETS.push({
       const bw  = { dashed: 1.5, thin: 1, medium: 2, thick: 3 }[typeof frameBorder === 'function' ? frameBorder(d) : ''] || 0;
       const top = -(pad + bw) - Math.round(sz * 0.45);
       const seite = iconPos === 'right' ? 'right:4px;' : 'left:4px;';
-      const sym = `<span style="position:absolute;top:${top}px;${seite}width:${sz}px;height:${sz}px;padding:2px;box-sizing:content-box;`
-        + `background:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;pointer-events:none;">`
-        + `<img src="${d.symbolGrau && typeof lwSymbolSrcSw === 'function' ? lwSymbolSrcSw(d.symbol) : lwSymbolSrc(d.symbol)}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;"></span>`;
+      // Klick aufs Symbol (Widget gewählt) → Drehgriff wie in der Zeichenebene; Position bleibt fest
+      const dreh = _ibDreh === d.id && d.id === selId && !_solutionsMode;
+      if (_ibDreh === d.id && !dreh) _ibDreh = null;
+      const rot = d.symbolRot || 0;
+      const griff = dreh ? `<span class="lw-ui" style="position:absolute;inset:-3px;border:1.5px dashed #3b6fd4;border-radius:4px;pointer-events:none;"></span>
+          <span class="lw-ui" style="position:absolute;left:50%;top:-20px;width:1.5px;height:17px;margin-left:-0.75px;background:#3b6fd4;pointer-events:none;"></span>
+          <span class="lw-ui" title="Drehen (Shift = 15°-Schritte)" onpointerdown="ibDrehStart(event,${d.id})" onclick="event.stopPropagation()"
+            style="position:absolute;left:50%;top:-31px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;
+                   border:2px solid #3b6fd4;box-sizing:border-box;cursor:grab;touch-action:none;pointer-events:auto;"></span>` : '';
+      const sym = `<span data-ib-sym="${d.id}" onpointerdown="ibSymKlick(${d.id})" title="Klicken zum Drehen" style="position:absolute;top:${top}px;${seite}width:${sz}px;height:${sz}px;`
+        + `display:flex;align-items:center;justify-content:center;">${griff}`
+        + `<img draggable="false" ${rot ? `data-rot="${rot}" ` : ''}src="${d.symbolGrau && typeof lwSymbolSrcSw === 'function' ? lwSymbolSrcSw(d.symbol) : lwSymbolSrc(d.symbol)}" alt="" style="max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;${rot ? `transform:rotate(${rot}deg);` : ''}"></span>`;
       const platz = sz + 10;   // Text weicht dem Symbol aus
       const text = `<div class="infobox-text" style="font-size:${fontSize}px;line-height:1.6;font-family:${font};color:${txtCol};text-align:${align};`
         + `${iconPos === 'right' ? `padding-right:${platz}px;` : `padding-left:${platz}px;`}min-height:${Math.round(sz * 0.6)}px;">${html}</div>`;
@@ -94,7 +103,15 @@ WIDGETS.push({
           ${toggleBtn("Links",  iconPos==="left",  `upd(${d.id},'iconPos','left')`)}
           ${toggleBtn("Rechts", iconPos==="right", `upd(${d.id},'iconPos','right')`)}
         </div></div>` : "") +
-      `<div class="prow"><label>Schriftfarbe</label>
+      `<div class="prow"><label>Hintergrund</label><div style="display:flex;gap:8px;">
+          <input type="color" value="${d.bgColor || '#ffffff'}" onclick="event.stopPropagation()" onchange="upd(${d.id},'bgColor',this.value)"
+            style="width:36px;height:26px;padding:0;border:1.5px solid #ddd;border-radius:4px;cursor:pointer;background:#fff;flex:0 0 auto;${d.bgColor ? '' : 'opacity:.45;'}">
+          <span style="font-size:11px;color:#888;font-family:monospace;align-self:center;">${d.bgColor || 'keine'}</span>
+          <button onclick="event.stopPropagation();upd(${d.id},'bgColor','')"
+            style="margin-left:auto;padding:4px 10px;border-radius:4px;border:1.5px solid ${d.bgColor ? '#ddd' : '#89b4fa'};background:${d.bgColor ? '#fff' : '#e8f0ff'};
+                   font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;color:${d.bgColor ? '#999' : '#1e1e2e'};">Keine</button>
+        </div></div>
+      <div class="prow"><label>Schriftfarbe</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Schwarz", txtCol!=="#ffffff", `upd(${d.id},'textColor','#333')`)}
           ${toggleBtn("Weiß",    txtCol==="#ffffff", `upd(${d.id},'textColor','#ffffff')`)}
@@ -134,6 +151,11 @@ function ibSymbolBlock(d) {
     + (d.symbol ? `<div class="prow"><label>Symbolgröße</label><div style="display:flex;gap:4px;">
         ${knopf('Klein', g === 'klein', `upd(${d.id},'symbolGroesse','klein')`)}${knopf('Mittel', g === 'mittel', `upd(${d.id},'symbolGroesse','mittel')`)}${knopf('Groß', g === 'gross', `upd(${d.id},'symbolGroesse','gross')`)}
       </div></div>` : '')
+    + (d.symbol ? `<div class="prow"><label>Drehung (°)</label><div style="display:flex;gap:4px;">
+        <input type="number" min="-180" max="180" step="5" value="${Math.round(d.symbolRot || 0)}" onclick="event.stopPropagation()"
+          onchange="upd(${d.id},'symbolRot',((+this.value % 360) + 540) % 360 - 180)" style="flex:1;">
+        ${knopf('↺ 0°', false, `upd(${d.id},'symbolRot',0)`)}
+      </div><div style="font-size:10px;color:#aaa;margin-top:3px;line-height:1.4;">Oder im Blatt aufs Symbol klicken und am blauen Punkt drehen.</div></div>` : '')
     + propFold('ib-symbole', 'Symbol auswählen', grid, !d.symbol);
 }
 function ibSymbolSetzen(id, name) {
@@ -142,4 +164,37 @@ function ibSymbolSetzen(id, name) {
   w.symbol = name || '';
   w.icon = '';                 // altes Emoji-Symbol wird ersetzt
   render(); renderProps(id);
+}
+
+// ── Symbol im Blatt drehen (Griff wie in der Zeichenebene; die Position bleibt fest) ──
+let _ibDreh = null;          // Widget-ID, deren Symbol gerade den Drehgriff zeigt
+function ibSymKlick(id) { _ibDreh = id; }   // der Klick läuft weiter → sel(id) zeichnet neu, jetzt mit Griff
+function ibDrehStart(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  const w = widgets.find(x => x.id === id);
+  const box = document.querySelector(`.wwrap:not(.wrep)[data-id="${id}"] [data-ib-sym="${id}"]`);
+  const img = box && box.querySelector('img'); if (!w || !img) return;
+  const b = box.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+  const alt = w.symbolRot || 0; let neu = alt, gesichert = false;
+  const move = ev => {
+    let a = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI + 90;
+    if (ev.shiftKey) a = Math.round(a / 15) * 15;
+    else { const r90 = Math.round(a / 90) * 90; if (Math.abs(a - r90) < 5) a = r90; }   // gerade rastet ein
+    neu = ((Math.round(a) % 360) + 540) % 360 - 180; if (neu === -180) neu = 180;
+    img.style.transform = neu ? `rotate(${neu}deg)` : '';
+  };
+  const up = () => {
+    document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+    // Der Klick nach dem Loslassen (oft neben dem Widget) soll die Auswahl nicht aufheben
+    const schluck = ev => { ev.stopPropagation(); ev.preventDefault(); };
+    document.addEventListener('click', schluck, { capture: true, once: true });
+    setTimeout(() => document.removeEventListener('click', schluck, { capture: true }), 0);
+    if (neu === alt) return;
+    if (!gesichert) { saveHistory(); gesichert = true; }
+    w.symbolRot = neu;
+    if (typeof repSync === 'function') repSync(w);
+    if (typeof scheduleDraftSave === 'function') scheduleDraftSave();
+    renderProps(id);
+  };
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
 }

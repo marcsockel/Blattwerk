@@ -118,6 +118,12 @@ function kalCw(d) {
   return (d.groesse || 'mittel') === 'gross' && platz > 0 ? Math.max(kalCs(d), Math.floor(platz / 7)) : kalCs(d);
 }
 
+// Höhe des Monatstitels über der Tabelle (Schrift + Abstand) — muss zu kalTabelle passen
+function kalTitelH(d) {
+  const fs = Math.round(kalCs(d) * 0.4), tfs = Math.round(fs * 1.15);
+  return Math.round(tfs * 1.2) + Math.round(fs * 0.35);
+}
+
 function kalTabelle(d, active) {
   const g = d.groesse || 'mittel';
   const cs = kalCs(d), cw = kalCw(d);
@@ -125,28 +131,30 @@ function kalTabelle(d, active) {
   const ff = "'DidactGothic7',sans-serif";
   const n = kalTage(d), start = kalWt(d, 1);
   const leer = new Set((d.modus || 'voll') === 'luecken' ? (d.luecken || []) : []);
-  const rb = 'border:1.2px solid #333;';
-  let html = `<tr><th colspan="7" style="${rb}padding:6px 4px;background:#e4e4e4;font-family:${ff};font-size:${Math.round(fs * 1.1)}px;font-weight:700;color:#222;">${KAL_MONATE[kalMonat(d) - 1]} ${kalJahr(d)}</th></tr><tr>`;
-  KAL_WT_K.forEach((k, i) => { html += `<th style="${rb}width:${cw}px;height:${Math.round(cs * 0.72)}px;padding:0;background:${i >= 5 ? '#e4e4e4' : '#f3f3f3'};font-family:${ff};font-size:${Math.round(fs * 0.85)}px;font-weight:700;color:#333;">${k}</th>`; });
+  // Tabellenstil: class="bw-tab" (index.html). Monat/Jahr stehen als Titel ÜBER der Tabelle.
+  let html = '<tr>';
+  KAL_WT_K.forEach((k, i) => { html += `<th style="width:${cw}px;height:${Math.round(cs * 0.68)}px;padding:0;${i >= 5 ? 'color:#999;' : ''}">${k}</th>`; });
   html += '</tr>';
   const zellen = start + n, zeilen = Math.ceil(zellen / 7);
   for (let r = 0; r < zeilen; r++) {
     html += '<tr>';
     for (let c = 0; c < 7; c++) {
       const tag = r * 7 + c - start + 1;
-      const bg = c >= 5 ? 'background:#efefef;' : '';
+      const we = c >= 5;                                        // Wochenende: leicht getönt
       let inhalt = '';
       if (tag >= 1 && tag <= n) {
-        if (!leer.has(tag)) inhalt = `<span style="color:#222;">${tag}</span>`;
+        if (!leer.has(tag)) inhalt = `<span style="color:${we ? '#777' : '#222'};">${tag}</span>`;
         else if (active) inhalt = `<span style="color:#2563eb;font-weight:700;">${tag}</span>`;
       }
-      html += `<td style="${rb}width:${cw}px;height:${cs}px;padding:0;text-align:center;vertical-align:middle;${bg}font-family:${ff};font-size:${fs}px;">${inhalt}</td>`;
+      html += `<td style="width:${cw}px;height:${cs}px;padding:0;text-align:center;vertical-align:middle;${we ? 'background:#f7f7f5;' : ''}">${inhalt}</td>`;
     }
     html += '</tr>';
   }
   // „Groß": exakt bündig mit dem Widget-Rand (gleiche Breite wie die Fragen darunter)
   const voll = (d.groesse || 'mittel') === 'gross' && cw > cs;
-  return `<table style="border-collapse:collapse;flex:0 0 auto;${voll ? 'width:100%;table-layout:fixed;' : ''}">${html}</table>`;
+  return `<div style="flex:0 0 auto;font-family:${ff};${voll ? 'width:100%;' : ''}">`
+    + `<div style="font-size:${Math.round(fs * 1.15)}px;height:${Math.round(Math.round(fs * 1.15) * 1.2)}px;font-weight:700;color:#222;margin:0 0 ${Math.round(fs * 0.35)}px 2px;line-height:1.2;white-space:nowrap;">${KAL_MONATE[kalMonat(d) - 1]} <span style="color:#888;font-weight:400;">${kalJahr(d)}</span></div>`
+    + `<table class="bw-tab" style="font-size:${fs}px;${voll ? 'width:100%;table-layout:fixed;' : ''}">${html}</table></div>`;
 }
 
 // Fragen-Layout wird gerechnet (kein CSS-Spaltenumbruch → keine Leerzeile am Spaltenanfang):
@@ -171,7 +179,9 @@ function kalFragenHtml(d, active) {
       + `color:#2563eb;font-weight:700;">${active ? esc(a) : ''}</div></div>`;
   }).join('');
   const ff = `font-family:'DidactGothic7',sans-serif;font-size:${fs}px;`;
-  if (kalDaneben(d)) return `<div style="flex:1 1 0;min-width:0;${ff}">${items}</div>`;
+  // Neben dem Kalender beginnen die Fragen erst auf Höhe der Tabelle — die Zeile neben
+  // dem Monatstitel bleibt frei.
+  if (kalDaneben(d)) return `<div style="flex:1 1 0;min-width:0;padding-top:${kalTitelH(d)}px;${ff}">${items}</div>`;
   const zwei = fragen.length > 1 && kalPlatz(d) >= 2 * KAL_FRAGEN_MIN + KAL_GAP;
   return zwei
     ? `<div style="width:100%;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(${Math.ceil(fragen.length / 2)},auto);grid-auto-flow:column;column-gap:${KAL_GAP}px;${ff}">${items}</div>`

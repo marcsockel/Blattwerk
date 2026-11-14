@@ -47,14 +47,13 @@ WIDGETS.push({
       const kasten = seededShuffle(items.map(it => it.wort), (Math.imul(d.id, 2654435761) + items.length * 40503) >>> 0);
       const jeArt = ARTK_ART.map(a => items.filter(it => it.art === a).map(it => it.wort));
       const zeilen = Math.max(2, ...jeArt.map(l => l.length));
-      const rb = 'border:1.2px solid #333;';
-      let t = `<tr>${ARTK_ART.map(a => `<th style="${rb}width:33.33%;padding:${Math.round(fs * 0.3)}px 6px;background:#efefef;font-weight:700;">${a}</th>`).join('')}</tr>`;
+      let t = `<tr>${ARTK_ART.map(a => `<th style="width:33.33%;padding:${Math.round(fs * 0.25)}px 6px;font-size:.9em;">${a}</th>`).join('')}</tr>`;
       for (let r = 0; r < zeilen; r++)
-        t += `<tr>${jeArt.map(l => `<td style="${rb}height:${Math.round(fs * 2)}px;padding:0 8px;color:#2563eb;font-weight:700;">${isActive && l[r] ? esc(l[r]) : ''}</td>`).join('')}</tr>`;
+        t += `<tr>${jeArt.map(l => `<td style="height:${Math.round(fs * 2)}px;padding:0 8px;color:#2563eb;font-weight:700;">${isActive && l[r] ? esc(l[r]) : ''}</td>`).join('')}</tr>`;
       return atHtml(d)
         + `<div style="${basis}border:1.5px solid #555;border-radius:8px;padding:${Math.round(fs * 0.45)}px ${Math.round(fs * 0.7)}px;margin-bottom:${Math.round(fs * 0.7)}px;display:flex;flex-wrap:wrap;gap:${Math.round(fs * 0.3)}px ${Math.round(fs * 1.3)}px;justify-content:center;line-height:1.4;">`
         + kasten.map(w => `<span style="white-space:nowrap;">${esc(w)}</span>`).join('') + `</div>`
-        + `<table style="${basis}width:100%;border-collapse:collapse;table-layout:fixed;">${t}</table>`;
+        + `<table class="bw-tab" style="${basis}width:100%;table-layout:fixed;">${t}</table>`;
     }
 
     const cols = Math.max(1, Math.min(4, Math.round(+d.cols) || 2));
@@ -265,11 +264,10 @@ WIDGETS.push({
     } else if (d.zusatz === 'tabelle' && listen.length) {
       const sp = arten.map(a => ({ a, l: wartListe(d, a) }));
       const n = Math.max(2, ...sp.map(x => x.l.length));
-      const rb = 'border:1.2px solid #333;';
-      let t = `<tr>${sp.map(x => `<th style="${rb}width:${(100 / sp.length).toFixed(2)}%;padding:${Math.round(fs * 0.25)}px 6px;background:#efefef;font-family:'DidactGothic7',sans-serif;font-weight:700;">${WART[x.a].name}</th>`).join('')}</tr>`;
+      let t = `<tr>${sp.map(x => `<th style="width:${(100 / sp.length).toFixed(2)}%;padding:${Math.round(fs * 0.25)}px 6px;font-family:'DidactGothic7',sans-serif;">${WART[x.a].name}</th>`).join('')}</tr>`;
       for (let r = 0; r < n; r++)
-        t += `<tr>${sp.map(x => `<td style="${rb}height:${Math.round(fs * 1.8)}px;padding:0 8px;color:#2563eb;font-weight:700;overflow:hidden;white-space:nowrap;">${isActive && x.l[r] ? esc(x.l[r].wort) : ''}</td>`).join('')}</tr>`;
-      zusatz = `<table style="${basis}width:100%;border-collapse:collapse;table-layout:fixed;margin-top:${Math.round(fs * 0.8)}px;">${t}</table>`;
+        t += `<tr>${sp.map(x => `<td style="height:${Math.round(fs * 1.8)}px;padding:0 8px;color:#2563eb;font-weight:700;overflow:hidden;white-space:nowrap;">${isActive && x.l[r] ? esc(x.l[r].wort) : ''}</td>`).join('')}</tr>`;
+      zusatz = `<table class="bw-tab" style="${basis}width:100%;table-layout:fixed;margin-top:${Math.round(fs * 0.8)}px;">${t}</table>`;
     }
 
     // Großer Zeilen- und Wortabstand: Platz zum Unterstreichen/Anmalen

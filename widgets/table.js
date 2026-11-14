@@ -16,6 +16,7 @@ WIDGETS.push({
 
   createData: id => ({
     id, type:"table", rows:3, cols:3, hasHeader:true, hasHeaderCol:false, fullWidth:true,
+    design: 'modern', // 'modern' = gemeinsamer Tabellenstil (class bw-tab) | 'klassisch' (fehlt = klassisch: alte Blätter)
     font: 'inherit', fontSize: 13,
     cellStyles: {},   // sparse: {"r,c": {align, valign, fontSize, font}} — fehlt = von Tabelle
     colWidths: {},    // sparse: {c: px} — Breite gilt für die ganze Spalte
@@ -29,7 +30,10 @@ WIDGETS.push({
     const cs = d.cellStyles || {};
     const cw = d.colWidths || {};
     const selHere = _tblSel && _tblSel.id === d.id ? _tblSel : null;
-    let html = `<table style="border-collapse:collapse;${fw?'width:100%;table-layout:fixed;':'table-layout:auto;'}">`;
+    // Design: „modern" = einheitlicher Tabellenstil (index.html .bw-tab: runder Außenrahmen,
+    // dünne graue Innenlinien, leiser Kopf); „klassisch" = volles Raster mit grauem Kopf.
+    const modern = d.design === 'modern';
+    let html = `<table${modern ? ' class="bw-tab"' : ''} style="${modern ? '' : 'border-collapse:collapse;'}${fw?'width:100%;table-layout:fixed;':'table-layout:auto;'}">`;
     html += '<colgroup>';
     for (let c = 0; c < d.cols; c++) html += `<col${cw[c] ? ` style="width:${cw[c]}px;"` : ''}>`;
     html += '</colgroup>';
@@ -42,7 +46,9 @@ WIDGETS.push({
         // Markierung nur solange das Widget selbst ausgewählt ist — und als Klasse
         // (Bildschirm-CSS), damit sie NIE mitgedruckt wird.
         const isSel = selHere && selHere.r === r && selHere.c === c && d.id === selId;
-        html += `<td${isSel ? ' class="tbl-selcell" data-tblsel="1"' : ''} style="border:1px solid #888;padding:0;${fw?'':'min-width:60px;white-space:nowrap;'}
+        html += `<td${isSel ? ' class="tbl-selcell" data-tblsel="1"' : ''} style="${modern
+              ? (hdr ? 'background:#f4f4f2;' : '') + (d.hasHeader && r === 0 && d.rows > 1 ? 'border-bottom:1.3px solid #555;' : '') + (d.hasHeaderCol && c === 0 && d.cols > 1 ? 'border-right:1.3px solid #555;' : '')
+              : 'border:1px solid #888;'}padding:0;${fw?'':'min-width:60px;white-space:nowrap;'}
             ${st.valign ? `vertical-align:${st.valign};` : ''}">
           <div contenteditable="true"
             onclick="event.stopPropagation()"
@@ -50,7 +56,7 @@ WIDGETS.push({
             style="padding:7px 10px;font-family:${st.font || font};font-size:${st.fontSize || d.fontSize || 13}px;min-height:22px;outline:none;word-break:break-word;
                    ${st.align ? `text-align:${st.align};` : ''}
                    ${st.bold ? 'font-weight:700;' : ''}${st.italic ? 'font-style:italic;' : ''}
-                   ${hdr ? 'font-weight:700;background:#d9d9d9;' : ''}"
+                   ${hdr ? (modern ? 'font-weight:700;color:#555;' : 'font-weight:700;background:#d9d9d9;') : ''}"
             oninput="tblUpdCell(${d.id},${r},${c},this.innerText)"
           >${val}</div>
         </td>`;
@@ -80,6 +86,11 @@ WIDGETS.push({
         <option value="true"  ${d.hasHeaderCol?"selected":""}>Ja</option>
         <option value="false" ${!d.hasHeaderCol?"selected":""}>Nein</option>
       </select>`) +
+      `<div class="prow"><label>Design</label>
+        <div style="display:flex;gap:4px;">
+          ${toggleBtn("Modern", d.design === 'modern', `upd(${d.id},'design','modern')`)}
+          ${toggleBtn("Klassisch", d.design !== 'modern', `upd(${d.id},'design','klassisch')`)}
+        </div></div>` +
       `<div class="prow"><label>Breite</label>
         <div style="display:flex;gap:4px;">
           ${toggleBtn("Volle Breite", fw, `upd(${d.id},'fullWidth',true)`)}

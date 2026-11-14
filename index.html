@@ -164,8 +164,20 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);height:100vh;display:f
 .frame-noborder{outline:1px dashed #d2cfc8;outline-offset:-2px;}  /* rahmenlose Gruppe sichtbar (Bildschirm) */
 /* Multitool: Zellrahmen nur im Editor, nicht im Druck */
 .winner{padding:7px 9px;flex:1 1 auto;}
-/* Infobox mit überstehendem Symbol: oben Platz schaffen (Überstand − normaler Widget-Abstand) */
-.wwrap:has(.ib-sym-klein){margin-top:4px;} .wwrap:has(.ib-sym-mittel){margin-top:12px;} .wwrap:has(.ib-sym-gross){margin-top:20px;}
+/* ── Einheitlicher Tabellenstil der Widgets (class="bw-tab") ──────────────────────────
+   Kräftiger Außenrahmen mit runden Ecken, innen dünne graue Linien, leiser Kopf (kleine
+   graue Schrift, heller Grund, eine kräftige Linie darunter). Genutzt von Kalender,
+   Punkte-Summe, Artikel, Wortarten, Strichliste. Zellen setzen nur noch Maße/Ausrichtung. */
+.bw-tab{border-collapse:separate;border-spacing:0;border:1.3px solid #555;border-radius:6px;overflow:hidden;}
+.bw-tab td,.bw-tab th{border-right:1px solid #bdbdbd;border-bottom:1px solid #bdbdbd;}
+.bw-tab tr>*:last-child{border-right:none;}
+.bw-tab tr:last-child>*{border-bottom:none;}
+.bw-tab th{font-weight:700;color:#555;font-size:.8em;letter-spacing:.03em;background:#f4f4f2;border-bottom:1.3px solid #555;}
+/* Infobox mit überstehendem Symbol: Das Symbol ragt 14/20/26 px (klein/mittel/groß) über den Rahmen hinaus.
+   Das Widget bekommt nach oben so viel Platz, dass zwischen Symbol und dem Widget darüber der normale
+   Abstand (14 px) bleibt — das weiße Feld hinter dem Symbol überdeckt dann nichts (Schatten, Rahmen …).
+   Die Ränder zweier Widgets untereinander verschmelzen (der größere gilt) → Überstand + 14. */
+.wwrap:has(.ib-sym-klein){margin-top:28px;} .wwrap:has(.ib-sym-mittel){margin-top:34px;} .wwrap:has(.ib-sym-gross){margin-top:40px;}
 /* Platzhalter: unsichtbar (nur Abstand), Auswahl über .wwrap-Outline */
 .ph-spacer{border:none;background:transparent;box-sizing:border-box;}
 /* Optionaler Schatten (Rahmen/Fläche) – liegt nach außen, ändert die Breite/Layout NICHT */
@@ -231,7 +243,7 @@ body.props-resizing iframe,body.props-resizing #canvas-area{pointer-events:none;
   .tbl-selcell{outline:none!important;}
   input,textarea,[contenteditable]{caret-color:transparent!important;} /* blinkender Cursor eines fokussierten Felds (z. B. Eingabekästchen) nicht mitdrucken */
   .float-noborder > .winner{outline:none!important;} /* Bildschirm-Hilfslinie nicht drucken */
-  .lw-canvas{outline:none!important;} .lw-canvas .lw-ui,.lw-marquee{display:none!important;} /* Leinwand/Zeichenebene: Auswahl-Griffe nicht drucken */
+  .lw-canvas{outline:none!important;} .lw-canvas .lw-ui,[data-ib-sym] .lw-ui,.lw-marquee{display:none!important;} /* Leinwand/Zeichenebene: Auswahl-Griffe nicht drucken */
   .group-frame.frame-noborder{border:none!important;} /* Gruppen ohne Rahmen: gestrichelte Editor-Hilfslinie nicht drucken */
   .frame-noborder{outline:none!important;}
   #layout{display:block;overflow:visible;}
@@ -509,25 +521,25 @@ const WIDGETS = [];
 <script src="main/img_picker.js?v=4"></script>
 <script src="vendor/qrcode.js"></script>
 <!-- ── Widget scripts ──────────────────────────────────────────── -->
-<script src="widgets/heading.js"></script>
-<script src="widgets/subheading.js"></script>
+<script src="widgets/heading.js?v=2"></script>
 <script src="widgets/text.js?v=9"></script>
-<script src="widgets/textfluss.js"></script>
+<script src="widgets/textfluss.js?v=2"></script>
 <script src="widgets/image.js?v=5"></script>
 <script src="widgets/qr.js?v=3"></script>
-<script src="widgets/platzhalter.js"></script>
+<script src="widgets/selbst.js?v=5"></script>
+<script src="widgets/punktesumme.js?v=2"></script>
+<script src="widgets/platzhalter.js?v=3"></script>
 <script src="widgets/namedate.js?v=3"></script>
 <script src="widgets/instruction.js?v=6"></script>
-<script src="widgets/divider.js?v=3"></script>
 <script src="widgets/linebox.js?v=3"></script>
 <script src="widgets/checkbox.js?v=5"></script>
-<script src="widgets/table.js?v=3"></script>
+<script src="widgets/table.js?v=4"></script>
 <script src="widgets/gap_text.js?v=5"></script>
 <script src="widgets/wordsearch.js?v=3"></script>
 <script src="widgets/scramble.js?v=4"></script>
 <script src="widgets/purzelsatz.js?v=1"></script>
 <script src="widgets/wortarten_lexikon.js?v=1"></script>
-<script src="widgets/grammatik.js?v=2"></script>
+<script src="widgets/grammatik.js?v=3"></script>
 <script src="widgets/matching.js?v=4"></script>
 <script src="widgets/numbering.js?v=4"></script>
 <script src="widgets/arithmetic.js?v=4"></script>
@@ -539,8 +551,8 @@ const WIDGETS = [];
 <script src="widgets/zahlenhaus.js?v=5"></script>
 <script src="widgets/uhr.js?v=2"></script>
 <script src="widgets/zeitspanne.js?v=2"></script>
-<script src="widgets/kalender.js?v=3"></script>
-<script src="widgets/eingabekaestchen.js?v=10"></script>
+<script src="widgets/kalender.js?v=5"></script>
+<script src="widgets/eingabekaestchen.js?v=11"></script>
 <script src="widgets/halbschriftlich.js?v=8"></script>
 <script src="widgets/schriftlich_addition.js?v=4"></script>
 <script src="widgets/schriftlich_subtraktion.js?v=4"></script>
@@ -556,7 +568,7 @@ const WIDGETS = [];
 <script src="widgets/bild_wort_zuordnung2.js"></script>
 <script src="widgets/aeue.js?v=5"></script>
 <script src="widgets/verlaengern.js?v=3"></script>
-<script src="widgets/infobox.js?v=5"></script>
+<script src="widgets/infobox.js?v=7"></script>
 <script src="widgets/silbentext.js"></script>
 <script src="widgets/silbenwort.js?v=9"></script>
 <script src="widgets/crossword.js"></script>
@@ -579,10 +591,10 @@ const WIDGETS = [];
 <script src="widgets/zahlenkarten.js?v=2"></script>
 <script src="widgets/diagramm.js"></script>
 <script src="widgets/kuchendiagramm.js"></script>
-<script src="widgets/strichliste.js"></script>
+<script src="widgets/strichliste.js?v=2"></script>
 <script src="widgets/group.js?v=2"></script>
 <script src="widgets/floatbox.js?v=4"></script>
-<script src="widgets/leinwand.js?v=30"></script>
+<script src="widgets/leinwand.js?v=31"></script>
 
 <script>
 // ── Lookup map (built after all widgets are registered) ───────────
@@ -884,7 +896,7 @@ function dupPage(){
 //  - trägt data-rep statt data-id/data-idx → alle Zugriffe über .wwrap[data-id] treffen
 //    weiterhin nur das Original; Klick auf die Spiegelung wählt das Original aus.
 // Nur für einfache Kopf-Widgets (reines HTML, keine Nachzeichnung per ID).
-const REP_TYPES=new Set(['heading','subheading','namedate','text','instruction','infobox','divider','image','linebox']);
+const REP_TYPES=new Set(['heading','namedate','text','instruction','infobox','platzhalter','image','linebox']);
 function repErlaubt(w){ return !!w&&REP_TYPES.has(w.type)&&!w.floating&&!w.parent&&!(w.type==='text'&&w.fliessen); }
 // Liegt das Widget in einer Gruppe? (dort gibt es keine Wiederholung)
 function repInGruppe(w){
@@ -1004,8 +1016,8 @@ function bwZuBreitPruefen(scope) {
 function bwPasstInBreite(w, frac) {
   const def = WIDGET_MAP[w.type];
   if (!def || frac >= 1) return true;
-  if (['group','groupEnd','image','text','silbentext','gap_text','instruction','infobox','heading','subheading',
-       'divider','linebox','platzhalter','namedate','leinwand','floatbox','zeichenebene','pagebreak','textfluss',
+  if (['group','groupEnd','image','text','silbentext','gap_text','instruction','infobox','heading',
+       'linebox','platzhalter','namedate','leinwand','floatbox','zeichenebene','pagebreak','textfluss',
        'eingabekaestchen','kaestchen'].includes(w.type)) return true;   // Kästchenfeld passt seine Spaltenzahl selbst an
   const page = document.querySelector('.page'); if (!page) return true;
   const val = frac <= 0.25 ? '1/4' : frac <= 1/3 + 0.01 ? '1/3' : frac <= 0.5 ? '1/2' : frac <= 2/3 + 0.01 ? '2/3' : '3/4';
@@ -1088,6 +1100,8 @@ function applyWidgetUpdate(id, k, v, doRenderProps) {
   _dirty = true;
   scheduleDraftSave();
   if (updNeedsFullRender(w, k) || !patchWidget(id)) render();
+  // Punkte geändert → Punkte-Summe-Widgets (widgets/punktesumme.js) zählen neu
+  if (k === 'punkte') widgets.forEach(x => { if (x.type === 'punktesumme' && x.id !== id) patchWidget(x.id); });
   if (doRenderProps) renderProps(id);
 }
 
@@ -1678,7 +1692,8 @@ function checkOverflow(ranges){
     // obwohl sie passen würden.
     const nextPage=pages[pi+1];
     const nextWraps=nextPage?[...nextPage.querySelectorAll('.wwrap')].filter(el=>!el.closest('.group-frame')&&!el.closest('.floatbox,.zeichenebene,.wrep')):[];
-    const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0])-nextWraps[0].offsetTop:Infinity;
+    // + margin-top (z. B. Infobox mit Symbol): der Platz darüber wandert beim Zurückfließen mit
+    const firstNextH=nextWraps.length?wrapFlowBottom(nextWraps[0])-nextWraps[0].offsetTop+(parseFloat(getComputedStyle(nextWraps[0]).marginTop)||0):Infinity;
     if(pageBottom+firstNextH<=maxBottom){
       // Sicher: auto-Break entfernen, Widget fließt zurück
       _ovfPasses++;
@@ -1793,7 +1808,7 @@ function desel(){
 // Fähigkeiten werden ausgelassen, wenn das Widget sie nicht hat:
 //  - Aufgabentext nur bei Widgets mit aufgabenNr/aufgabenText
 //    (z.B. Überschrift hat das nicht → wird weggelassen)
-//  - Rahmen (inkl. Hintergrund) nicht bei heading/subheading/divider
+//  - Rahmen (inkl. Hintergrund) nicht bei heading/platzhalter
 //  - Layout immer
 function sfTaskBlock(id,w){
   const nr=w.aufgabenNr||0, txt=w.aufgabenText||'';
@@ -1848,8 +1863,8 @@ function sfTaskBlock(id,w){
 // (group: eigener Rahmen-Renderer ohne ptHtml; textfluss: noFooter/erbt vom Master.)
 const PUNKTE_EXCLUDE=new Set([
   'diagramm','kuchendiagramm',                                  // Mathe: Diagramme
-  'heading','subheading','image','platzhalter','namedate',      // Allgemein: Struktur/Deko
-  'divider','infobox','floatbox','group','textfluss'
+  'heading','image','platzhalter','namedate',      // Allgemein: Struktur/Deko
+  'infobox','floatbox','group','textfluss','punktesumme'
 ]);
 function widgetHasPunkte(w){
   if(PUNKTE_EXCLUDE.has(w.type))return false;
@@ -1877,10 +1892,9 @@ function sfPunkteBlock(id,w){
     ${pts?`<div style="font-size:11px;color:#888;">Vorschau: <span style="font-family:'DidactGothic7',sans-serif;color:#222;">___ / ${pts}${einheit?' '+einheit:''}</span> — unten rechts im Widget</div>`:''}`;
 }
 function sfBgBlock(id,w){
+  if(w.type==='infobox')return ''; // Infobox: Hintergrundfarbe steht unter „Inhalt" (Farbfenster)
   const bg=w.bgColor||'';
-  const swatches=w.type==='infobox'
-    ? [['','Kein'],['#000000',''],['#444444',''],['#777777','']]
-    : [['','✕'],['#ffffff',''],['#f2f2f2',''],['#e0e0e0',''],['#cacaca','']];
+  const swatches=[['','✕'],['#ffffff',''],['#f2f2f2',''],['#e0e0e0',''],['#cacaca','']];
   // ✕ = keine Farbe (durchsichtig, z.B. Gruppenfarbe scheint durch),
   // Weiß = echtes Weiß (z.B. weißes Widget in einer gefärbten Gruppe).
   const titles={'':'Keine Farbe','#ffffff':'Weiß'};
@@ -1963,7 +1977,7 @@ function standardFooter(id,w){
   const def=WIDGET_MAP[w.type];
   if(def&&def.meta&&def.meta.noFooter)return '';
   const hasTask=w.aufgabenNr!==undefined||w.aufgabenText!==undefined;
-  const noBorder=['heading','subheading','divider','platzhalter'].includes(w.type);
+  const noBorder=['heading','platzhalter'].includes(w.type);
   let inner='';
   if(hasTask){
     inner+=propFold('sf-aufgabe','Aufgabentext',sfTaskBlock(id,w),true);
@@ -2261,6 +2275,24 @@ function dup(idx){
   }
   widgets.splice(at,0,c);render();sel(c.id);
 }
+// Ältere Blätter an den aktuellen Stand anpassen (beim Öffnen, Wiederherstellen, Einfügen).
+//  - „Zwischentitel" (subheading) gibt es nicht mehr → „Überschrift" mit ebene 3.
+//  - „Trennlinie" (divider) gibt es nicht mehr → „Abstand / Trennlinie" (platzhalter) mit Linie.
+//    28 px = frühere Höhe der Trennlinie samt Innenabstand → das Blatt sieht aus wie vorher.
+function migrateWidgets(list){
+  (list||[]).forEach(w=>{
+    // „Zwischentitel" (subheading) → Überschrift 3. Ebene (gleiche Optik)
+    if(w&&w.type==='subheading'){ w.type='heading'; w.ebene=3; }
+    if(w&&w.type==='divider'){
+      w.type='platzhalter';
+      w.height=28; w.flush=true;
+      if(!w.linie)w.linie='medium';
+      if(!w.linienFarbe)w.linienFarbe='#e0ddd6';
+    }
+  });
+  return list||[];
+}
+
 // ── Kopieren / Ausschneiden / Einfügen (Strg/Cmd + C / X / V) ──────────────────
 // Kopiert das ausgewählte Widget als Daten (Gruppe samt Inhalt, schwebender Rahmen samt Kind).
 // Zwischenablage: im Speicher UND in localStorage → Einfügen klappt auch in einem anderen
@@ -2299,7 +2331,7 @@ function pasteWidget(){
   let clip=_wClip;
   try{ const l=JSON.parse(localStorage.getItem(CLIP_KEY)||'null'); if(l&&Array.isArray(l.items)&&(!clip||l.t>clip.t))clip=l; }catch(e){}
   if(!clip||!clip.items.length)return false;
-  const items=JSON.parse(JSON.stringify(clip.items)).filter(x=>x.type==='groupEnd'||WIDGET_MAP[x.type]);
+  const items=migrateWidgets(JSON.parse(JSON.stringify(clip.items))).filter(x=>x.type==='groupEnd'||WIDGET_MAP[x.type]);
   if(!items.length)return false;
   saveHistory();
   // Neue IDs; Verweise innerhalb des Kopierten mitziehen (Rahmen-Kind → Rahmen)
@@ -2430,7 +2462,7 @@ async function loadBeispielBlob(blob, fallbackName){
   const nameEl=document.getElementById('blatt-name');
   const docName=(doc.name||'').trim()||(fallbackName||'').replace(/\.blatt$/i,'');
   if(nameEl&&docName) nameEl.value=docName;
-  const loaded=doc.widgets||[];
+  const loaded=migrateWidgets(doc.widgets||[]);
   const mimeMap={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif',webp:'image/webp',svg:'image/svg+xml'};
   for(const w of loaded){
     if(w.src&&w.src.startsWith('images/')){
@@ -2457,7 +2489,7 @@ function addSampleBuiltin(){
   const h=add("heading");h.text="Elmar der Elefant";
 
   // Zwischentitel
-  const sh=add("subheading");sh.text="Aufgabe 1 – Lückentext";
+  const sh=add("heading");sh.ebene=3;sh.text="Aufgabe 1 – Lückentext";
 
   // Aufgabentext
   const ins=add("instruction");ins.html="Lies den Text und fülle die Lücken aus.";
@@ -2469,7 +2501,7 @@ function addSampleBuiltin(){
   g.font="'Grundschrift', sans-serif";
 
   // Zwischentitel
-  const sh2=add("subheading");sh2.text="Aufgabe 2 – Multiple Choice";
+  const sh2=add("heading");sh2.ebene=3;sh2.text="Aufgabe 2 – Multiple Choice";
 
   // Aufgabentext
   const ins2=add("instruction");ins2.html="Kreuze die richtige Antwort an.";
@@ -2587,7 +2619,7 @@ async function blattOpen(file) {
   const nameEl = document.getElementById('blatt-name');
   const docName = (doc.name || '').trim() || file.name.replace(/\.blatt$/i, '');
   if (nameEl) nameEl.value = docName;
-  const loaded = doc.widgets || [];
+  const loaded = migrateWidgets(doc.widgets || []);
 
   const mimeMap = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg',
                     gif:'image/gif', webp:'image/webp', svg:'image/svg+xml' };
@@ -2692,7 +2724,7 @@ function showRestoreBanner(draft){
     +`<button id="rb-no" style="${btn('Verwerfen','#24262c','#cdd6f4')}">Verwerfen</button>`;
   document.body.appendChild(bar);
   document.getElementById('rb-yes').onclick=()=>{
-    widgets=draft.widgets||[];
+    widgets=migrateWidgets(draft.widgets||[]);
     idC=draft.idC||Math.max(0,...widgets.map(w=>w.id||0),0);
     selId=null; activePage=0;
     const nameEl=document.getElementById('blatt-name'); if(nameEl&&draft.name)nameEl.value=draft.name;

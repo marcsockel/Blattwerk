@@ -62,7 +62,7 @@ function slRowHtml(it, d, active, dims) {
   const numGiven   = richtung === 'malen'   || richtung === 'voll';
   const showSol = active && richtung !== 'leer';
   const n = it.value;
-  const cb = `border:1.2px solid #333;padding:3px 8px;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;`;
+  const cb = `padding:3px 8px;font-family:'DidactGothic7',sans-serif;font-size:${fs}px;`;
 
   let html = `<tr><td style="${cb}text-align:left;color:#222;white-space:nowrap;">${esc(it.label)}</td>`;
 
@@ -104,15 +104,14 @@ WIDGETS.push({
       size,
     };
     const align = d.align || 'left';
-    const thB = `border:1.2px solid #333;padding:4px 8px;background:#f0f0f0;`
-              + `font-family:'DidactGothic7',sans-serif;font-size:${dims.fs}px;font-weight:700;color:#333;`;
+    const thB = `padding:4px 8px;`;                       // Kopf-Optik: class="bw-tab" (index.html)
     const head = `<tr><th style="${thB}text-align:left;">Kategorie</th>`
                + `<th style="${thB}text-align:left;">Strichliste</th>`
                + `<th style="${thB}text-align:center;">Anzahl</th></tr>`;
     const body = items.map(it => slRowHtml(it, d, active, dims)).join('');
     return atHtml(d) +
       `<div style="text-align:${align};">`
-      + `<table style="border-collapse:collapse;display:inline-table;">${head}${body}</table></div>`;
+      + `<table class="bw-tab" style="display:inline-table;font-family:'DidactGothic7',sans-serif;font-size:${dims.fs}px;">${head}${body}</table></div>`;
   },
 
   renderProps: d => {
